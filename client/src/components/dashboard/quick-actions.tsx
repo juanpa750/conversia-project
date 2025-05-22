@@ -4,7 +4,7 @@ import {
   RiRobotLine, 
   RiWhatsappLine, 
   RiUserAddLine, 
-  RiSettingsLine 
+  RiSettings3Line 
 } from "@/lib/icons";
 
 interface QuickActionItemProps {
@@ -66,7 +66,7 @@ export function QuickActions() {
         
         <QuickActionItem 
           href="/settings"
-          icon={<RiSettingsLine className="text-xl" />}
+          icon={<RiSettings3Line className="text-xl" />}
           iconColor="bg-purple-100 text-purple-600"
           title="Configuración"
           description="Personaliza tus preferencias"

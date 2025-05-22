@@ -25,7 +25,22 @@ import {
   RiDownload2Line,
   RiLockLine,
   RiMailLine,
-  RiGlobalLine
+  RiGlobalLine,
+  RiAddLine,
+  RiMoreLine,
+  RiFileExcel2Line,
+  RiFileList3Line,
+  RiBrainLine,
+  RiShoppingCart2Line,
+  RiPieChartLine,
+  RiAdvertisementLine,
+  RiTeamLine,
+  RiGalleryLine,
+  RiApps2Line,
+  RiLayoutGridLine,
+  RiFileChartLine,
+  RiMoneyDollarBoxLine,
+  RiStore2Line
 } from 'react-icons/ri';
 
 export {
@@ -55,5 +70,20 @@ export {
   RiDownload2Line,
   RiLockLine,
   RiMailLine,
-  RiGlobalLine
+  RiGlobalLine,
+  RiAddLine,
+  RiMoreLine,
+  RiFileExcel2Line,
+  RiFileList3Line,
+  RiBrainLine,
+  RiShoppingCart2Line,
+  RiPieChartLine,
+  RiAdvertisementLine,
+  RiTeamLine,
+  RiGalleryLine,
+  RiApps2Line,
+  RiLayoutGridLine,
+  RiFileChartLine,
+  RiMoneyDollarBoxLine,
+  RiStore2Line
 };

@@ -110,7 +110,7 @@
   }
   
   .drop-zone.active {
-    @apply bg-primary-50 bg-opacity-70;
+    @apply bg-primary/10;
   }
 }
 
