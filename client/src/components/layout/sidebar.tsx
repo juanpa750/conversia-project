@@ -9,7 +9,13 @@ import {
   RiSettings3Line, 
   RiCustomerService2Line,
   RiRobotLine,
-  RiLogoutBoxRLine 
+  RiLogoutBoxRLine,
+  RiBrainLine,
+  RiStore2Line,
+  RiAdvertisementLine,
+  RiTeamLine,
+  RiApps2Line,
+  RiGalleryLine
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -79,6 +85,30 @@ export function Sidebar() {
         </NavItem>
         
         <NavItem 
+          href="/ai-advanced" 
+          icon={<RiBrainLine />} 
+          active={location.startsWith("/ai-advanced")}
+        >
+          IA Avanzada
+        </NavItem>
+        
+        <NavItem 
+          href="/store" 
+          icon={<RiStore2Line />} 
+          active={location.startsWith("/store")}
+        >
+          Tienda
+        </NavItem>
+        
+        <NavItem 
+          href="/campaigns" 
+          icon={<RiAdvertisementLine />} 
+          active={location.startsWith("/campaigns")}
+        >
+          Campañas
+        </NavItem>
+        
+        <NavItem 
           href="/clients" 
           icon={<RiUser3Line />} 
           active={location.startsWith("/clients")}
@@ -92,6 +122,34 @@ export function Sidebar() {
           active={location.startsWith("/analytics")}
         >
           Analytics
+        </NavItem>
+        
+        <div className="mb-3 mt-6 px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
+          Avanzado
+        </div>
+        
+        <NavItem 
+          href="/multimedia" 
+          icon={<RiGalleryLine />} 
+          active={location.startsWith("/multimedia")}
+        >
+          Multimedia
+        </NavItem>
+        
+        <NavItem 
+          href="/integrations" 
+          icon={<RiApps2Line />} 
+          active={location.startsWith("/integrations")}
+        >
+          Integraciones
+        </NavItem>
+        
+        <NavItem 
+          href="/templates" 
+          icon={<RiLayoutGridLine />} 
+          active={location.startsWith("/templates")}
+        >
+          Templates
         </NavItem>
         
         <div className="mb-3 mt-6 px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
