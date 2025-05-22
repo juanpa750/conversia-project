@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { RiBrainLine, RiUpload2Line, RiFileTextLine, RiRobotLine, RiImage2Line, RiEmotionLine } from "@/lib/icons";
+import { RiBrainLine, RiUploadLine, RiFileTextLine, RiRobotLine, RiImage2Line, RiEmotionLine } from "@/lib/icons";
 import { Layout } from "@/components/layout/layout";
 
 export default function AIAdvanced() {
@@ -146,7 +146,7 @@ export default function AIAdvanced() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
-                  <RiUpload2Line className="h-10 w-10 mx-auto text-gray-400" />
+                  <RiUploadLine className="h-10 w-10 mx-auto text-gray-400" />
                   <p className="mt-2 text-sm text-gray-500">
                     Arrastra archivos PDF, DOCX o TXT aquí, o
                   </p>

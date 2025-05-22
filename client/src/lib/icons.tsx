@@ -22,6 +22,7 @@ import {
   RiTestTubeLine,
   RiCalendarLine,
   RiArrowDownSLine,
+  RiArrowUpSLine,
   RiDownload2Line,
   RiLockLine,
   RiMailLine,
@@ -30,6 +31,7 @@ import {
   RiMoreLine,
   RiFileExcel2Line,
   RiFileList3Line,
+  RiFileTextLine,
   RiBrainLine,
   RiShoppingCart2Line,
   RiPieChartLine,
@@ -40,7 +42,12 @@ import {
   RiLayoutGridLine,
   RiFileChartLine,
   RiMoneyDollarBoxLine,
-  RiStore2Line
+  RiStore2Line,
+  RiUploadLine,
+  RiImage2Line,
+  RiEmotionLine,
+  RiDeleteBinLine,
+  RiEditLine
 } from 'react-icons/ri';
 
 export {
@@ -67,6 +74,7 @@ export {
   RiTestTubeLine,
   RiCalendarLine,
   RiArrowDownSLine,
+  RiArrowUpSLine,
   RiDownload2Line,
   RiLockLine,
   RiMailLine,
@@ -75,6 +83,7 @@ export {
   RiMoreLine,
   RiFileExcel2Line,
   RiFileList3Line,
+  RiFileTextLine,
   RiBrainLine,
   RiShoppingCart2Line,
   RiPieChartLine,
@@ -85,5 +94,10 @@ export {
   RiLayoutGridLine,
   RiFileChartLine,
   RiMoneyDollarBoxLine,
-  RiStore2Line
+  RiStore2Line,
+  RiUploadLine,
+  RiImage2Line,
+  RiEmotionLine,
+  RiDeleteBinLine,
+  RiEditLine
 };
