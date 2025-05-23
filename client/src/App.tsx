@@ -15,6 +15,7 @@ import SubscriptionPlans from "@/pages/subscription/plans";
 import SubscriptionCheckout from "@/pages/subscription/checkout";
 import Settings from "@/pages/settings";
 import Support from "@/pages/support";
+import CRMDashboard from "@/pages/crm";
 import { useAuth } from "@/hooks/use-auth";
 
 function Router() {
@@ -65,6 +66,11 @@ function Router() {
           <Route path="/chatbots/templates">
             <Layout>
               <ChatbotTemplates />
+            </Layout>
+          </Route>
+          <Route path="/crm">
+            <Layout>
+              <CRMDashboard />
             </Layout>
           </Route>
           <Route path="/clients">

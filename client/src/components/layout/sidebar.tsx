@@ -109,6 +109,14 @@ export function Sidebar() {
         </NavItem>
         
         <NavItem 
+          href="/crm" 
+          icon={<RiTeamLine />} 
+          active={location.startsWith("/crm")}
+        >
+          CRM Avanzado
+        </NavItem>
+        
+        <NavItem 
           href="/clients" 
           icon={<RiUser3Line />} 
           active={location.startsWith("/clients")}
@@ -146,7 +154,7 @@ export function Sidebar() {
         
         <NavItem 
           href="/templates" 
-          icon={<RiLayoutGridLine />} 
+          icon={<RiGalleryLine />} 
           active={location.startsWith("/templates")}
         >
           Templates
