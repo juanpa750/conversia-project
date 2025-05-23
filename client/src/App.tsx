@@ -16,6 +16,8 @@ import SubscriptionCheckout from "@/pages/subscription/checkout";
 import Settings from "@/pages/settings";
 import Support from "@/pages/support";
 import CRMDashboard from "@/pages/crm";
+import WhatsAppConnect from "@/pages/integrations/whatsapp-connect";
+import WhatsAppBotConfig from "@/pages/integrations/whatsapp-bot";
 import { useAuth } from "@/hooks/use-auth";
 
 function Router() {
@@ -103,6 +105,16 @@ function Router() {
           <Route path="/support">
             <Layout>
               <Support />
+            </Layout>
+          </Route>
+          <Route path="/integrations/whatsapp-connect">
+            <Layout>
+              <WhatsAppConnect />
+            </Layout>
+          </Route>
+          <Route path="/integrations/whatsapp-bot">
+            <Layout>
+              <WhatsAppBotConfig />
             </Layout>
           </Route>
         </>
