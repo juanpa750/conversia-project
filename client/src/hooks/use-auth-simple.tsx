@@ -117,6 +117,8 @@ export function useAuth() {
       title: "Sesión cerrada",
       description: "Has cerrado sesión correctamente.",
     });
+    // Redireccionar a la página de login
+    window.location.href = '/login';
   };
 
   return {
