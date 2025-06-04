@@ -11,9 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   RiWhatsappLine, 
   RiBrainLine, 
-  RiImageLine, 
+  RiImage2Line, 
   RiMessage2Line,
-  RiArrowRightSLine,
+  RiArrowDownSLine,
   RiCheckLine,
   RiUploadLine,
   RiSave3Line
@@ -155,7 +155,7 @@ export default function WhatsAppBotConfig() {
             <span>Reconocimiento de Productos</span>
           </TabsTrigger>
           <TabsTrigger value="multimedia" className="flex gap-2 items-center">
-            <RiImageLine className="h-4 w-4" />
+            <RiImage2Line className="h-4 w-4" />
             <span>Multimedia</span>
           </TabsTrigger>
         </TabsList>
@@ -372,7 +372,7 @@ export default function WhatsAppBotConfig() {
                             className="h-full w-full object-cover rounded-lg"
                           />
                         ) : (
-                          <RiImageLine className="h-8 w-8 text-gray-400" />
+                          <RiImage2Line className="h-8 w-8 text-gray-400" />
                         )}
                       </div>
                       <div className="flex-1">
@@ -413,7 +413,7 @@ export default function WhatsAppBotConfig() {
                 onClick={() => setActiveTab("multimedia")}
                 className="flex items-center gap-1"
               >
-                Continuar <RiArrowRightSLine className="h-4 w-4" />
+                Continuar <RiArrowDownSLine className="h-4 w-4 transform rotate-270" />
               </Button>
             </CardFooter>
           </Card>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Layout } from "@/components/layout/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { RiWhatsappLine, RiCheckLine, RiUser3Line, RiArrowUpSLine } from "@/lib/icons";
+import { RiWhatsappLine, RiCheckLine, RiUser3Line, RiAddLine } from "@/lib/icons";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -116,7 +116,7 @@ export default function WhatsAppConnect() {
                         onClick={handleManualConnection}
                         disabled={!phoneNumber || connectWhatsApp.isPending}
                       >
-                        <RiArrowUpSLine className="h-5 w-5 transform rotate-90" />
+                        <RiAddLine className="h-5 w-5" />
                       </Button>
                     </div>
                   </div>
