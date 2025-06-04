@@ -58,7 +58,6 @@ import {
   RiArrowDownSLine,
   RiArrowUpSLine
 } from "@/lib/icons";
-import { Layout } from "@/components/layout/layout";
 
 // Mock data for products
 const MOCK_PRODUCTS = [
@@ -298,7 +297,7 @@ export default function StorePage() {
   };
 
   return (
-    <Layout>
+    <>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Tienda</h1>
         <p className="mt-1 text-sm text-gray-500">
@@ -803,6 +802,6 @@ export default function StorePage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </Layout>
+    </>
   );
 }
