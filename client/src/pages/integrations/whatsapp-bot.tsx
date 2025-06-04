@@ -464,7 +464,7 @@ export default function WhatsAppBotConfig() {
                           file.type === 'audio' ? 'bg-purple-100 text-purple-600' :
                           'bg-red-100 text-red-600'
                         }`}>
-                          {file.type === 'image' && <RiImageLine className="h-5 w-5" />}
+                          {file.type === 'image' && <RiImage2Line className="h-5 w-5" />}
                           {file.type === 'audio' && <div className="h-5 w-5">🔊</div>}
                           {file.type === 'video' && <div className="h-5 w-5">🎬</div>}
                         </div>
@@ -540,7 +540,7 @@ export default function WhatsAppBotConfig() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <div className="rounded-full bg-blue-100 p-2">
-                <RiImageLine className="h-5 w-5 text-blue-600" />
+                <RiImage2Line className="h-5 w-5 text-blue-600" />
               </div>
               <h4 className="font-medium text-blue-800">Reconocimiento inteligente</h4>
             </div>
