@@ -83,7 +83,7 @@ const MOCK_CAMPAIGNS = [
     openRate: 68,
     clickRate: 32,
     conversions: 89,
-    message: "¡Hola ${nombre}! 🌞 Este verano tenemos ofertas especiales para ti. 20% de descuento en todos nuestros productos durante esta semana. ¡No te lo pierdas! Responde SI para más información."
+    message: "¡Hola [nombre]! 🌞 Este verano tenemos ofertas especiales para ti. 20% de descuento en todos nuestros productos durante esta semana. ¡No te lo pierdas! Responde SI para más información."
   },
   {
     id: "2",
@@ -95,7 +95,7 @@ const MOCK_CAMPAIGNS = [
     openRate: 0,
     clickRate: 0,
     conversions: 0,
-    message: "¡Hola ${nombre}! 🆕 Acabamos de recibir los nuevos modelos que tanto esperabas. Echa un vistazo a nuestra colección exclusiva. Responde CATALOGO para ver las novedades."
+    message: "¡Hola [nombre]! 🆕 Acabamos de recibir los nuevos modelos que tanto esperabas. Echa un vistazo a nuestra colección exclusiva. Responde CATALOGO para ver las novedades."
   },
   {
     id: "3",
@@ -107,7 +107,7 @@ const MOCK_CAMPAIGNS = [
     openRate: 72,
     clickRate: 45,
     conversions: 67,
-    message: "¡Hola ${nombre}! 🛒 Notamos que dejaste productos en tu carrito. ¿Necesitas ayuda para completar tu compra? Estamos aquí para asistirte. Responde AYUDA si tienes alguna pregunta."
+    message: "¡Hola [nombre]! 🛒 Notamos que dejaste productos en tu carrito. ¿Necesitas ayuda para completar tu compra? Estamos aquí para asistirte. Responde AYUDA si tienes alguna pregunta."
   },
   {
     id: "4",
@@ -314,7 +314,7 @@ export default function MarketingPage() {
   };
 
   return (
-    <Layout>
+    <>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Marketing</h1>
         <p className="mt-1 text-sm text-gray-500">
@@ -464,10 +464,10 @@ export default function MarketingPage() {
                       id="campaign-message" 
                       placeholder="Escribe el mensaje que recibirán tus contactos..." 
                       rows={6}
-                      defaultValue="¡Hola ${nombre}! 👋 Tenemos novedades que podrían interesarte. Responde a este mensaje para más información."
+                      defaultValue="¡Hola [nombre]! 👋 Tenemos novedades que podrían interesarte. Responde a este mensaje para más información."
                     />
                     <p className="text-xs text-gray-500">
-                      Usa ${nombre} para insertar el nombre del contacto y otros campos dinámicos como ${producto}, ${descuento}, etc.
+                      Usa [nombre] para insertar el nombre del contacto y otros campos dinámicos como [producto], [descuento], etc.
                     </p>
                   </div>
                 </div>
@@ -808,7 +808,7 @@ export default function MarketingPage() {
 
                   <div className="flex items-center py-2 border-t">
                     <Button variant="outline" className="gap-2">
-                      <RiImage2Line className="h-4 w-4" />
+                      <RiUploadLine className="h-4 w-4" />
                       <span>Adjuntar archivo</span>
                     </Button>
                   </div>
@@ -947,6 +947,6 @@ export default function MarketingPage() {
           </div>
         </TabsContent>
       </Tabs>
-    </Layout>
+    </>
   );
 }
