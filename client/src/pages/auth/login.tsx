@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +31,7 @@ const formSchema = z.object({
 
 export function Login() {
   const [_, navigate] = useLocation();
-  const { login, isLoginPending } = useAuth();
+  const { login, isLoginPending, isAuthenticated } = useAuth();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -42,12 +42,15 @@ export function Login() {
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    login(values, {
-      onSuccess: () => {
-        navigate("/");
-      },
-    });
+    login(values);
   };
+
+  // Redirect when authentication succeeds
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
