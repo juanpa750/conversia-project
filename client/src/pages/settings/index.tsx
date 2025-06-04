@@ -35,7 +35,7 @@ import {
   RiWhatsappLine, 
   RiMailLine,
   RiNotification3Line,
-  RiVipCrownLine 
+  RiMoneyDollarBoxLine 
 } from "@/lib/icons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -359,7 +359,7 @@ export function Settings() {
                 value="subscription"
                 className="w-full justify-start px-3"
               >
-                <RiVipCrownLine className="mr-2" />
+                <RiMoneyDollarBoxLine className="mr-2" />
                 Suscripción
               </TabsTrigger>
               <TabsTrigger 
