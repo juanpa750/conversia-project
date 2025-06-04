@@ -66,7 +66,8 @@ import {
   RiUserLine,
   RiTeamLine,
   RiPieChartLine,
-  RiCalendarLine
+  RiCalendarLine,
+  RiUploadLine
 } from "@/lib/icons";
 import { Layout } from "@/components/layout/layout";
 import { format } from "date-fns";

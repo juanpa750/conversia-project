@@ -27,7 +27,6 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { RiBrainLine, RiUploadLine, RiFileTextLine, RiRobotLine, RiImage2Line, RiEmotionLine } from "@/lib/icons";
-import { Layout } from "@/components/layout/layout";
 
 export default function AIAdvanced() {
   const [activeTab, setActiveTab] = useState("train");
@@ -106,7 +105,7 @@ export default function AIAdvanced() {
   };
 
   return (
-    <Layout>
+    <>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">IA Avanzada</h1>
         <p className="mt-1 text-sm text-gray-500">
@@ -550,6 +549,6 @@ export default function AIAdvanced() {
           </Card>
         </TabsContent>
       </Tabs>
-    </Layout>
+    </>
   );
 }
