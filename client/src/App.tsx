@@ -6,6 +6,7 @@ import Layout from "@/components/layout/layout";
 import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/auth/login";
 import Register from "@/pages/auth/register";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import Chatbots from "@/pages/chatbots";
 import ChatbotBuilder from "@/pages/chatbots/builder";
 import ChatbotTemplates from "@/pages/chatbots/templates";
@@ -38,13 +39,13 @@ function Router() {
   return (
     <Switch>
       {!isAuthenticated ? (
-        <>
+        <LanguageProvider>
           <Route path="/login" component={Login} />
           <Route path="/register" component={Register} />
           <Route path="*">
             <Login />
           </Route>
-        </>
+        </LanguageProvider>
       ) : (
         <>
           <Route path="/">

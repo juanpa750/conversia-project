@@ -112,7 +112,7 @@ export function Login() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Contraseña</FormLabel>
+                    <FormLabel>{t('login.password')}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
@@ -120,7 +120,7 @@ export function Login() {
                         </span>
                         <Input
                           type="password"
-                          placeholder="********"
+                          placeholder={t('login.passwordPlaceholder')}
                           className="pl-10"
                           {...field}
                         />
@@ -138,10 +138,10 @@ export function Login() {
                 {isLoginPending ? (
                   <div className="flex items-center">
                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></div>
-                    <span>Iniciando sesión...</span>
+                    <span>...</span>
                   </div>
                 ) : (
-                  "Iniciar sesión"
+                  t('login.submit')
                 )}
               </Button>
             </form>
