@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface LoginCredentials {
   email: string;
@@ -29,25 +29,29 @@ const DEMO_USER = {
 export function useAuth() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // Disable demo mode for production
-  const isDemoMode = false;
-  
+  // Check for token in localStorage on mount
   useEffect(() => {
-    if (isDemoMode) {
-      // Set the demo user data for preview mode
-      queryClient.setQueryData(["/api/auth/me"], DEMO_USER);
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      setAuthChecked(true);
     }
-  }, [queryClient]);
+  }, []);
 
   const { data: user, isLoading, error } = useQuery({
     queryKey: ["/api/auth/me"],
     retry: false,
-    enabled: !isDemoMode, // Don't make the actual query in demo mode
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    staleTime: Infinity,
+    enabled: !!localStorage.getItem('auth_token') && !authChecked,
+    onSettled: () => {
+      setAuthChecked(true);
+    }
   });
 
-  // In demo mode, we're always authenticated with the demo user
-  const isAuthenticated = isDemoMode ? true : !!user;
+  const isAuthenticated = !!user && !!localStorage.getItem('auth_token');
   
   // Use the demo user when in demo mode
   const userData = isDemoMode ? DEMO_USER : user;

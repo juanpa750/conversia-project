@@ -22,7 +22,7 @@ import AIAdvanced from "@/pages/ai-advanced";
 import Marketing from "@/pages/marketing";
 import Reports from "@/pages/reports";
 import Store from "@/pages/store";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth-simple";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
