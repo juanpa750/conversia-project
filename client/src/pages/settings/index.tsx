@@ -326,48 +326,48 @@ export function Settings() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Sidebar */}
           <div className="lg:col-span-3">
-            <TabsList className="flex flex-col items-start justify-start space-y-1 lg:h-full">
+            <TabsList className="flex flex-col items-start justify-start space-y-2 lg:h-full bg-gray-50 p-2 rounded-lg">
               <TabsTrigger 
                 value="profile"
-                className="w-full justify-start px-3"
+                className="w-full justify-start px-4 py-3 rounded-md text-left hover:bg-white transition-colors"
               >
-                <RiUser3Line className="mr-2" />
-                Perfil
+                <RiUser3Line className="mr-3 w-4 h-4" />
+                <span className="font-medium">Perfil</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="password"
-                className="w-full justify-start px-3"
+                className="w-full justify-start px-4 py-3 rounded-md text-left hover:bg-white transition-colors"
               >
-                <RiLockLine className="mr-2" />
-                Contraseña
+                <RiLockLine className="mr-3 w-4 h-4" />
+                <span className="font-medium">Contraseña</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="notifications"
-                className="w-full justify-start px-3"
+                className="w-full justify-start px-4 py-3 rounded-md text-left hover:bg-white transition-colors"
               >
-                <RiNotification3Line className="mr-2" />
-                Notificaciones
+                <RiNotification3Line className="mr-3 w-4 h-4" />
+                <span className="font-medium">Notificaciones</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="whatsapp"
-                className="w-full justify-start px-3"
+                className="w-full justify-start px-4 py-3 rounded-md text-left hover:bg-white transition-colors"
               >
-                <RiWhatsappLine className="mr-2" />
-                Integración WhatsApp
+                <RiWhatsappLine className="mr-3 w-4 h-4" />
+                <span className="font-medium">Integración WhatsApp</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="subscription"
-                className="w-full justify-start px-3"
+                className="w-full justify-start px-4 py-3 rounded-md text-left hover:bg-white transition-colors"
               >
-                <RiMoneyDollarBoxLine className="mr-2" />
-                Suscripción
+                <RiMoneyDollarBoxLine className="mr-3 w-4 h-4" />
+                <span className="font-medium">Suscripción</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="preferences"
-                className="w-full justify-start px-3"
+                className="w-full justify-start px-4 py-3 rounded-md text-left hover:bg-white transition-colors"
               >
-                <RiGlobalLine className="mr-2" />
-                Preferencias
+                <RiGlobalLine className="mr-3 w-4 h-4" />
+                <span className="font-medium">Preferencias</span>
               </TabsTrigger>
             </TabsList>
           </div>
