@@ -1,6 +1,5 @@
 import React from "react";
 import { Link } from "wouter";
-import { Layout } from "@/components/layout/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -59,7 +58,7 @@ export default function CRMDashboard() {
   ];
 
   return (
-    <Layout>
+    <>
       <div className="container mx-auto py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -105,6 +104,6 @@ export default function CRMDashboard() {
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 }

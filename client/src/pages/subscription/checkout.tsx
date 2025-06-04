@@ -311,8 +311,14 @@ function CheckoutForm({ planId }: { planId: string }) {
   );
 }
 
-export function SubscriptionCheckout() {
+interface SubscriptionCheckoutProps {
+  planId: string;
+}
+
+export function SubscriptionCheckout({ planId }: SubscriptionCheckoutProps) {
   const params = useParams<{ planId: string }>();
+  // Use the prop planId if provided, otherwise fall back to params
+  const actualPlanId = planId || params.planId;
   const [clientSecret, setClientSecret] = useState("");
 
   useEffect(() => {
