@@ -80,13 +80,13 @@ interface WhatsAppIntegration {
 }
 
 export function Settings() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("profile");
 
-  // Ensure user data is available
-  if (!user) {
+  // Show loading state while user data is being fetched
+  if (isLoading || !user) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -97,13 +97,13 @@ export function Settings() {
     );
   }
 
-  // Profile form setup
+  // Profile form setup with proper type casting
   const profileForm = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      firstName: user?.firstName || "",
-      lastName: user?.lastName || "",
-      email: user?.email || "",
+      firstName: (user as any)?.firstName || "",
+      lastName: (user as any)?.lastName || "",
+      email: (user as any)?.email || "",
       company: "",
       phone: "",
       bio: "",
@@ -378,11 +378,11 @@ export function Settings() {
                 <div className="mb-6 flex items-center space-x-4">
                   <Avatar className="h-20 w-20">
                     <AvatarImage
-                      src={user?.profileImageUrl}
-                      alt={user?.firstName}
+                      src={(user as any)?.profileImageUrl}
+                      alt={(user as any)?.firstName}
                     />
                     <AvatarFallback>
-                      {user?.firstName?.charAt(0) || user?.email?.charAt(0)}
+                      {(user as any)?.firstName?.charAt(0) || (user as any)?.email?.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
