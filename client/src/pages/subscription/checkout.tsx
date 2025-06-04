@@ -323,15 +323,15 @@ export function SubscriptionCheckout({ planId }: SubscriptionCheckoutProps) {
 
   useEffect(() => {
     // Create PaymentIntent as soon as the page loads
-    if (params.planId) {
-      apiRequest("POST", "/api/subscription/create-intent", { planId: params.planId })
+    if (actualPlanId) {
+      apiRequest("POST", "/api/subscription/create-intent", { planId: actualPlanId })
         .then((res) => res.json())
         .then((data) => {
           setClientSecret(data.clientSecret);
         })
         .catch(console.error);
     }
-  }, [params.planId]);
+  }, [actualPlanId]);
 
   return (
     <>
@@ -353,7 +353,7 @@ export function SubscriptionCheckout({ planId }: SubscriptionCheckoutProps) {
           <CardContent>
             {clientSecret ? (
               <Elements stripe={stripePromise} options={{ clientSecret }}>
-                <CheckoutForm planId={params.planId} />
+                <CheckoutForm planId={actualPlanId} />
               </Elements>
             ) : (
               <div className="flex items-center justify-center py-6">
