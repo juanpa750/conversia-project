@@ -88,7 +88,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Remove password from response
       const { password: _, ...userWithoutPassword } = user;
       
-      res.json(userWithoutPassword);
+      res.json({ 
+        user: userWithoutPassword,
+        token: token
+      });
     } catch (error: any) {
       console.error('Login error:', error);
       res.status(500).json({ message: 'Login failed', error: error.message });

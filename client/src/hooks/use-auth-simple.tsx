@@ -70,6 +70,8 @@ export function useAuth() {
     onSuccess: (data) => {
       localStorage.setItem('auth_token', data.token);
       setUser(data.user);
+      // Trigger page refresh to redirect to dashboard
+      window.location.href = '/';
       toast({
         title: "¡Bienvenido!",
         description: "Has iniciado sesión correctamente.",

@@ -355,6 +355,13 @@ export function Settings() {
                 Integración WhatsApp
               </TabsTrigger>
               <TabsTrigger 
+                value="subscription"
+                className="w-full justify-start px-3"
+              >
+                <RiCreditCardLine className="mr-2" />
+                Suscripción
+              </TabsTrigger>
+              <TabsTrigger 
                 value="preferences"
                 className="w-full justify-start px-3"
               >
