@@ -23,6 +23,7 @@ import {
   FormMessage 
 } from "@/components/ui/form";
 import { RiRobotLine, RiMailLine, RiLockLine, RiGlobalLine } from "@/lib/icons";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce un email válido" }),
@@ -32,6 +33,7 @@ const formSchema = z.object({
 export function Login() {
   const [_, navigate] = useLocation();
   const { login, isLoginPending, isAuthenticated } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -58,7 +60,11 @@ export function Login() {
       <div className="absolute top-4 right-4">
         <div className="flex items-center space-x-2 bg-white rounded-lg shadow-sm px-3 py-2">
           <RiGlobalLine className="w-4 h-4 text-gray-500" />
-          <select className="border-none bg-transparent text-sm focus:outline-none cursor-pointer">
+          <select 
+            className="border-none bg-transparent text-sm focus:outline-none cursor-pointer"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as 'es' | 'en' | 'pt')}
+          >
             <option value="es">Español</option>
             <option value="en">English</option>
             <option value="pt">Português</option>
@@ -71,9 +77,9 @@ export function Login() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white">
             <RiRobotLine className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl font-bold">BotMaster</CardTitle>
+          <CardTitle className="text-2xl font-bold">{t('login.title')}</CardTitle>
           <CardDescription>
-            Inicia sesión para gestionar tus chatbots
+            {t('login.subtitle')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -84,14 +90,14 @@ export function Login() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t('login.email')}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                           <RiMailLine />
                         </span>
                         <Input
-                          placeholder="tu@email.com"
+                          placeholder={t('login.emailPlaceholder')}
                           className="pl-10"
                           {...field}
                         />

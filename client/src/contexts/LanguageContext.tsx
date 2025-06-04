@@ -1,0 +1,277 @@
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+type Language = 'es' | 'en' | 'pt';
+
+interface LanguageContextType {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: (key: string) => string;
+}
+
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+// Traducciones
+const translations = {
+  es: {
+    // Login
+    'login.title': 'BotMaster',
+    'login.subtitle': 'Inicia sesión para gestionar tus chatbots',
+    'login.email': 'Email',
+    'login.password': 'Contraseña',
+    'login.submit': 'Iniciar Sesión',
+    'login.noAccount': '¿No tienes cuenta?',
+    'login.register': 'Regístrate aquí',
+    'login.emailPlaceholder': 'tu@email.com',
+    'login.passwordPlaceholder': 'Tu contraseña',
+    
+    // Navigation
+    'nav.dashboard': 'Panel de Control',
+    'nav.chatbots': 'Chatbots',
+    'nav.analytics': 'Analíticas',
+    'nav.clients': 'Clientes',
+    'nav.settings': 'Configuración',
+    'nav.support': 'Soporte',
+    'nav.integrations': 'Integraciones',
+    'nav.marketing': 'Marketing',
+    'nav.crm': 'CRM',
+    'nav.reports': 'Reportes',
+    'nav.subscription': 'Suscripción',
+    'nav.store': 'Tienda',
+    
+    // Settings
+    'settings.title': 'Configuración',
+    'settings.profile': 'Perfil',
+    'settings.password': 'Contraseña',
+    'settings.subscription': 'Suscripción',
+    'settings.preferences': 'Preferencias',
+    
+    // Profile
+    'profile.title': 'Información del Perfil',
+    'profile.subtitle': 'Actualiza tu información personal y de contacto',
+    'profile.firstName': 'Nombre',
+    'profile.lastName': 'Apellido',
+    'profile.email': 'Email',
+    'profile.company': 'Empresa',
+    'profile.phone': 'Teléfono',
+    'profile.bio': 'Biografía',
+    'profile.save': 'Guardar Cambios',
+    'profile.saving': 'Guardando...',
+    
+    // Password
+    'password.title': 'Cambiar Contraseña',
+    'password.subtitle': 'Actualiza tu contraseña para mantener tu cuenta segura',
+    'password.current': 'Contraseña Actual',
+    'password.new': 'Nueva Contraseña',
+    'password.confirm': 'Confirmar Nueva Contraseña',
+    'password.save': 'Actualizar Contraseña',
+    'password.saving': 'Actualizando...',
+    
+    // Subscription
+    'subscription.title': 'Plan de Suscripción',
+    'subscription.subtitle': 'Gestiona tu plan y facturación',
+    'subscription.current': 'Plan Actual',
+    'subscription.status': 'Estado',
+    'subscription.active': 'Activo',
+    'subscription.daysLeft': 'días restantes',
+    'subscription.renewal': 'Próxima renovación',
+    'subscription.upgrade': 'Mejorar Plan',
+    'subscription.cancel': 'Cancelar Suscripción',
+    
+    // Preferences
+    'preferences.title': 'Preferencias Generales',
+    'preferences.subtitle': 'Personaliza tu experiencia en la plataforma',
+    'preferences.language': 'Idioma',
+    'preferences.timezone': 'Zona Horaria',
+    'preferences.notifications': 'Notificaciones',
+    'preferences.dateFormat': 'Formato de fecha',
+    'preferences.timeFormat': 'Formato de hora',
+    'preferences.save': 'Guardar Preferencias',
+    'preferences.saving': 'Guardando...',
+  },
+  en: {
+    // Login
+    'login.title': 'BotMaster',
+    'login.subtitle': 'Sign in to manage your chatbots',
+    'login.email': 'Email',
+    'login.password': 'Password',
+    'login.submit': 'Sign In',
+    'login.noAccount': "Don't have an account?",
+    'login.register': 'Register here',
+    'login.emailPlaceholder': 'your@email.com',
+    'login.passwordPlaceholder': 'Your password',
+    
+    // Navigation
+    'nav.dashboard': 'Dashboard',
+    'nav.chatbots': 'Chatbots',
+    'nav.analytics': 'Analytics',
+    'nav.clients': 'Clients',
+    'nav.settings': 'Settings',
+    'nav.support': 'Support',
+    'nav.integrations': 'Integrations',
+    'nav.marketing': 'Marketing',
+    'nav.crm': 'CRM',
+    'nav.reports': 'Reports',
+    'nav.subscription': 'Subscription',
+    'nav.store': 'Store',
+    
+    // Settings
+    'settings.title': 'Settings',
+    'settings.profile': 'Profile',
+    'settings.password': 'Password',
+    'settings.subscription': 'Subscription',
+    'settings.preferences': 'Preferences',
+    
+    // Profile
+    'profile.title': 'Profile Information',
+    'profile.subtitle': 'Update your personal and contact information',
+    'profile.firstName': 'First Name',
+    'profile.lastName': 'Last Name',
+    'profile.email': 'Email',
+    'profile.company': 'Company',
+    'profile.phone': 'Phone',
+    'profile.bio': 'Bio',
+    'profile.save': 'Save Changes',
+    'profile.saving': 'Saving...',
+    
+    // Password
+    'password.title': 'Change Password',
+    'password.subtitle': 'Update your password to keep your account secure',
+    'password.current': 'Current Password',
+    'password.new': 'New Password',
+    'password.confirm': 'Confirm New Password',
+    'password.save': 'Update Password',
+    'password.saving': 'Updating...',
+    
+    // Subscription
+    'subscription.title': 'Subscription Plan',
+    'subscription.subtitle': 'Manage your plan and billing',
+    'subscription.current': 'Current Plan',
+    'subscription.status': 'Status',
+    'subscription.active': 'Active',
+    'subscription.daysLeft': 'days remaining',
+    'subscription.renewal': 'Next renewal',
+    'subscription.upgrade': 'Upgrade Plan',
+    'subscription.cancel': 'Cancel Subscription',
+    
+    // Preferences
+    'preferences.title': 'General Preferences',
+    'preferences.subtitle': 'Customize your platform experience',
+    'preferences.language': 'Language',
+    'preferences.timezone': 'Timezone',
+    'preferences.notifications': 'Notifications',
+    'preferences.dateFormat': 'Date format',
+    'preferences.timeFormat': 'Time format',
+    'preferences.save': 'Save Preferences',
+    'preferences.saving': 'Saving...',
+  },
+  pt: {
+    // Login
+    'login.title': 'BotMaster',
+    'login.subtitle': 'Entre para gerenciar seus chatbots',
+    'login.email': 'Email',
+    'login.password': 'Senha',
+    'login.submit': 'Entrar',
+    'login.noAccount': 'Não tem uma conta?',
+    'login.register': 'Registre-se aqui',
+    'login.emailPlaceholder': 'seu@email.com',
+    'login.passwordPlaceholder': 'Sua senha',
+    
+    // Navigation
+    'nav.dashboard': 'Painel',
+    'nav.chatbots': 'Chatbots',
+    'nav.analytics': 'Análises',
+    'nav.clients': 'Clientes',
+    'nav.settings': 'Configurações',
+    'nav.support': 'Suporte',
+    'nav.integrations': 'Integrações',
+    'nav.marketing': 'Marketing',
+    'nav.crm': 'CRM',
+    'nav.reports': 'Relatórios',
+    'nav.subscription': 'Assinatura',
+    'nav.store': 'Loja',
+    
+    // Settings
+    'settings.title': 'Configurações',
+    'settings.profile': 'Perfil',
+    'settings.password': 'Senha',
+    'settings.subscription': 'Assinatura',
+    'settings.preferences': 'Preferências',
+    
+    // Profile
+    'profile.title': 'Informações do Perfil',
+    'profile.subtitle': 'Atualize suas informações pessoais e de contato',
+    'profile.firstName': 'Nome',
+    'profile.lastName': 'Sobrenome',
+    'profile.email': 'Email',
+    'profile.company': 'Empresa',
+    'profile.phone': 'Telefone',
+    'profile.bio': 'Bio',
+    'profile.save': 'Salvar Alterações',
+    'profile.saving': 'Salvando...',
+    
+    // Password
+    'password.title': 'Alterar Senha',
+    'password.subtitle': 'Atualize sua senha para manter sua conta segura',
+    'password.current': 'Senha Atual',
+    'password.new': 'Nova Senha',
+    'password.confirm': 'Confirmar Nova Senha',
+    'password.save': 'Atualizar Senha',
+    'password.saving': 'Atualizando...',
+    
+    // Subscription
+    'subscription.title': 'Plano de Assinatura',
+    'subscription.subtitle': 'Gerencie seu plano e faturamento',
+    'subscription.current': 'Plano Atual',
+    'subscription.status': 'Status',
+    'subscription.active': 'Ativo',
+    'subscription.daysLeft': 'dias restantes',
+    'subscription.renewal': 'Próxima renovação',
+    'subscription.upgrade': 'Melhorar Plano',
+    'subscription.cancel': 'Cancelar Assinatura',
+    
+    // Preferences
+    'preferences.title': 'Preferências Gerais',
+    'preferences.subtitle': 'Personalize sua experiência na plataforma',
+    'preferences.language': 'Idioma',
+    'preferences.timezone': 'Fuso Horário',
+    'preferences.notifications': 'Notificações',
+    'preferences.dateFormat': 'Formato de data',
+    'preferences.timeFormat': 'Formato de hora',
+    'preferences.save': 'Salvar Preferências',
+    'preferences.saving': 'Salvando...',
+  },
+};
+
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguageState] = useState<Language>(() => {
+    const saved = localStorage.getItem('botmaster-language');
+    return (saved as Language) || 'es';
+  });
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('botmaster-language', lang);
+  };
+
+  const t = (key: string): string => {
+    return (translations[language] as any)[key] || key;
+  };
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+export function useLanguage() {
+  const context = useContext(LanguageContext);
+  if (!context) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+}
