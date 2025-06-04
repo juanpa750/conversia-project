@@ -304,15 +304,15 @@ export function Settings() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Sidebar */}
-        <div className="lg:col-span-3">
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            orientation="vertical"
-            className="w-full"
-          >
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        orientation="vertical"
+        className="w-full"
+      >
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          {/* Sidebar */}
+          <div className="lg:col-span-3">
             <TabsList className="flex flex-col items-start justify-start space-y-1 lg:h-full">
               <TabsTrigger 
                 value="profile"
@@ -350,11 +350,10 @@ export function Settings() {
                 Preferencias
               </TabsTrigger>
             </TabsList>
-          </Tabs>
-        </div>
+          </div>
 
-        {/* Content */}
-        <div className="lg:col-span-9">
+          {/* Content */}
+          <div className="lg:col-span-9">
           <TabsContent value="profile">
             <Card>
               <CardHeader>
@@ -950,8 +949,9 @@ export function Settings() {
               </CardContent>
             </Card>
           </TabsContent>
+          </div>
         </div>
-      </div>
+      </Tabs>
     </>
   );
 }
