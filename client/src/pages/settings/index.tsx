@@ -374,7 +374,7 @@ export function Settings() {
 
           {/* Content */}
           <div className="lg:col-span-9">
-          <TabsContent value="profile">
+            <TabsContent value="profile">
             <Card>
               <CardHeader>
                 <CardTitle>Información de Perfil</CardTitle>
