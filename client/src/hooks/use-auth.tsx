@@ -30,8 +30,8 @@ export function useAuth() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Enable demo mode for the preview
-  const isDemoMode = true;
+  // Disable demo mode for production
+  const isDemoMode = false;
   
   useEffect(() => {
     if (isDemoMode) {
