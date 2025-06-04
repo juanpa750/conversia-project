@@ -126,7 +126,7 @@ export default function WhatsAppBotConfig() {
   };
 
   return (
-    <Layout>
+    <>
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Configuración de Chatbot WhatsApp</h1>
@@ -564,6 +564,6 @@ export default function WhatsAppBotConfig() {
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 }

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Layout } from "@/components/layout/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { RiWhatsappLine, RiCheckLine, RiUser3Line, RiAddLine } from "@/lib/icons";
@@ -47,7 +46,7 @@ export default function WhatsAppConnect() {
   };
 
   return (
-    <Layout>
+    <>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Conectar WhatsApp</h1>
         <p className="mt-1 text-sm text-gray-500">
@@ -216,6 +215,6 @@ export default function WhatsAppConnect() {
           </Card>
         </div>
       </div>
-    </Layout>
+    </>
   );
 }
