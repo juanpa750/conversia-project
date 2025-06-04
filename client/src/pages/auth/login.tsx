@@ -22,7 +22,7 @@ import {
   FormLabel, 
   FormMessage 
 } from "@/components/ui/form";
-import { RiRobotLine, RiMailLine, RiLockLine } from "@/lib/icons";
+import { RiRobotLine, RiMailLine, RiLockLine, RiGlobalLine } from "@/lib/icons";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce un email válido" }),
@@ -53,7 +53,19 @@ export function Login() {
   }, [isAuthenticated, navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 relative">
+      {/* Language Selector */}
+      <div className="absolute top-4 right-4">
+        <div className="flex items-center space-x-2 bg-white rounded-lg shadow-sm px-3 py-2">
+          <RiGlobalLine className="w-4 h-4 text-gray-500" />
+          <select className="border-none bg-transparent text-sm focus:outline-none cursor-pointer">
+            <option value="es">Español</option>
+            <option value="en">English</option>
+            <option value="pt">Português</option>
+          </select>
+        </div>
+      </div>
+      
       <Card className="mx-auto w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white">

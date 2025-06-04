@@ -342,20 +342,6 @@ export function Settings() {
                 <span className="font-medium">Contraseña</span>
               </TabsTrigger>
               <TabsTrigger 
-                value="notifications"
-                className="w-full justify-start px-4 py-3 rounded-md text-left hover:bg-white transition-colors"
-              >
-                <RiNotification3Line className="mr-3 w-4 h-4" />
-                <span className="font-medium">Notificaciones</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="whatsapp"
-                className="w-full justify-start px-4 py-3 rounded-md text-left hover:bg-white transition-colors"
-              >
-                <RiWhatsappLine className="mr-3 w-4 h-4" />
-                <span className="font-medium">Integración WhatsApp</span>
-              </TabsTrigger>
-              <TabsTrigger 
                 value="subscription"
                 className="w-full justify-start px-4 py-3 rounded-md text-left hover:bg-white transition-colors"
               >
