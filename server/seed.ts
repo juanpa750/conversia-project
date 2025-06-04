@@ -1,5 +1,6 @@
 import { storage } from "./storage";
 import { hashPassword } from "./auth";
+import { randomUUID } from "crypto";
 
 async function seedDatabase() {
   try {
@@ -13,6 +14,7 @@ async function seedDatabase() {
       const hashedPassword = await hashPassword("12345");
       
       const testUser = await storage.createUser({
+        id: randomUUID(),
         email: testUserEmail,
         password: hashedPassword,
         firstName: "Usuario",
