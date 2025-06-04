@@ -969,6 +969,89 @@ export function Settings() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="subscription">
+            <Card>
+              <CardHeader>
+                <CardTitle>Estado de Suscripción</CardTitle>
+                <CardDescription>
+                  Información sobre tu plan actual y detalles de facturación
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-900">Plan Profesional</h3>
+                      <p className="text-sm text-blue-700 mt-1">
+                        Acceso completo a todas las funcionalidades
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-blue-900">€29/mes</div>
+                      <div className="text-sm text-blue-700">Próxima facturación: 04 Jul 2025</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-lg border p-4">
+                    <h4 className="font-medium mb-2">Días restantes</h4>
+                    <div className="text-3xl font-bold text-green-600">23</div>
+                    <p className="text-sm text-gray-600">días hasta la renovación</p>
+                  </div>
+                  
+                  <div className="rounded-lg border p-4">
+                    <h4 className="font-medium mb-2">Chatbots creados</h4>
+                    <div className="text-3xl font-bold text-blue-600">3/10</div>
+                    <p className="text-sm text-gray-600">chatbots de tu límite</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-medium">Funcionalidades incluidas</h4>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm">Hasta 10 chatbots</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm">Conversaciones ilimitadas</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm">Integración WhatsApp Business</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm">Analytics avanzado</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm">Soporte prioritario</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm">API de integración</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex space-x-3">
+                  <Button variant="outline">
+                    Cambiar Plan
+                  </Button>
+                  <Button variant="outline">
+                    Ver Historial de Facturación
+                  </Button>
+                  <Button variant="destructive">
+                    Cancelar Suscripción
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
           </div>
         </div>
       </Tabs>
