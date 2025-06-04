@@ -375,29 +375,29 @@ export function Settings() {
           {/* Content */}
           <div className="lg:col-span-9">
             <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Información de Perfil</CardTitle>
-                <CardDescription>
-                  Actualiza tu información personal y datos de contacto
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-6 flex items-center space-x-4">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage
-                      src={(user as any)?.profileImageUrl}
-                      alt={(user as any)?.firstName}
-                    />
-                    <AvatarFallback>
-                      {(user as any)?.firstName?.charAt(0) || (user as any)?.email?.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <Button variant="outline" size="sm">
-                      Cambiar foto
-                    </Button>
-                    <p className="mt-2 text-xs text-gray-500">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Información de Perfil</CardTitle>
+                  <CardDescription>
+                    Actualiza tu información personal y datos de contacto
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-6 flex items-center space-x-4">
+                    <Avatar className="h-20 w-20">
+                      <AvatarImage
+                        src={(user as any)?.profileImageUrl}
+                        alt={(user as any)?.firstName}
+                      />
+                      <AvatarFallback>
+                        {(user as any)?.firstName?.charAt(0) || (user as any)?.email?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <Button variant="outline" size="sm">
+                        Cambiar foto
+                      </Button>
+                      <p className="mt-2 text-xs text-gray-500">
                       JPG, GIF o PNG. Máximo 1MB.
                     </p>
                   </div>
@@ -929,16 +929,14 @@ export function Settings() {
                           Formato de fecha
                         </label>
                       </div>
-                      <Select defaultValue={preferences.dateFormat}>
-                        <SelectTrigger id="date-format">
-                          <SelectValue placeholder="Seleccionar formato" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                          <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                          <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        defaultValue={preferences.dateFormat}
+                      >
+                        <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                        <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                        <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                      </select>
                     </div>
                     <div>
                       <div className="mb-2 flex items-center justify-between">
@@ -946,15 +944,13 @@ export function Settings() {
                           Formato de hora
                         </label>
                       </div>
-                      <Select defaultValue={preferences.timeFormat}>
-                        <SelectTrigger id="time-format">
-                          <SelectValue placeholder="Seleccionar formato" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="12h">12 horas (AM/PM)</SelectItem>
-                          <SelectItem value="24h">24 horas</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        defaultValue={preferences.timeFormat}
+                      >
+                        <option value="12h">12 horas (AM/PM)</option>
+                        <option value="24h">24 horas</option>
+                      </select>
                     </div>
                   </div>
                 </div>
