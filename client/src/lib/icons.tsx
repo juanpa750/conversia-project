@@ -47,7 +47,9 @@ import {
   RiImage2Line,
   RiEmotionLine,
   RiDeleteBinLine,
-  RiEditLine
+  RiEditLine,
+  RiFilterLine,
+  RiLineChartLine
 } from 'react-icons/ri';
 
 export {
@@ -99,5 +101,6 @@ export {
   RiImage2Line,
   RiEmotionLine,
   RiDeleteBinLine,
-  RiEditLine
+  RiEditLine,
+  RiFilterLine
 };
