@@ -32,7 +32,6 @@ const formSchema = z.object({
 export function Login() {
   const [_, navigate] = useLocation();
   const { login, isLoginPending, isAuthenticated } = useAuth();
-  const { language, setLanguage, t } = useLanguage();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -61,8 +60,7 @@ export function Login() {
           <RiGlobalLine className="w-4 h-4 text-gray-500" />
           <select 
             className="border-none bg-transparent text-sm focus:outline-none cursor-pointer"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as 'es' | 'en' | 'pt')}
+            defaultValue="es"
           >
             <option value="es">Español</option>
             <option value="en">English</option>
@@ -76,9 +74,9 @@ export function Login() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white">
             <RiRobotLine className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl font-bold">{t('login.title')}</CardTitle>
+          <CardTitle className="text-2xl font-bold">Iniciar Sesión</CardTitle>
           <CardDescription>
-            {t('login.subtitle')}
+            Accede a tu cuenta de BotMaster
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -89,14 +87,13 @@ export function Login() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('login.email')}</FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                          <RiMailLine />
-                        </span>
+                        <RiMailLine className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                         <Input
-                          placeholder={t('login.emailPlaceholder')}
+                          type="email"
+                          placeholder="tu@ejemplo.com"
                           className="pl-10"
                           {...field}
                         />
@@ -111,15 +108,13 @@ export function Login() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('login.password')}</FormLabel>
+                    <FormLabel>Contraseña</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                          <RiLockLine />
-                        </span>
+                        <RiLockLine className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                         <Input
                           type="password"
-                          placeholder={t('login.passwordPlaceholder')}
+                          placeholder="••••••••"
                           className="pl-10"
                           {...field}
                         />
@@ -129,28 +124,21 @@ export function Login() {
                   </FormItem>
                 )}
               />
-              <Button
-                type="submit"
-                className="w-full"
+              <Button 
+                type="submit" 
+                className="w-full" 
                 disabled={isLoginPending}
               >
-                {isLoginPending ? (
-                  <div className="flex items-center">
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></div>
-                    <span>...</span>
-                  </div>
-                ) : (
-                  t('login.submit')
-                )}
+                {isLoginPending ? "Iniciando sesión..." : "Iniciar Sesión"}
               </Button>
             </form>
           </Form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <div className="text-center text-sm">
+          <div className="text-center text-sm text-gray-600">
             ¿No tienes una cuenta?{" "}
-            <Link href="/register" className="font-medium text-primary hover:underline">
-              Registrate
+            <Link href="/auth/register" className="font-medium text-primary hover:underline">
+              Regístrate aquí
             </Link>
           </div>
         </CardFooter>
