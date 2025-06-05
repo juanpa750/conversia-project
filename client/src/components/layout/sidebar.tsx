@@ -145,14 +145,6 @@ export function Sidebar() {
         </div>
         
         <NavItem 
-          href="/multimedia" 
-          icon={<RiGalleryLine />} 
-          active={location.startsWith("/multimedia")}
-        >
-          Multimedia
-        </NavItem>
-        
-        <NavItem 
           href="/integrations" 
           icon={<RiApps2Line />} 
           active={location.startsWith("/integrations")}

@@ -50,9 +50,9 @@ export function Dashboard() {
       <div className="mb-6">
         <div className="flex flex-col justify-between md:flex-row md:items-end">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Panel de Control</h1>
             <p className="mt-1 text-sm text-gray-500">
-              {t('dashboard.welcome')}
+              Resumen general de tu plataforma de chatbots
             </p>
           </div>
           <div className="mt-4 flex space-x-3 md:mt-0">
