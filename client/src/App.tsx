@@ -27,6 +27,13 @@ import Store from "@/pages/store";
 import Multimedia from "@/pages/multimedia";
 import Templates from "@/pages/templates";
 import CRMAdvanced from "@/pages/crm/advanced";
+import ContactScoring from "@/pages/crm/advanced/contact-scoring";
+import Automations from "@/pages/crm/advanced/automations";
+import RelationshipMapping from "@/pages/crm/advanced/relationship-mapping";
+import PredictiveAnalysis from "@/pages/crm/advanced/predictive-analysis";
+import SalesPipeline from "@/pages/crm/advanced/sales-pipeline";
+import NurtureCampaigns from "@/pages/crm/advanced/nurture-campaigns";
+import AIFlows from "@/pages/templates/ai-flows";
 import { useAuth } from "@/hooks/use-auth-simple";
 
 function Router() {
@@ -87,6 +94,36 @@ function Router() {
           <Route path="/crm/advanced">
             <Layout>
               <CRMAdvanced />
+            </Layout>
+          </Route>
+          <Route path="/crm/advanced/contact-scoring">
+            <Layout>
+              <ContactScoring />
+            </Layout>
+          </Route>
+          <Route path="/crm/advanced/automations">
+            <Layout>
+              <Automations />
+            </Layout>
+          </Route>
+          <Route path="/crm/advanced/relationship-mapping">
+            <Layout>
+              <RelationshipMapping />
+            </Layout>
+          </Route>
+          <Route path="/crm/advanced/predictive-analysis">
+            <Layout>
+              <PredictiveAnalysis />
+            </Layout>
+          </Route>
+          <Route path="/crm/advanced/sales-pipeline">
+            <Layout>
+              <SalesPipeline />
+            </Layout>
+          </Route>
+          <Route path="/crm/advanced/nurture-campaigns">
+            <Layout>
+              <NurtureCampaigns />
             </Layout>
           </Route>
           <Route path="/clients">
@@ -197,10 +234,12 @@ function Router() {
 
 function App() {
   return (
-    <TooltipProvider>
-      <Toaster />
-      <Router />
-    </TooltipProvider>
+    <LanguageProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Router />
+      </TooltipProvider>
+    </LanguageProvider>
   );
 }
 

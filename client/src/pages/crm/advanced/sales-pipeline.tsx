@@ -341,8 +341,8 @@ export default function SalesPipelinePage() {
             onChange={(e) => setFilterBy(e.target.value)}
           >
             <option value="all">Todos los deals</option>
-            <option value="high_value">Alto valor (>€20k)</option>
-            <option value="closing_soon">Cierran pronto (<30 días)</option>
+            <option value="high_value">Alto valor mayor a 20k euros</option>
+            <option value="closing_soon">Cierran pronto (menos de 30 días)</option>
             <option value="overdue">Vencidos</option>
           </select>
           <Button
