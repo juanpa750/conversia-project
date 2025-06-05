@@ -193,14 +193,6 @@ function Router() {
               <Marketing />
             </Layout>
           </Route>
-          <Route path="/multimedia">
-            <Layout>
-              <div className="p-6">
-                <h1 className="text-2xl font-bold mb-4">Multimedia</h1>
-                <p>Gestión de archivos multimedia para tus chatbots</p>
-              </div>
-            </Layout>
-          </Route>
           <Route path="/integrations">
             <Layout>
               <div className="p-6">
