@@ -25,7 +25,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { AssistantWizard } from "@/components/chatbot/assistant-wizard";
 import {
   RiSearchLine,
   RiUser3Line,
@@ -115,14 +117,46 @@ const STATUS_LABELS = {
 };
 
 export function Chatbots() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("all");
 
-  // In a real application, we would fetch this data from the API
-  const { data: chatbots } = useQuery({
+  // Fetch chatbots data
+  const { data: chatbots = DUMMY_CHATBOTS } = useQuery({
     queryKey: ["/api/chatbots", { search: searchQuery, filter }],
-    initialData: DUMMY_CHATBOTS,
+    queryFn: () => Promise.resolve(DUMMY_CHATBOTS),
   });
+
+  // Create chatbot mutation
+  const createChatbot = useMutation({
+    mutationFn: async (config: any) => {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return {
+        id: Date.now().toString(),
+        name: config.name,
+        description: config.description,
+        status: 'draft' as const,
+        type: 'sales' as const,
+        messages: 0,
+        contacts: 0,
+        createdAt: new Date().toISOString().split('T')[0],
+        objective: config.objective,
+        aiInstructions: config.aiInstructions
+      };
+    },
+    onSuccess: (newChatbot) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chatbots"] });
+      toast({
+        title: "Chatbot creado exitosamente",
+        description: `${newChatbot.name} está listo para configurar.`,
+      });
+    }
+  });
+
+  const handleAssistantComplete = (config: any) => {
+    createChatbot.mutate(config);
+  };
 
   const filteredChatbots = chatbots.filter((chatbot) => {
     if (filter !== "all" && chatbot.type !== filter) {
@@ -143,15 +177,18 @@ export function Chatbots() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Mis Chatbots</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Gestiona y edita tus chatbots de WhatsApp
+            Gestiona y edita tus chatbots de WhatsApp con asistencia IA
           </p>
         </div>
-        <Button asChild>
-          <Link href="/chatbots/builder">
-            <RiAddLine className="mr-2" />
-            Nuevo Chatbot
-          </Link>
-        </Button>
+        <div className="flex space-x-3">
+          <AssistantWizard onComplete={handleAssistantComplete} />
+          <Button variant="outline" asChild>
+            <Link href="/chatbots/builder">
+              <RiAddLine className="mr-2" />
+              Crear Manual
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="mb-6 flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
