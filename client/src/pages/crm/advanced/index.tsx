@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +31,6 @@ import {
   PieChart,
   LineChart
 } from 'lucide-react';
-import { Link } from 'wouter';
 
 interface CRMModule {
   id: string;
@@ -333,18 +333,18 @@ export default function CRMAdvanced() {
 
               {/* Actions */}
               <div className="flex gap-2 pt-4">
-                <Button asChild className="flex-1">
-                  <Link href={module.explorePath}>
+                <Link href={module.explorePath} className="flex-1">
+                  <Button className="w-full">
                     <Activity className="w-4 h-4 mr-2" />
                     Explorar
-                  </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link href={module.configPath}>
+                  </Button>
+                </Link>
+                <Link href={module.configPath}>
+                  <Button variant="outline">
                     <Settings className="w-4 h-4 mr-2" />
                     Configurar
-                  </Link>
-                </Button>
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
