@@ -39,13 +39,13 @@ function Router() {
   return (
     <Switch>
       {!isAuthenticated ? (
-        <LanguageProvider>
+        <>
           <Route path="/login" component={Login} />
           <Route path="/register" component={Register} />
           <Route path="*">
             <Login />
           </Route>
-        </LanguageProvider>
+        </>
       ) : (
         <>
           <Route path="/">
