@@ -18,6 +18,16 @@ export function generateToken(user: User) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 }
 
+// Extend Request interface to include userId and userRole
+declare global {
+  namespace Express {
+    interface Request {
+      userId?: string;
+      userRole?: string;
+    }
+  }
+}
+
 // Middleware to authenticate requests
 export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
   try {
@@ -27,8 +37,9 @@ export function isAuthenticated(req: Request, res: Response, next: NextFunction)
       return res.status(401).json({ message: 'Authentication required' });
     }
     
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string };
     req.userId = decoded.id;
+    req.userRole = decoded.role;
     next();
   } catch (error) {
     return res.status(401).json({ message: 'Invalid or expired token' });

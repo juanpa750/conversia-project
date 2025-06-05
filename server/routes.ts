@@ -643,6 +643,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Conversation Control routes
+  app.get("/api/conversations/ai-control", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const conversations = await storage.getConversationsByUser(userId);
+      
+      // Add AI control metadata to each conversation
+      const conversationsWithAI = conversations.conversations.map(conv => ({
+        id: conv.id,
+        contactName: conv.contactName || "Unknown Contact",
+        contactPhone: conv.contactId || "N/A",
+        lastMessage: conv.lastMessage || "No messages",
+        lastMessageTime: conv.updatedAt || new Date(),
+        aiEnabled: conv.aiEnabled || false,
+        status: conv.aiStatus || 'active',
+        messageCount: conv.messageCount || 0,
+        chatbotId: conv.chatbotId
+      }));
+
+      res.json(conversationsWithAI);
+    } catch (error) {
+      console.error("Error fetching AI control conversations:", error);
+      res.status(500).json({ message: "Failed to fetch conversations" });
+    }
+  });
+
+  app.put("/api/conversations/:id/ai-control", isAuthenticated, async (req: any, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const { aiEnabled } = req.body;
+      
+      // Update conversation AI settings
+      await storage.updateConversationAI(conversationId, { aiEnabled });
+      
+      res.json({ success: true, message: "AI control updated successfully" });
+    } catch (error) {
+      console.error("Error updating AI control:", error);
+      res.status(500).json({ message: "Failed to update AI control" });
+    }
+  });
+
+  app.put("/api/conversations/:id/ai-pause", isAuthenticated, async (req: any, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      
+      await storage.updateConversationAI(conversationId, { aiStatus: 'paused' });
+      
+      res.json({ success: true, message: "AI paused successfully" });
+    } catch (error) {
+      console.error("Error pausing AI:", error);
+      res.status(500).json({ message: "Failed to pause AI" });
+    }
+  });
+
+  app.put("/api/conversations/:id/ai-resume", isAuthenticated, async (req: any, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      
+      await storage.updateConversationAI(conversationId, { aiStatus: 'active' });
+      
+      res.json({ success: true, message: "AI resumed successfully" });
+    } catch (error) {
+      console.error("Error resuming AI:", error);
+      res.status(500).json({ message: "Failed to resume AI" });
+    }
+  });
+
+  app.post("/api/conversations/:id/manual-message", isAuthenticated, async (req: any, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const { content } = req.body;
+      const userId = req.userId;
+      
+      // Create manual message
+      const message = await storage.addManualMessage(conversationId, {
+        content,
+        isAI: false,
+        sentBy: userId,
+        timestamp: new Date()
+      });
+      
+      res.json({ success: true, message: message });
+    } catch (error) {
+      console.error("Error sending manual message:", error);
+      res.status(500).json({ message: "Failed to send manual message" });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;

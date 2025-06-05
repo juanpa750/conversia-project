@@ -20,6 +20,7 @@ import CRMDashboard from "@/pages/crm";
 import WhatsAppConnect from "@/pages/integrations/whatsapp-connect";
 import WhatsAppBotConfig from "@/pages/integrations/whatsapp-bot";
 import AIAdvanced from "@/pages/ai-advanced";
+import ConversationControl from "@/pages/ai-advanced/conversation-control";
 import Marketing from "@/pages/marketing";
 import Reports from "@/pages/reports";
 import Store from "@/pages/store";
@@ -126,6 +127,11 @@ function Router() {
           <Route path="/ai-advanced">
             <Layout>
               <AIAdvanced />
+            </Layout>
+          </Route>
+          <Route path="/ai-advanced/conversation-control">
+            <Layout>
+              <ConversationControl />
             </Layout>
           </Route>
           <Route path="/store">
