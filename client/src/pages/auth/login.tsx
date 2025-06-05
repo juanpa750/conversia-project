@@ -23,7 +23,6 @@ import {
   FormMessage 
 } from "@/components/ui/form";
 import { RiRobotLine, RiMailLine, RiLockLine, RiGlobalLine } from "@/lib/icons";
-import { useLanguage } from "@/contexts/LanguageContext";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce un email válido" }),
