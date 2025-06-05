@@ -230,9 +230,9 @@ function Router() {
               <Reports />
             </Layout>
           </Route>
+          <Route component={NotFound} />
         </>
       )}
-      <Route component={NotFound} />
     </Switch>
   );
 }
