@@ -95,6 +95,10 @@ export interface IStorage {
   getMultimediaFile(id: number): Promise<MultimediaFile | undefined>;
   createMultimediaFile(data: InsertMultimediaFile): Promise<MultimediaFile>;
   deleteMultimediaFile(id: number): Promise<void>;
+
+  // AI Conversation Control operations
+  updateConversationAI(conversationId: number, data: { aiEnabled?: boolean; aiStatus?: string }): Promise<void>;
+  addManualMessage(conversationId: number, messageData: any): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -436,6 +440,42 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(multimediaFiles)
       .where(eq(multimediaFiles.id, id));
+  }
+
+  // AI Conversation Control operations
+  async updateConversationAI(conversationId: number, data: { aiEnabled?: boolean; aiStatus?: string }): Promise<void> {
+    const updateData: any = {};
+    if (data.aiEnabled !== undefined) {
+      updateData.aiEnabled = data.aiEnabled;
+    }
+    if (data.aiStatus !== undefined) {
+      updateData.aiStatus = data.aiStatus;
+    }
+    updateData.updatedAt = new Date();
+
+    await db.update(conversations)
+      .set(updateData)
+      .where(eq(conversations.id, conversationId));
+  }
+
+  async addManualMessage(conversationId: number, messageData: any): Promise<any> {
+    const [message] = await db.insert(messages).values({
+      conversationId,
+      content: messageData.content,
+      isFromUser: !messageData.isAI,
+      timestamp: messageData.timestamp || new Date(),
+    }).returning();
+
+    // Update conversation last message
+    await db.update(conversations)
+      .set({
+        lastMessage: messageData.content,
+        lastMessageTime: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(conversations.id, conversationId));
+
+    return message;
   }
 }
 
