@@ -384,10 +384,10 @@ export function Settings() {
                         Cambiar foto
                       </Button>
                       <p className="mt-2 text-xs text-gray-500">
-                      JPG, GIF o PNG. Máximo 1MB.
-                    </p>
+                        JPG, GIF o PNG. Máximo 1MB.
+                      </p>
+                    </div>
                   </div>
-                </div>
 
                 <Form {...profileForm}>
                   <form
@@ -845,6 +845,123 @@ export function Settings() {
                     </form>
                   </Form>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="subscription">
+            <Card>
+              <CardHeader>
+                <CardTitle>Plan de Suscripción</CardTitle>
+                <CardDescription>
+                  Gestiona tu plan actual y facturación
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Current Plan */}
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-900">Plan Professional</h3>
+                      <p className="text-sm text-blue-700">Tu plan actual</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-blue-900">€49</p>
+                      <p className="text-sm text-blue-700">por mes</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-4 text-sm text-blue-800">
+                    <div>✓ 10,000 mensajes/mes</div>
+                    <div>✓ 5 chatbots</div>
+                    <div>✓ Análisis avanzado</div>
+                    <div>✓ Soporte prioritario</div>
+                  </div>
+                </div>
+
+                {/* Usage Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 border rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">2,847</p>
+                    <p className="text-sm text-gray-600">Mensajes usados</p>
+                    <p className="text-xs text-gray-500">de 10,000</p>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">3</p>
+                    <p className="text-sm text-gray-600">Chatbots activos</p>
+                    <p className="text-xs text-gray-500">de 5</p>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <p className="text-2xl font-bold text-green-600">71%</p>
+                    <p className="text-sm text-gray-600">Uso del plan</p>
+                    <p className="text-xs text-gray-500">este mes</p>
+                  </div>
+                </div>
+
+                {/* Billing Information */}
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Información de facturación</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Próxima facturación:</span>
+                      <span className="font-medium">15 de febrero, 2025</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Método de pago:</span>
+                      <span className="font-medium">•••• •••• •••• 4242</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Estado:</span>
+                      <span className="text-green-600 font-medium">Activo</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button variant="outline">
+                    <RiMoneyDollarBoxLine className="w-4 h-4 mr-2" />
+                    Cambiar plan
+                  </Button>
+                  <Button variant="outline">
+                    Actualizar método de pago
+                  </Button>
+                  <Button variant="outline">
+                    Descargar facturas
+                  </Button>
+                </div>
+
+                {/* Upgrade Options */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-medium mb-4">Planes disponibles</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-semibold">Plan Enterprise</h4>
+                      <p className="text-2xl font-bold mt-2">€99<span className="text-sm font-normal">/mes</span></p>
+                      <ul className="text-sm text-gray-600 mt-3 space-y-1">
+                        <li>✓ 50,000 mensajes/mes</li>
+                        <li>✓ Chatbots ilimitados</li>
+                        <li>✓ API completa</li>
+                        <li>✓ Soporte 24/7</li>
+                      </ul>
+                      <Button className="w-full mt-4" variant="outline">
+                        Actualizar plan
+                      </Button>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-semibold">Plan Básico</h4>
+                      <p className="text-2xl font-bold mt-2">€19<span className="text-sm font-normal">/mes</span></p>
+                      <ul className="text-sm text-gray-600 mt-3 space-y-1">
+                        <li>✓ 1,000 mensajes/mes</li>
+                        <li>✓ 2 chatbots</li>
+                        <li>✓ Análisis básico</li>
+                        <li>✓ Soporte por email</li>
+                      </ul>
+                      <Button className="w-full mt-4" variant="outline">
+                        Cambiar a básico
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
