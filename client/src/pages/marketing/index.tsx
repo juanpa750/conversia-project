@@ -253,6 +253,7 @@ export default function MarketingPage() {
   const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [showAddBroadcastDialog, setShowAddBroadcastDialog] = useState(false);
+  const [showCampaignAssistant, setShowCampaignAssistant] = useState(false);
   const { toast } = useToast();
 
   // Filter campaigns based on search term
@@ -364,15 +365,24 @@ export default function MarketingPage() {
         <TabsContent value="campaigns" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-medium">Gestión de campañas</h2>
-            <Dialog open={showAddCampaignDialog} onOpenChange={setShowAddCampaignDialog}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <RiAddLine />
-                  <span>Nueva campaña</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={() => setShowCampaignAssistant(true)}
+              >
+                <RiUserLine />
+                <span>Asistente IA para Campañas</span>
+              </Button>
+              <Dialog open={showAddCampaignDialog} onOpenChange={setShowAddCampaignDialog}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <RiAddLine />
+                    <span>Nueva campaña</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
                   <DialogTitle>Crear nueva campaña</DialogTitle>
                   <DialogDescription>
                     Define los detalles de tu campaña de marketing. Todos los campos marcados con * son obligatorios.
@@ -707,6 +717,7 @@ export default function MarketingPage() {
               )}
             </DialogContent>
           </Dialog>
+            </div>
         </TabsContent>
 
         {/* Broadcasts Tab */}
@@ -950,6 +961,19 @@ export default function MarketingPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Campaign Assistant Dialog */}
+      {showCampaignAssistant && (
+        <CampaignAssistant 
+          onComplete={(config) => {
+            setShowCampaignAssistant(false);
+            toast({
+              title: "Configuración completada",
+              description: "La campaña se ha configurado según las recomendaciones del asistente IA.",
+            });
+          }}
+        />
+      )}
     </>
   );
 }
