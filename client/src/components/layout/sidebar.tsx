@@ -85,6 +85,14 @@ export function Sidebar() {
         </NavItem>
         
         <NavItem 
+          href="/multimedia" 
+          icon={<RiGalleryLine />} 
+          active={location.startsWith("/multimedia")}
+        >
+          Multimedia
+        </NavItem>
+        
+        <NavItem 
           href="/ai-advanced" 
           icon={<RiBrainLine />} 
           active={location.startsWith("/ai-advanced")}
@@ -106,14 +114,6 @@ export function Sidebar() {
           active={location.startsWith("/campaigns")}
         >
           Campañas
-        </NavItem>
-        
-        <NavItem 
-          href="/multimedia" 
-          icon={<RiGalleryLine />} 
-          active={location.startsWith("/multimedia")}
-        >
-          Multimedia
         </NavItem>
         
         <NavItem 

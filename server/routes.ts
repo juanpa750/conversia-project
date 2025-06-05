@@ -609,9 +609,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Multimedia routes
-  app.get("/api/multimedia", isAuthenticated, async (req, res) => {
+  app.get("/api/multimedia", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user!.id;
+      const userId = req.userId;
       const files = await storage.getMultimediaFiles(userId);
       res.json(files);
     } catch (error) {
@@ -620,9 +620,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/multimedia", isAuthenticated, async (req, res) => {
+  app.post("/api/multimedia", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user!.id;
+      const userId = req.userId;
       const fileData = { ...req.body, userId };
       const file = await storage.createMultimediaFile(fileData);
       res.json(file);
@@ -632,7 +632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/multimedia/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/multimedia/:id", isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteMultimediaFile(id);
