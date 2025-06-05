@@ -144,7 +144,15 @@ const translations = {
     'login.emailPlaceholder': 'your@email.com',
     'login.passwordPlaceholder': 'Your password',
     
+    // Dashboard
+    'dashboard.title': 'Dashboard',
+    'dashboard.welcome': 'Bienvenido de nuevo, aquí tienes un resumen de tu actividad',
+    
     // Navigation
+    // Dashboard
+    'dashboard.title': 'Dashboard',
+    'dashboard.welcome': 'Welcome back, here\'s a summary of your activity',
+    
     'nav.dashboard': 'Dashboard',
     'nav.chatbots': 'Chatbots',
     'nav.analytics': 'Analytics',

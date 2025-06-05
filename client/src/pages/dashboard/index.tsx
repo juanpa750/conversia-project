@@ -7,9 +7,12 @@ import ChartSection from "@/components/dashboard/chart-section";
 import RecentConversations from "@/components/dashboard/recent-conversations";
 import QuickActions from "@/components/dashboard/quick-actions";
 import PlanCard from "@/components/dashboard/plan-card";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { RiDownload2Line, RiCalendarLine, RiArrowDownSLine } from "@/lib/icons";
 
 export function Dashboard() {
+  const { t } = useLanguage();
+  
   // In a real application, we would fetch this data from the API
   const { data: statsData } = useQuery({
     queryKey: ["/api/stats/dashboard"],
@@ -47,9 +50,9 @@ export function Dashboard() {
       <div className="mb-6">
         <div className="flex flex-col justify-between md:flex-row md:items-end">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Bienvenido de nuevo, aquí tienes un resumen de tu actividad
+              {t('dashboard.welcome')}
             </p>
           </div>
           <div className="mt-4 flex space-x-3 md:mt-0">
