@@ -23,6 +23,7 @@ import {
   FormMessage 
 } from "@/components/ui/form";
 import { RiRobotLine, RiMailLine, RiLockLine, RiGlobalLine } from "@/lib/icons";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce un email válido" }),
@@ -32,6 +33,7 @@ const formSchema = z.object({
 export function Login() {
   const [_, navigate] = useLocation();
   const { login, isLoginPending, isAuthenticated } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,7 +62,8 @@ export function Login() {
           <RiGlobalLine className="w-4 h-4 text-gray-500" />
           <select 
             className="border-none bg-transparent text-sm focus:outline-none cursor-pointer"
-            defaultValue="es"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as 'es' | 'en' | 'pt')}
           >
             <option value="es">Español</option>
             <option value="en">English</option>
@@ -74,9 +77,9 @@ export function Login() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white">
             <RiRobotLine className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl font-bold">Iniciar Sesión</CardTitle>
+          <CardTitle className="text-2xl font-bold">{t('login.title')}</CardTitle>
           <CardDescription>
-            Accede a tu cuenta de BotMaster
+            {t('login.subtitle')}
           </CardDescription>
         </CardHeader>
         <CardContent>
