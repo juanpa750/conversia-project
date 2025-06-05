@@ -220,6 +220,11 @@ function Router() {
               <Templates />
             </Layout>
           </Route>
+          <Route path="/templates/ai-flows">
+            <Layout>
+              <AIFlows />
+            </Layout>
+          </Route>
           <Route path="/reports">
             <Layout>
               <Reports />
