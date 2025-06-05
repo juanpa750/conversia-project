@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth-simple";
+// import { useLanguage } from "@/contexts/LanguageContext";
 
 interface NavItemProps {
   href: string;
@@ -45,6 +46,7 @@ function NavItem({ href, icon, children, active }: NavItemProps) {
 export function Sidebar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  // const { t } = useLanguage();
 
   return (
     <div className="flex h-full w-64 flex-shrink-0 flex-col border-r border-gray-200 bg-white">
