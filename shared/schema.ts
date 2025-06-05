@@ -187,6 +187,21 @@ export const sessions = pgTable(
   }
 );
 
+// Multimedia files table
+export const multimediaFiles = pgTable("multimedia_files", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  fileName: varchar("file_name").notNull(),
+  originalName: varchar("original_name").notNull(),
+  fileType: varchar("file_type").notNull(), // 'image' | 'video'
+  mimeType: varchar("mime_type").notNull(),
+  fileSize: integer("file_size").notNull(),
+  filePath: varchar("file_path").notNull(),
+  url: varchar("url").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schema types
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -265,3 +280,6 @@ export type WhatsappIntegration = typeof whatsappIntegrations.$inferSelect;
 export type InsertWhatsappIntegration = z.infer<typeof insertWhatsappIntegrationSchema>;
 
 export type UserPreference = typeof userPreferences.$inferSelect;
+
+export type MultimediaFile = typeof multimediaFiles.$inferSelect;
+export type InsertMultimediaFile = typeof multimediaFiles.$inferInsert;

@@ -10,15 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-
-interface MediaFile {
-  id: string;
-  name: string;
-  type: 'image' | 'video';
-  url: string;
-  size: number;
-  uploadedAt: string;
-}
+import { MultimediaFile } from "@shared/schema";
 
 export default function Multimedia() {
   const { t } = useLanguage();
@@ -28,7 +20,7 @@ export default function Multimedia() {
   const queryClient = useQueryClient();
 
   // Obtener archivos multimedia
-  const { data: mediaFiles = [], isLoading } = useQuery({
+  const { data: mediaFiles = [], isLoading } = useQuery<MultimediaFile[]>({
     queryKey: ['/api/multimedia'],
   });
 
@@ -264,7 +256,7 @@ export default function Multimedia() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {mediaFiles.map((file: MediaFile) => (
+                  {mediaFiles.map((file: MultimediaFile) => (
                     <div key={file.id} className="border rounded-lg overflow-hidden">
                       <div className="aspect-video bg-gray-100 flex items-center justify-center">
                         {file.type === 'image' ? (
