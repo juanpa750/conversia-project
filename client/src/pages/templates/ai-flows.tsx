@@ -13,6 +13,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Brain, 
   MessageSquare, 
@@ -34,7 +37,16 @@ import {
   Clock,
   ArrowRight,
   Play,
-  Settings
+  Settings,
+  Plus,
+  Edit,
+  Trash2,
+  Download,
+  Upload,
+  Search,
+  Filter,
+  Eye,
+  Copy
 } from 'lucide-react';
 
 interface AITemplate {
@@ -46,399 +58,234 @@ interface AITemplate {
   complexity: 'basic' | 'intermediate' | 'advanced';
   estimatedSetupTime: number;
   features: string[];
-  aiFlow: AIFlowStep[];
-  icon: React.ReactNode;
-  color: string;
-  tags: string[];
   usageCount: number;
   rating: number;
-  conversionRate: number;
+  icon: React.ReactNode;
+  flow: {
+    trigger: string;
+    steps: Array<{
+      type: 'message' | 'condition' | 'action' | 'ai_response';
+      content: string;
+      conditions?: string[];
+    }>;
+  };
 }
 
-interface AIFlowStep {
+interface CustomFlow {
   id: string;
-  type: 'welcome' | 'ai_analysis' | 'question' | 'condition' | 'action' | 'ai_response' | 'human_handoff';
-  title: string;
-  content: string;
-  aiPrompt?: string;
-  conditions?: Array<{
-    field: string;
-    operator: string;
-    value: string;
-    nextStep: string;
-  }>;
-  nextStep?: string;
-  aiContext?: string;
-  learningPoints?: string[];
+  name: string;
+  description: string;
+  isActive: boolean;
+  triggers: string[];
+  steps: number;
+  lastModified: string;
+  performance: {
+    completionRate: number;
+    avgResponseTime: number;
+    userSatisfaction: number;
+  };
 }
 
 const aiTemplates: AITemplate[] = [
   {
-    id: 'ecommerce-ai-sales',
-    name: 'Ventas E-commerce con IA',
-    description: 'Bot inteligente que analiza comportamiento del cliente y recomienda productos personalizados',
+    id: '1',
+    name: 'Asistente de Ventas E-commerce',
+    description: 'Automatiza el proceso de ventas con recomendaciones inteligentes y seguimiento de carritos abandonados',
     category: 'Ventas',
     industry: 'E-commerce',
     complexity: 'advanced',
-    estimatedSetupTime: 45,
-    features: ['Análisis de preferencias con IA', 'Recomendaciones personalizadas', 'Procesamiento de órdenes', 'Seguimiento post-venta'],
-    conversionRate: 34,
-    aiFlow: [
-      {
-        id: 'welcome',
-        type: 'welcome',
-        title: 'Bienvenida Personalizada',
-        content: '¡Hola! Soy tu asistente de compras inteligente. Te ayudaré a encontrar exactamente lo que necesitas.',
-        aiContext: 'Analizar historial de navegación y comportamiento previo',
-        nextStep: 'analyze_preferences'
-      },
-      {
-        id: 'analyze_preferences',
-        type: 'ai_analysis',
-        title: 'Análisis de Preferencias',
-        content: 'Analizando tus preferencias...',
-        aiPrompt: 'Analiza el historial de navegación, productos vistos, búsquedas previas y comportamiento del usuario para identificar preferencias y necesidades específicas.',
-        learningPoints: ['Categorías de interés', 'Rango de precios', 'Marcas preferidas', 'Estilo personal'],
-        nextStep: 'personalized_greeting'
-      },
-      {
-        id: 'personalized_greeting',
-        type: 'ai_response',
-        title: 'Saludo Personalizado',
-        content: 'Veo que te interesan [categoría detectada]. Tenemos nuevos productos que podrían gustarte.',
-        aiPrompt: 'Genera un saludo personalizado basado en las preferencias detectadas, mencionando productos específicos relevantes.',
-        nextStep: 'product_recommendation'
-      },
-      {
-        id: 'product_recommendation',
-        type: 'ai_response',
-        title: 'Recomendación Inteligente',
-        content: 'Te recomiendo estos productos basándome en tu perfil:',
-        aiPrompt: 'Selecciona y presenta 3-4 productos específicos que mejor coincidan con el perfil del usuario, explicando por qué son perfectos para él.',
-        nextStep: 'interest_check'
-      },
-      {
-        id: 'interest_check',
-        type: 'question',
-        title: 'Verificación de Interés',
-        content: '¿Alguno de estos productos te interesa? ¿O buscas algo específico?',
-        conditions: [
-          { field: 'response', operator: 'contains', value: 'sí|me gusta|interesa', nextStep: 'product_details' },
-          { field: 'response', operator: 'contains', value: 'no|otro|diferente', nextStep: 'alternative_search' },
-          { field: 'response', operator: 'contains', value: 'precio|costo|barato', nextStep: 'price_discussion' }
-        ],
-        nextStep: 'clarify_needs'
-      },
-      {
-        id: 'product_details',
-        type: 'ai_response',
-        title: 'Detalles del Producto',
-        content: 'Perfecto, te doy más detalles sobre este producto:',
-        aiPrompt: 'Proporciona información detallada y persuasiva sobre el producto elegido, incluyendo beneficios específicos para el usuario.',
-        nextStep: 'purchase_intent'
-      },
-      {
-        id: 'purchase_intent',
-        type: 'question',
-        title: 'Intención de Compra',
-        content: '¿Te gustaría agregarlo al carrito o necesitas más información?',
-        conditions: [
-          { field: 'response', operator: 'contains', value: 'carrito|comprar|agregar', nextStep: 'process_order' },
-          { field: 'response', operator: 'contains', value: 'información|dudas|preguntas', nextStep: 'provide_info' },
-          { field: 'response', operator: 'contains', value: 'pensar|después|tiempo', nextStep: 'follow_up_sequence' }
-        ],
-        nextStep: 'human_handoff'
-      },
-      {
-        id: 'process_order',
-        type: 'action',
-        title: 'Procesamiento de Orden',
-        content: 'Excelente! Te ayudo a completar tu compra.',
-        nextStep: 'order_confirmation'
-      }
-    ],
-    icon: <ShoppingCart className="w-6 h-6" />,
-    color: 'bg-blue-500',
-    tags: ['IA', 'E-commerce', 'Personalización', 'Ventas'],
+    estimatedSetupTime: 15,
+    features: ['Recomendaciones IA', 'Carrito abandonado', 'Upselling', 'Cross-selling'],
     usageCount: 1247,
-    rating: 4.8
+    rating: 4.8,
+    icon: <ShoppingCart className="w-6 h-6" />,
+    flow: {
+      trigger: 'Usuario dice "productos" o "comprar"',
+      steps: [
+        { type: 'ai_response', content: 'Analizar historial y preferencias del usuario' },
+        { type: 'message', content: '¡Hola! Te ayudo a encontrar el producto perfecto' },
+        { type: 'condition', content: '¿Qué tipo de producto buscas?', conditions: ['Ropa', 'Electrónicos', 'Hogar'] },
+        { type: 'ai_response', content: 'Mostrar productos personalizados según selección' }
+      ]
+    }
   },
   {
-    id: 'restaurant-ai-orders',
-    name: 'Restaurante IA - Pedidos',
-    description: 'Sistema inteligente para tomar pedidos, sugerir platos y gestionar reservas con análisis de preferencias',
-    category: 'Restaurantes',
-    industry: 'Gastronomía',
+    id: '2',
+    name: 'Soporte Técnico Inteligente',
+    description: 'Resuelve problemas técnicos comunes con diagnósticos automáticos y escalado inteligente',
+    category: 'Soporte',
+    industry: 'Tecnología',
     complexity: 'intermediate',
-    estimatedSetupTime: 30,
-    features: ['Recomendaciones de menú con IA', 'Gestión de pedidos', 'Sistema de reservas', 'Alertas de alergias'],
-    conversionRate: 42,
-    aiFlow: [
-      {
-        id: 'restaurant_welcome',
-        type: 'welcome',
-        title: 'Bienvenida al Restaurante',
-        content: '¡Bienvenido a [Nombre Restaurante]! Soy tu asistente gastronómico. ¿En qué puedo ayudarte hoy?',
-        nextStep: 'service_type'
-      },
-      {
-        id: 'service_type',
-        type: 'question',
-        title: 'Tipo de Servicio',
-        content: '¿Qué necesitas hoy?\n1. Hacer un pedido\n2. Reservar mesa\n3. Ver menú\n4. Información del restaurante',
-        conditions: [
-          { field: 'response', operator: 'contains', value: '1|pedido|ordenar', nextStep: 'order_preference_analysis' },
-          { field: 'response', operator: 'contains', value: '2|reserva|mesa', nextStep: 'reservation_process' },
-          { field: 'response', operator: 'contains', value: '3|menú|carta', nextStep: 'menu_display' },
-          { field: 'response', operator: 'contains', value: '4|información|horarios', nextStep: 'restaurant_info' }
-        ],
-        nextStep: 'clarify_service'
-      },
-      {
-        id: 'order_preference_analysis',
-        type: 'ai_analysis',
-        title: 'Análisis de Preferencias Gastronómicas',
-        content: 'Perfecto! Déjame conocerte mejor para sugerirte los mejores platos.',
-        aiPrompt: 'Analiza el historial de pedidos, preferencias dietéticas mencionadas, y hora del día para personalizar recomendaciones de menú.',
-        learningPoints: ['Preferencias dietéticas', 'Platos favoritos', 'Restricciones alimentarias', 'Presupuesto aproximado'],
-        nextStep: 'dietary_questions'
-      },
-      {
-        id: 'dietary_questions',
-        type: 'question',
-        title: 'Preferencias Dietéticas',
-        content: '¿Tienes alguna preferencia dietética o alergias que deba considerar? (vegetariano, vegano, sin gluten, etc.)',
-        nextStep: 'ai_menu_recommendations'
-      },
-      {
-        id: 'ai_menu_recommendations',
-        type: 'ai_response',
-        title: 'Recomendaciones Personalizadas',
-        content: 'Basándome en tus preferencias, te recomiendo estos platos especiales:',
-        aiPrompt: 'Genera recomendaciones específicas del menú considerando preferencias dietéticas, hora del día, historial y platos populares. Incluye precios y descripciones atractivas.',
-        nextStep: 'order_selection'
-      },
-      {
-        id: 'order_selection',
-        type: 'question',
-        title: 'Selección de Platos',
-        content: '¿Qué te gustaría ordenar? Puedes elegir de mis recomendaciones o pedir algo específico del menú.',
-        conditions: [
-          { field: 'response', operator: 'contains', value: 'recomendación|sugerencia', nextStep: 'process_recommended_order' },
-          { field: 'response', operator: 'contains', value: 'otro|diferente|menú', nextStep: 'custom_order' },
-          { field: 'response', operator: 'contains', value: 'precio|costo|oferta', nextStep: 'budget_options' }
-        ],
-        nextStep: 'order_details'
-      },
-      {
-        id: 'process_recommended_order',
-        type: 'ai_response',
-        title: 'Confirmación de Pedido',
-        content: '¡Excelente elección! Confirmo tu pedido:',
-        aiPrompt: 'Confirma el pedido seleccionado, calcula tiempo de preparación estimado, costo total y opciones de entrega.',
-        nextStep: 'delivery_options'
-      }
-    ],
+    estimatedSetupTime: 10,
+    features: ['Diagnóstico automático', 'Base de conocimiento', 'Escalado inteligente'],
+    usageCount: 892,
+    rating: 4.6,
+    icon: <Settings className="w-6 h-6" />,
+    flow: {
+      trigger: 'Usuario reporta problema técnico',
+      steps: [
+        { type: 'message', content: 'Entiendo que tienes un problema técnico. Te ayudo a resolverlo' },
+        { type: 'condition', content: '¿Qué tipo de problema tienes?', conditions: ['No funciona', 'Error', 'Lento'] },
+        { type: 'ai_response', content: 'Ejecutar diagnóstico automático según el problema' },
+        { type: 'action', content: 'Si no se resuelve, escalar a técnico humano' }
+      ]
+    }
+  },
+  {
+    id: '3',
+    name: 'Reservas de Restaurante',
+    description: 'Gestiona reservas, consulta disponibilidad y sugiere platos especiales del día',
+    category: 'Servicios',
+    industry: 'Restauración',
+    complexity: 'basic',
+    estimatedSetupTime: 8,
+    features: ['Gestión de reservas', 'Menu dinámico', 'Ofertas especiales'],
+    usageCount: 654,
+    rating: 4.7,
     icon: <Coffee className="w-6 h-6" />,
-    color: 'bg-orange-500',
-    tags: ['IA', 'Restaurantes', 'Pedidos', 'Recomendaciones'],
-    usageCount: 856,
-    rating: 4.6
+    flow: {
+      trigger: 'Usuario quiere hacer reserva',
+      steps: [
+        { type: 'message', content: '¡Bienvenido! Te ayudo con tu reserva' },
+        { type: 'condition', content: '¿Para cuántas personas?', conditions: ['1-2', '3-4', '5+'] },
+        { type: 'ai_response', content: 'Verificar disponibilidad y sugerir horarios' },
+        { type: 'action', content: 'Confirmar reserva y enviar recordatorio' }
+      ]
+    }
   },
   {
-    id: 'healthcare-ai-appointment',
-    name: 'Salud IA - Citas Médicas',
-    description: 'Asistente médico inteligente para agendar citas, triaje inicial y seguimiento de pacientes',
-    category: 'Salud',
-    industry: 'Medicina',
+    id: '4',
+    name: 'Consultor de Seguros',
+    description: 'Evalúa necesidades de seguros y proporciona cotizaciones personalizadas',
+    category: 'Consultoría',
+    industry: 'Seguros',
     complexity: 'advanced',
-    estimatedSetupTime: 60,
-    features: ['Triaje inteligente', 'Agendamiento automático', 'Recordatorios', 'Seguimiento post-consulta'],
-    conversionRate: 67,
-    aiFlow: [
-      {
-        id: 'medical_welcome',
-        type: 'welcome',
-        title: 'Bienvenida Médica',
-        content: 'Hola, soy el asistente virtual de [Clínica]. Estoy aquí para ayudarte con tus necesidades médicas de manera segura y confidencial.',
-        aiContext: 'Mantener tono profesional y empático, priorizar privacidad médica',
-        nextStep: 'patient_identification'
-      },
-      {
-        id: 'patient_identification',
-        type: 'question',
-        title: 'Identificación del Paciente',
-        content: '¿Eres paciente nuevo o ya tienes historial con nosotros? Por favor, proporciona tu nombre completo.',
-        conditions: [
-          { field: 'patient_type', operator: 'equals', value: 'existing', nextStep: 'returning_patient_flow' },
-          { field: 'patient_type', operator: 'equals', value: 'new', nextStep: 'new_patient_registration' }
-        ],
-        nextStep: 'verify_patient_status'
-      },
-      {
-        id: 'medical_concern_analysis',
-        type: 'ai_analysis',
-        title: 'Análisis de Motivo de Consulta',
-        content: 'Entiendo tu preocupación. Déjame analizar la mejor manera de ayudarte.',
-        aiPrompt: 'Analiza los síntomas o motivos de consulta mencionados para determinar urgencia, especialidad médica requerida y tipo de cita apropiada. IMPORTANTE: No proporcionar diagnósticos médicos.',
-        learningPoints: ['Nivel de urgencia', 'Especialidad requerida', 'Tipo de consulta', 'Disponibilidad necesaria'],
-        nextStep: 'urgency_assessment'
-      },
-      {
-        id: 'urgency_assessment',
-        type: 'ai_response',
-        title: 'Evaluación de Urgencia',
-        content: 'Basándome en lo que me cuentas, te recomiendo:',
-        aiPrompt: 'Evalúa la urgencia del caso y recomienda el tipo de atención apropiada (urgencia, cita regular, telemedicina). Ser claro sobre cuándo buscar atención inmediata.',
-        conditions: [
-          { field: 'urgency_level', operator: 'equals', value: 'emergency', nextStep: 'emergency_protocol' },
-          { field: 'urgency_level', operator: 'equals', value: 'urgent', nextStep: 'urgent_appointment' },
-          { field: 'urgency_level', operator: 'equals', value: 'routine', nextStep: 'schedule_routine_appointment' }
-        ],
-        nextStep: 'appointment_scheduling'
-      },
-      {
-        id: 'schedule_routine_appointment',
-        type: 'ai_response',
-        title: 'Programación de Cita',
-        content: 'Te ayudo a agendar una cita con el especialista apropiado.',
-        aiPrompt: 'Identifica la especialidad médica más apropiada y presenta opciones de horarios disponibles considerando la preferencia del paciente.',
-        nextStep: 'appointment_confirmation'
-      },
-      {
-        id: 'pre_appointment_instructions',
-        type: 'ai_response',
-        title: 'Instrucciones Pre-Consulta',
-        content: 'Para tu cita, es importante que:',
-        aiPrompt: 'Proporciona instrucciones específicas de preparación para la consulta según el tipo de cita agendada (ayuno, documentos, medicamentos, etc.).',
-        nextStep: 'appointment_reminder_setup'
-      }
-    ],
-    icon: <Heart className="w-6 h-6" />,
-    color: 'bg-red-500',
-    tags: ['IA', 'Salud', 'Citas', 'Triaje'],
-    usageCount: 643,
-    rating: 4.9
+    estimatedSetupTime: 20,
+    features: ['Evaluación de riesgos', 'Cotizaciones', 'Comparativas', 'Documentación'],
+    usageCount: 423,
+    rating: 4.5,
+    icon: <Briefcase className="w-6 h-6" />,
+    flow: {
+      trigger: 'Usuario consulta sobre seguros',
+      steps: [
+        { type: 'message', content: 'Te ayudo a encontrar el seguro perfecto para ti' },
+        { type: 'condition', content: '¿Qué tipo de seguro necesitas?', conditions: ['Auto', 'Hogar', 'Vida', 'Salud'] },
+        { type: 'ai_response', content: 'Hacer preguntas específicas según tipo de seguro' },
+        { type: 'ai_response', content: 'Calcular cotización personalizada' }
+      ]
+    }
+  }
+];
+
+const customFlows: CustomFlow[] = [
+  {
+    id: 'custom-1',
+    name: 'Flujo de Bienvenida Personalizado',
+    description: 'Saludo inicial adaptado al horario y perfil del cliente',
+    isActive: true,
+    triggers: ['hola', 'inicio', 'empezar'],
+    steps: 5,
+    lastModified: '2024-01-15',
+    performance: {
+      completionRate: 89,
+      avgResponseTime: 1.2,
+      userSatisfaction: 4.3
+    }
   },
   {
-    id: 'real-estate-ai-advisor',
-    name: 'Inmobiliaria IA - Asesor',
-    description: 'Asesor inmobiliario inteligente que analiza necesidades, presupuesto y recomienda propiedades ideales',
-    category: 'Inmobiliaria',
-    industry: 'Bienes Raíces',
-    complexity: 'advanced',
-    estimatedSetupTime: 50,
-    features: ['Análisis de necesidades', 'Búsqueda inteligente', 'Cálculo de financiamiento', 'Tours virtuales'],
-    conversionRate: 28,
-    aiFlow: [
-      {
-        id: 'real_estate_welcome',
-        type: 'welcome',
-        title: 'Bienvenida Inmobiliaria',
-        content: '¡Hola! Soy tu asesor inmobiliario inteligente. Te ayudaré a encontrar la propiedad perfecta para ti.',
-        nextStep: 'needs_assessment'
-      },
-      {
-        id: 'needs_assessment',
-        type: 'ai_analysis',
-        title: 'Análisis de Necesidades',
-        content: 'Vamos a conocer exactamente qué buscas en tu próxima propiedad.',
-        aiPrompt: 'Analiza las necesidades específicas del cliente: tipo de propiedad, ubicación preferida, presupuesto, tamaño familiar, estilo de vida, y prioridades.',
-        learningPoints: ['Tipo de propiedad', 'Presupuesto disponible', 'Zona preferida', 'Características indispensables'],
-        nextStep: 'budget_analysis'
-      },
-      {
-        id: 'budget_analysis',
-        type: 'question',
-        title: 'Análisis de Presupuesto',
-        content: 'Para encontrar las mejores opciones, ¿cuál es tu rango de presupuesto aproximado? ¿Será compra de contado o necesitas financiamiento?',
-        nextStep: 'financing_consultation'
-      },
-      {
-        id: 'financing_consultation',
-        type: 'ai_response',
-        title: 'Consultoría Financiera',
-        content: 'Te ayudo a entender tus opciones de financiamiento:',
-        aiPrompt: 'Calcula opciones de financiamiento, mensualidades aproximadas, enganche requerido y proporciona consejos financieros personalizados.',
-        nextStep: 'property_matching'
-      },
-      {
-        id: 'property_matching',
-        type: 'ai_response',
-        title: 'Búsqueda Inteligente',
-        content: 'Encontré estas propiedades que se ajustan perfectamente a lo que buscas:',
-        aiPrompt: 'Selecciona y presenta 3-5 propiedades que mejor coincidan con todos los criterios mencionados. Incluye fotos, características destacadas y razones por las que son ideales.',
-        nextStep: 'property_interest'
-      },
-      {
-        id: 'property_interest',
-        type: 'question',
-        title: 'Interés en Propiedades',
-        content: '¿Alguna de estas propiedades te llama la atención? ¿Te gustaría ver más detalles o agendar una visita?',
-        conditions: [
-          { field: 'response', operator: 'contains', value: 'visita|ver|conocer', nextStep: 'schedule_viewing' },
-          { field: 'response', operator: 'contains', value: 'detalles|información|características', nextStep: 'property_details' },
-          { field: 'response', operator: 'contains', value: 'otras|diferentes|más opciones', nextStep: 'refine_search' }
-        ],
-        nextStep: 'follow_up_sequence'
-      },
-      {
-        id: 'schedule_viewing',
-        type: 'ai_response',
-        title: 'Programar Visita',
-        content: 'Perfecto! Te ayudo a programar una visita a la propiedad.',
-        aiPrompt: 'Coordina horarios disponibles para visitas, prepara información adicional sobre la propiedad y el proceso de compra.',
-        nextStep: 'viewing_confirmation'
-      }
-    ],
-    icon: <Home className="w-6 h-6" />,
-    color: 'bg-green-500',
-    tags: ['IA', 'Inmobiliaria', 'Asesoría', 'Financiamiento'],
-    usageCount: 432,
-    rating: 4.7
+    id: 'custom-2',
+    name: 'Proceso de Devoluciones',
+    description: 'Automatiza el proceso de devoluciones y reembolsos',
+    isActive: true,
+    triggers: ['devolver', 'reembolso', 'problema'],
+    steps: 8,
+    lastModified: '2024-01-14',
+    performance: {
+      completionRate: 76,
+      avgResponseTime: 2.1,
+      userSatisfaction: 4.1
+    }
+  },
+  {
+    id: 'custom-3',
+    name: 'Seguimiento Post-venta',
+    description: 'Contacto automático después de una compra para feedback',
+    isActive: false,
+    triggers: ['compra_completada'],
+    steps: 4,
+    lastModified: '2024-01-10',
+    performance: {
+      completionRate: 92,
+      avgResponseTime: 0.8,
+      userSatisfaction: 4.6
+    }
   }
 ];
 
 export default function AIFlowsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [_, navigate] = useLocation();
+  const [, setLocation] = useLocation();
   
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedComplexity, setSelectedComplexity] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedComplexity, setSelectedComplexity] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState('templates');
 
-  const createChatbotMutation = useMutation({
-    mutationFn: async (template: AITemplate) => {
-      return apiRequest('POST', '/api/chatbots', {
-        name: `${template.name} - Copia`,
-        description: template.description,
-        type: template.category.toLowerCase(),
-        flow: template.aiFlow,
-        aiEnabled: true,
-        status: 'draft'
-      });
+  // Fetch templates
+  const { data: templates = aiTemplates, isLoading: templatesLoading } = useQuery({
+    queryKey: ['/api/ai-templates'],
+    queryFn: () => Promise.resolve(aiTemplates)
+  });
+
+  // Fetch custom flows
+  const { data: flows = customFlows, isLoading: flowsLoading } = useQuery({
+    queryKey: ['/api/custom-flows'],
+    queryFn: () => Promise.resolve(customFlows)
+  });
+
+  // Activate template mutation
+  const activateTemplate = useMutation({
+    mutationFn: async (templateId: string) => {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      return { templateId };
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/chatbots'] });
+    onSuccess: () => {
       toast({
-        title: "Template aplicado",
-        description: "El chatbot con IA se ha creado correctamente. Ahora puedes personalizarlo.",
-      });
-      navigate(`/chatbots/builder?id=${data.id}`);
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "No se pudo crear el chatbot con este template.",
-        variant: "destructive",
+        title: "Template activado",
+        description: "El flujo de IA se ha configurado exitosamente en tu chatbot.",
       });
     }
   });
 
-  const filteredTemplates = aiTemplates.filter(template => {
-    if (selectedCategory !== 'all' && template.category.toLowerCase() !== selectedCategory) return false;
-    if (selectedComplexity !== 'all' && template.complexity !== selectedComplexity) return false;
-    return true;
+  // Toggle flow status mutation
+  const toggleFlowStatus = useMutation({
+    mutationFn: async ({ flowId, isActive }: { flowId: string, isActive: boolean }) => {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      return { flowId, isActive };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-flows'] });
+      toast({
+        title: "Estado actualizado",
+        description: "El flujo se ha activado/desactivado correctamente.",
+      });
+    }
+  });
+
+  // Create new flow mutation
+  const createFlow = useMutation({
+    mutationFn: async (flowData: any) => {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return { id: Date.now().toString(), ...flowData };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-flows'] });
+      toast({
+        title: "Flujo creado",
+        description: "Tu nuevo flujo de IA se ha creado exitosamente.",
+      });
+    }
   });
 
   const getComplexityColor = (complexity: string) => {
@@ -459,158 +306,355 @@ export default function AIFlowsPage() {
     }
   };
 
+  const filteredTemplates = templates.filter(template => {
+    const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         template.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || template.category === selectedCategory;
+    const matchesComplexity = selectedComplexity === 'all' || template.complexity === selectedComplexity;
+    return matchesSearch && matchesCategory && matchesComplexity;
+  });
+
+  const categories = ['all', ...Array.from(new Set(templates.map(t => t.category)))];
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Templates con IA Avanzada</h1>
-          <p className="text-gray-600">Flujos inteligentes optimizados por IA para cada industria</p>
+          <h1 className="text-2xl font-bold text-gray-900">Flujos de IA</h1>
+          <p className="text-gray-600">Templates inteligentes y flujos personalizados para tu chatbot</p>
+        </div>
+        <div className="flex space-x-2">
+          <Button variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Exportar Flujos
+          </Button>
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            Crear Flujo
+          </Button>
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex space-x-4">
-            <div>
-              <label className="text-sm font-medium">Categoría</label>
-              <select
-                className="w-full p-2 border rounded-md mt-1"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <option value="all">Todas las categorías</option>
-                <option value="ventas">Ventas</option>
-                <option value="restaurantes">Restaurantes</option>
-                <option value="salud">Salud</option>
-                <option value="inmobiliaria">Inmobiliaria</option>
-                <option value="educación">Educación</option>
-                <option value="turismo">Turismo</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Complejidad</label>
-              <select
-                className="w-full p-2 border rounded-md mt-1"
-                value={selectedComplexity}
-                onChange={(e) => setSelectedComplexity(e.target.value)}
-              >
-                <option value="all">Todas las complejidades</option>
-                <option value="basic">Básico</option>
-                <option value="intermediate">Intermedio</option>
-                <option value="advanced">Avanzado</option>
-              </select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Templates Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTemplates.map((template) => (
-          <Card key={template.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className={`p-2 rounded-lg ${template.color} text-white`}>
-                  {template.icon}
-                </div>
-                <div className="flex space-x-1">
-                  <Badge className={getComplexityColor(template.complexity)}>
-                    {getComplexityLabel(template.complexity)}
-                  </Badge>
-                  <Badge variant="outline" className="bg-purple-50 text-purple-800">
-                    IA
-                  </Badge>
-                </div>
-              </div>
-              <CardTitle className="text-lg">{template.name}</CardTitle>
-              <CardDescription>{template.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Metrics */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="text-center p-2 bg-gray-50 rounded">
-                  <p className="font-bold text-green-600">{template.conversionRate}%</p>
-                  <p className="text-gray-600">Conversión</p>
-                </div>
-                <div className="text-center p-2 bg-gray-50 rounded">
-                  <p className="font-bold text-blue-600">{template.estimatedSetupTime}min</p>
-                  <p className="text-gray-600">Configuración</p>
-                </div>
-              </div>
-
-              {/* AI Features */}
-              <div>
-                <h4 className="font-medium mb-2 flex items-center">
-                  <Brain className="w-4 h-4 mr-2 text-purple-600" />
-                  Funciones IA
-                </h4>
-                <div className="space-y-1">
-                  {template.features.slice(0, 3).map((feature, index) => (
-                    <div key={index} className="flex items-center text-sm text-gray-600">
-                      <Zap className="w-3 h-3 mr-2 text-purple-500" />
-                      {feature}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Flow Preview */}
-              <div>
-                <h4 className="font-medium mb-2">Flujo IA ({template.aiFlow.length} pasos)</h4>
-                <div className="flex items-center space-x-1 overflow-x-auto">
-                  {template.aiFlow.slice(0, 4).map((step, index) => (
-                    <div key={step.id} className="flex items-center space-x-1">
-                      <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
-                        <span className="text-xs font-medium text-purple-600">{index + 1}</span>
-                      </div>
-                      {index < 3 && index < template.aiFlow.length - 1 && (
-                        <ArrowRight className="w-3 h-3 text-gray-400" />
-                      )}
-                    </div>
-                  ))}
-                  {template.aiFlow.length > 4 && (
-                    <span className="text-xs text-gray-500">+{template.aiFlow.length - 4}</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Usage Stats */}
-              <div className="flex items-center justify-between text-sm text-gray-600">
-                <div className="flex items-center">
-                  <Users className="w-4 h-4 mr-1" />
-                  {template.usageCount.toLocaleString()} usos
-                </div>
-                <div className="flex items-center">
-                  <span className="text-yellow-500">★</span>
-                  <span className="ml-1">{template.rating}</span>
-                </div>
-              </div>
-
-              {/* Action Button */}
-              <Button 
-                className="w-full"
-                onClick={() => createChatbotMutation.mutate(template)}
-                disabled={createChatbotMutation.isPending}
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Usar Template IA
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredTemplates.length === 0 && (
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
-          <CardContent className="p-8 text-center">
-            <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron templates</h3>
-            <p className="text-gray-600">Ajusta los filtros para ver más opciones de templates con IA.</p>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Brain className="w-8 h-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Templates Disponibles</p>
+                <p className="text-2xl font-bold text-gray-900">{templates.length}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-      )}
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Zap className="w-8 h-8 text-yellow-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Flujos Activos</p>
+                <p className="text-2xl font-bold text-gray-900">{flows.filter(f => f.isActive).length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Target className="w-8 h-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Tasa Completación</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {Math.round(flows.reduce((sum, f) => sum + f.performance.completionRate, 0) / flows.length)}%
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Users className="w-8 h-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Satisfacción</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {(flows.reduce((sum, f) => sum + f.performance.userSatisfaction, 0) / flows.length).toFixed(1)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="templates">Templates de IA</TabsTrigger>
+          <TabsTrigger value="custom">Flujos Personalizados</TabsTrigger>
+          <TabsTrigger value="analytics">Analíticas</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="templates" className="space-y-4">
+          {/* Filters */}
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-64">
+              <Input
+                placeholder="Buscar templates..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-md"
+              />
+            </div>
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-md"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              <option value="all">Todas las categorías</option>
+              {categories.slice(1).map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-md"
+              value={selectedComplexity}
+              onChange={(e) => setSelectedComplexity(e.target.value)}
+            >
+              <option value="all">Todas las complejidades</option>
+              <option value="basic">Básico</option>
+              <option value="intermediate">Intermedio</option>
+              <option value="advanced">Avanzado</option>
+            </select>
+          </div>
+
+          {/* Templates Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {templatesLoading ? (
+              <div className="col-span-2 text-center py-8">Cargando templates...</div>
+            ) : (
+              filteredTemplates.map((template) => (
+                <Card key={template.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        {template.icon}
+                        <div>
+                          <CardTitle className="text-lg">{template.name}</CardTitle>
+                          <CardDescription>{template.industry}</CardDescription>
+                        </div>
+                      </div>
+                      <Badge className={getComplexityColor(template.complexity)}>
+                        {getComplexityLabel(template.complexity)}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-600 mb-4">{template.description}</p>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                      <div>
+                        <span className="text-gray-500">Tiempo setup:</span>
+                        <span className="ml-1 font-medium">{template.estimatedSetupTime} min</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Usos:</span>
+                        <span className="ml-1 font-medium">{template.usageCount.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Rating:</span>
+                        <span className="ml-1 font-medium">⭐ {template.rating}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Categoría:</span>
+                        <span className="ml-1 font-medium">{template.category}</span>
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium mb-2">Características:</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {template.features.map((feature, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {feature}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium mb-2">Flujo:</h4>
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <div><strong>Trigger:</strong> {template.flow.trigger}</div>
+                        {template.flow.steps.slice(0, 2).map((step, index) => (
+                          <div key={index}>• {step.content}</div>
+                        ))}
+                        {template.flow.steps.length > 2 && (
+                          <div className="text-gray-400">... y {template.flow.steps.length - 2} pasos más</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <Button 
+                        className="flex-1" 
+                        onClick={() => activateTemplate.mutate(template.id)}
+                        disabled={activateTemplate.isPending}
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        {activateTemplate.isPending ? 'Activando...' : 'Activar'}
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="custom" className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            {flowsLoading ? (
+              <div className="text-center py-8">Cargando flujos personalizados...</div>
+            ) : (
+              flows.map((flow) => (
+                <Card key={flow.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3">
+                          <div>
+                            <h3 className="text-lg font-semibold">{flow.name}</h3>
+                            <p className="text-gray-600">{flow.description}</p>
+                          </div>
+                          <Badge variant={flow.isActive ? 'default' : 'secondary'}>
+                            {flow.isActive ? 'Activo' : 'Inactivo'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-500">Triggers:</span>
+                            <span className="ml-1 font-medium">{flow.triggers.length}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Pasos:</span>
+                            <span className="ml-1 font-medium">{flow.steps}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Completación:</span>
+                            <span className="ml-1 font-medium">{flow.performance.completionRate}%</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Modificado:</span>
+                            <span className="ml-1 font-medium">{flow.lastModified}</span>
+                          </div>
+                        </div>
+
+                        <div className="mt-4">
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Tiempo respuesta</div>
+                              <div className="font-medium">{flow.performance.avgResponseTime}s</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Satisfacción</div>
+                              <div className="font-medium">⭐ {flow.performance.userSatisfaction}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Completación</div>
+                              <Progress value={flow.performance.completionRate} className="h-2 mt-1" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => toggleFlowStatus.mutate({ 
+                            flowId: flow.id, 
+                            isActive: !flow.isActive 
+                          })}
+                          disabled={toggleFlowStatus.isPending}
+                        >
+                          {flow.isActive ? 'Desactivar' : 'Activar'}
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Rendimiento por Categoría</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {categories.slice(1).map((category) => {
+                    const categoryTemplates = templates.filter(t => t.category === category);
+                    const avgRating = categoryTemplates.reduce((sum, t) => sum + t.rating, 0) / categoryTemplates.length;
+                    return (
+                      <div key={category} className="flex items-center justify-between">
+                        <span>{category}</span>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-500">{categoryTemplates.length} templates</span>
+                          <span className="font-medium">⭐ {avgRating.toFixed(1)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Templates Más Populares</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {templates
+                    .sort((a, b) => b.usageCount - a.usageCount)
+                    .slice(0, 5)
+                    .map((template) => (
+                      <div key={template.id} className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          {template.icon}
+                          <span className="text-sm">{template.name}</span>
+                        </div>
+                        <span className="font-medium">{template.usageCount.toLocaleString()}</span>
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

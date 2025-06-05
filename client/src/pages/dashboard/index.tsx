@@ -22,19 +22,55 @@ export function Dashboard() {
     { value: "365", label: "Último año" }
   ];
 
-  const handleExport = () => {
-    toast({
-      title: "Exportando datos",
-      description: "Se está generando tu reporte. Te llegará por email en unos minutos.",
-    });
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    console.log("Export button clicked!");
+    setIsExporting(true);
     
-    // Simulate export process
-    setTimeout(() => {
+    try {
       toast({
-        title: "Reporte generado",
-        description: "El reporte ha sido enviado a tu email exitosamente.",
+        title: "Exportando datos",
+        description: "Generando reporte del dashboard...",
       });
-    }, 3000);
+      
+      // Create a CSV-like export
+      const csvData = [
+        "Métrica,Valor,Período",
+        `Chatbots Activos,${statsData.activeChatbots.value},${periodOptions.find(p => p.value === selectedPeriod)?.label}`,
+        `Mensajes Enviados,${statsData.messagesSent.value},${periodOptions.find(p => p.value === selectedPeriod)?.label}`,
+        `Nuevos Contactos,${statsData.newContacts.value},${periodOptions.find(p => p.value === selectedPeriod)?.label}`,
+        `Tasa de Respuesta,${statsData.responseRate.value},${periodOptions.find(p => p.value === selectedPeriod)?.label}`
+      ].join('\n');
+      
+      // Create and download file
+      const blob = new Blob([csvData], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dashboard-reporte-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      setTimeout(() => {
+        toast({
+          title: "Reporte exportado",
+          description: "El archivo CSV se ha descargado exitosamente.",
+        });
+        setIsExporting(false);
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Error exporting:', error);
+      toast({
+        title: "Error al exportar",
+        description: "No se pudo generar el reporte. Inténtalo de nuevo.",
+        variant: "destructive"
+      });
+      setIsExporting(false);
+    }
   };
   
   // In a real application, we would fetch this data from the API
@@ -104,9 +140,10 @@ export function Dashboard() {
               variant="default" 
               className="px-4 py-2 text-sm"
               onClick={handleExport}
+              disabled={isExporting}
             >
               <RiDownload2Line className="mr-2" />
-              Exportar
+              {isExporting ? "Exportando..." : "Exportar"}
             </Button>
           </div>
         </div>
