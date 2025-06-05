@@ -23,6 +23,7 @@ import AIAdvanced from "@/pages/ai-advanced";
 import Marketing from "@/pages/marketing";
 import Reports from "@/pages/reports";
 import Store from "@/pages/store";
+import Multimedia from "@/pages/multimedia";
 import { useAuth } from "@/hooks/use-auth-simple";
 
 function Router() {
@@ -130,6 +131,11 @@ function Router() {
           <Route path="/store">
             <Layout>
               <Store />
+            </Layout>
+          </Route>
+          <Route path="/multimedia">
+            <Layout>
+              <Multimedia />
             </Layout>
           </Route>
           <Route path="/campaigns">
