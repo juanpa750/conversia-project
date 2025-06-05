@@ -25,6 +25,7 @@ import Marketing from "@/pages/marketing";
 import Reports from "@/pages/reports";
 import Store from "@/pages/store";
 import Multimedia from "@/pages/multimedia";
+import Templates from "@/pages/templates";
 import { useAuth } from "@/hooks/use-auth-simple";
 
 function Router() {
@@ -173,7 +174,7 @@ function Router() {
           </Route>
           <Route path="/templates">
             <Layout>
-              <ChatbotTemplates />
+              <Templates />
             </Layout>
           </Route>
           <Route path="/reports">
