@@ -17,10 +17,6 @@ import SubscriptionCheckout from "@/pages/subscription/checkout";
 import Settings from "@/pages/settings";
 import Support from "@/pages/support";
 import CRMDashboard from "@/pages/crm";
-import CRMContacts from "@/pages/crm/contacts";
-import CRMCampaigns from "@/pages/crm/campaigns";
-import CRMAnalytics from "@/pages/crm/analytics";
-import CRMReports from "@/pages/crm/reports";
 import WhatsAppConnect from "@/pages/integrations/whatsapp-connect";
 import WhatsAppBotConfig from "@/pages/integrations/whatsapp-bot";
 import AIAdvanced from "@/pages/ai-advanced";
@@ -83,26 +79,6 @@ function Router() {
           <Route path="/crm">
             <Layout>
               <CRMDashboard />
-            </Layout>
-          </Route>
-          <Route path="/crm/contacts">
-            <Layout>
-              <CRMContacts />
-            </Layout>
-          </Route>
-          <Route path="/crm/campaigns">
-            <Layout>
-              <CRMCampaigns />
-            </Layout>
-          </Route>
-          <Route path="/crm/analytics">
-            <Layout>
-              <CRMAnalytics />
-            </Layout>
-          </Route>
-          <Route path="/crm/reports">
-            <Layout>
-              <CRMReports />
             </Layout>
           </Route>
           <Route path="/clients">

@@ -194,7 +194,7 @@ export function Sidebar() {
         <div className="flex items-center">
           <Avatar className="h-10 w-10 border border-gray-200">
             <AvatarImage 
-              src={user?.profileImageUrl || "https://images.unsplash.com/photo-1568602471122-7832951cc4c5"} 
+              src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5" 
               alt="Profile photo" 
             />
             <AvatarFallback>
