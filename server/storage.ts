@@ -13,6 +13,7 @@ import {
   analytics,
   whatsappIntegrations,
   userPreferences,
+  multimediaFiles,
   type User,
   type UpsertUser,
   type InsertUser,
@@ -32,6 +33,8 @@ import {
   type WhatsappIntegration,
   type InsertWhatsappIntegration,
   type UserPreference,
+  type MultimediaFile,
+  type InsertMultimediaFile,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -86,6 +89,12 @@ export interface IStorage {
   // User preferences operations
   getUserPreferences(userId: string): Promise<UserPreference | undefined>;
   updateUserPreferences(userId: string, data: Partial<UserPreference>): Promise<UserPreference>;
+
+  // Multimedia operations
+  getMultimediaFiles(userId: string): Promise<MultimediaFile[]>;
+  getMultimediaFile(id: number): Promise<MultimediaFile | undefined>;
+  createMultimediaFile(data: InsertMultimediaFile): Promise<MultimediaFile>;
+  deleteMultimediaFile(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -396,6 +405,37 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return preferences;
+  }
+
+  // Multimedia operations
+  async getMultimediaFiles(userId: string): Promise<MultimediaFile[]> {
+    return await db
+      .select()
+      .from(multimediaFiles)
+      .where(eq(multimediaFiles.userId, userId))
+      .orderBy(desc(multimediaFiles.createdAt));
+  }
+
+  async getMultimediaFile(id: number): Promise<MultimediaFile | undefined> {
+    const [file] = await db
+      .select()
+      .from(multimediaFiles)
+      .where(eq(multimediaFiles.id, id));
+    return file;
+  }
+
+  async createMultimediaFile(data: InsertMultimediaFile): Promise<MultimediaFile> {
+    const [file] = await db
+      .insert(multimediaFiles)
+      .values(data)
+      .returning();
+    return file;
+  }
+
+  async deleteMultimediaFile(id: number): Promise<void> {
+    await db
+      .delete(multimediaFiles)
+      .where(eq(multimediaFiles.id, id));
   }
 }
 
