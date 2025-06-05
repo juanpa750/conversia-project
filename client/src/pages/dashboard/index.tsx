@@ -7,11 +7,9 @@ import ChartSection from "@/components/dashboard/chart-section";
 import RecentConversations from "@/components/dashboard/recent-conversations";
 import QuickActions from "@/components/dashboard/quick-actions";
 import PlanCard from "@/components/dashboard/plan-card";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { RiDownload2Line, RiCalendarLine, RiArrowDownSLine } from "@/lib/icons";
 
 export function Dashboard() {
-  const { t } = useLanguage();
   
   // In a real application, we would fetch this data from the API
   const { data: statsData } = useQuery({
