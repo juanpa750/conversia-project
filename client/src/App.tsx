@@ -26,6 +26,7 @@ import Reports from "@/pages/reports";
 import Store from "@/pages/store";
 import Multimedia from "@/pages/multimedia";
 import Templates from "@/pages/templates";
+import CRMAdvanced from "@/pages/crm/advanced";
 import { useAuth } from "@/hooks/use-auth-simple";
 
 function Router() {
@@ -81,6 +82,11 @@ function Router() {
           <Route path="/crm">
             <Layout>
               <CRMDashboard />
+            </Layout>
+          </Route>
+          <Route path="/crm/advanced">
+            <Layout>
+              <CRMAdvanced />
             </Layout>
           </Route>
           <Route path="/clients">

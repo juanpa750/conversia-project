@@ -8,15 +8,12 @@ interface LanguageContextType {
   t: (key: string) => string;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
-
-// Traducciones
 const translations = {
   es: {
     // Login
     'login.title': 'BotMaster',
     'login.subtitle': 'Inicia sesión para gestionar tus chatbots',
-    'login.email': 'Email',
+    'login.email': 'Correo electrónico',
     'login.password': 'Contraseña',
     'login.submit': 'Iniciar Sesión',
     'login.noAccount': '¿No tienes cuenta?',
@@ -26,97 +23,91 @@ const translations = {
     
     // Dashboard
     'dashboard.title': 'Panel de Control',
-    'dashboard.subtitle': 'Resumen general de tu plataforma de chatbots',
-    'dashboard.welcome': 'Bienvenido de vuelta',
-    'dashboard.stats': 'Estadísticas Generales',
-    
-    // Multimedia
-    'multimedia.title': 'Gestión de Archivos Multimedia',
-    'multimedia.subtitle': 'Administra imágenes, videos y audios para tus chatbots',
-    'multimedia.uploadArea': 'Arrastra archivos aquí o haz clic para seleccionar',
-    'multimedia.supportedFormats': 'Soporta imágenes (JPG, PNG), videos (MP4, MOV) y audios (MP3, M4A)',
-    'multimedia.selectFiles': 'Seleccionar Archivos',
-    'multimedia.uploadSuccess': 'Archivo subido exitosamente',
-    'multimedia.fileUploadedSuccessfully': 'El archivo se ha subido correctamente',
-    'multimedia.uploadError': 'Error al subir archivo',
-    'multimedia.deleteSuccess': 'Archivo eliminado',
-    'multimedia.fileDeletedSuccessfully': 'El archivo se ha eliminado correctamente',
-    'multimedia.noFiles': 'No hay archivos multimedia',
-    'multimedia.noFilesDescription': 'Sube tus primeros archivos para comenzar',
+    'dashboard.subtitle': 'Gestiona tus chatbots y supervisa el rendimiento',
+    'dashboard.quickActions': 'Acciones Rápidas',
+    'dashboard.createBot': 'Crear Chatbot',
+    'dashboard.viewAnalytics': 'Ver Analíticas',
+    'dashboard.manageCRM': 'Gestionar CRM',
+    'dashboard.whatsappConnect': 'Conectar WhatsApp',
     
     // Navigation
-    'nav.dashboard': 'Panel de Control',
+    'nav.dashboard': 'Inicio',
     'nav.chatbots': 'Chatbots',
-    'nav.analytics': 'Analíticas',
     'nav.clients': 'Clientes',
+    'nav.analytics': 'Analíticas',
+    'nav.crm': 'CRM',
+    'nav.templates': 'Templates',
+    'nav.multimedia': 'Multimedia',
     'nav.settings': 'Configuración',
     'nav.support': 'Soporte',
-    'nav.integrations': 'Integraciones',
-    'nav.marketing': 'Marketing',
-    'nav.crm': 'CRM',
-    'nav.reports': 'Reportes',
     'nav.subscription': 'Suscripción',
     'nav.store': 'Tienda',
-    
-    // Settings
-    'settings.title': 'Configuración',
-    'settings.profile': 'Perfil',
-    'settings.password': 'Contraseña',
-    'settings.subscription': 'Suscripción',
-    'settings.preferences': 'Preferencias',
-    
-    // Profile
-    'profile.title': 'Información del Perfil',
-    'profile.subtitle': 'Actualiza tu información personal y de contacto',
+    'nav.campaigns': 'Campañas',
+    'nav.reports': 'Reportes',
+    'nav.integrations': 'Integraciones',
+    'nav.aiAdvanced': 'IA Avanzada',
+    'nav.crmAdvanced': 'CRM Avanzado',
     
     // Common
-    'common.success': 'Éxito',
-    'common.error': 'Error',
     'common.save': 'Guardar',
     'common.cancel': 'Cancelar',
     'common.delete': 'Eliminar',
     'common.edit': 'Editar',
-    'common.add': 'Agregar',
+    'common.create': 'Crear',
+    'common.back': 'Volver',
+    'common.next': 'Siguiente',
+    'common.previous': 'Anterior',
+    'common.loading': 'Cargando...',
     'common.search': 'Buscar',
     'common.filter': 'Filtrar',
-    'common.loading': 'Cargando...',
+    'common.actions': 'Acciones',
+    'common.status': 'Estado',
+    'common.name': 'Nombre',
+    'common.email': 'Email',
+    'common.phone': 'Teléfono',
+    'common.date': 'Fecha',
+    'common.yes': 'Sí',
+    'common.no': 'No',
+    'common.confirm': 'Confirmar',
+    'common.close': 'Cerrar',
+    
+    // Settings
+    'settings.profile': 'Perfil',
+    'settings.password': 'Contraseña',
+    'settings.subscription': 'Suscripción',
+    'settings.preferences': 'Preferencias',
+    'settings.notifications': 'Notificaciones',
+    'settings.language': 'Idioma',
+    'settings.timezone': 'Zona Horaria',
+    'settings.theme': 'Tema',
+    
+    // Profile
     'profile.firstName': 'Nombre',
     'profile.lastName': 'Apellido',
-    'profile.email': 'Email',
     'profile.company': 'Empresa',
-    'profile.phone': 'Teléfono',
     'profile.bio': 'Biografía',
-    'profile.save': 'Guardar Cambios',
+    'profile.avatar': 'Avatar',
+    'profile.save': 'Guardar Perfil',
     'profile.saving': 'Guardando...',
     
     // Password
-    'password.title': 'Cambiar Contraseña',
-    'password.subtitle': 'Actualiza tu contraseña para mantener tu cuenta segura',
     'password.current': 'Contraseña Actual',
     'password.new': 'Nueva Contraseña',
-    'password.confirm': 'Confirmar Nueva Contraseña',
-    'password.save': 'Actualizar Contraseña',
-    'password.saving': 'Actualizando...',
+    'password.confirm': 'Confirmar Contraseña',
+    'password.change': 'Cambiar Contraseña',
+    'password.changing': 'Cambiando...',
     
     // Subscription
-    'subscription.title': 'Plan de Suscripción',
-    'subscription.subtitle': 'Gestiona tu plan y facturación',
     'subscription.current': 'Plan Actual',
-    'subscription.status': 'Estado',
-    'subscription.active': 'Activo',
-    'subscription.daysLeft': 'días restantes',
-    'subscription.renewal': 'Próxima renovación',
     'subscription.upgrade': 'Mejorar Plan',
-    'subscription.cancel': 'Cancelar Suscripción',
+    'subscription.billing': 'Facturación',
+    'subscription.usage': 'Uso',
     
     // Preferences
-    'preferences.title': 'Preferencias Generales',
-    'preferences.subtitle': 'Personaliza tu experiencia en la plataforma',
-    'preferences.language': 'Idioma',
-    'preferences.timezone': 'Zona Horaria',
-    'preferences.notifications': 'Notificaciones',
-    'preferences.dateFormat': 'Formato de fecha',
-    'preferences.timeFormat': 'Formato de hora',
+    'preferences.notifications': 'Recibir notificaciones por email',
+    'preferences.marketing': 'Recibir emails de marketing',
+    'preferences.language': 'Idioma de la interfaz',
+    'preferences.timezone': 'Zona horaria',
     'preferences.save': 'Guardar Preferencias',
     'preferences.saving': 'Guardando...',
     
@@ -133,6 +124,29 @@ const translations = {
     'multimedia.fileDeletedSuccessfully': 'El archivo se ha eliminado correctamente',
     'multimedia.noFiles': 'No hay archivos multimedia',
     'multimedia.noFilesDescription': 'Sube tus primeros archivos para comenzar',
+    
+    // Templates
+    'templates.title': 'Templates de Chatbots',
+    'templates.subtitle': 'Flujos prediseñados para diferentes industrias',
+    'templates.useTemplate': 'Usar Template',
+    'templates.preview': 'Vista Previa',
+    'templates.configure': 'Configurar',
+    
+    // CRM Advanced
+    'crmAdvanced.title': 'CRM Avanzado',
+    'crmAdvanced.subtitle': 'Herramientas profesionales para gestión de clientes',
+    'crmAdvanced.leadScoring': 'Puntuación de Leads',
+    'crmAdvanced.salesPipeline': 'Pipeline de Ventas',
+    'crmAdvanced.customerSegmentation': 'Segmentación de Clientes',
+    'crmAdvanced.automationWorkflows': 'Flujos de Automatización',
+    'crmAdvanced.advancedReports': 'Reportes Avanzados',
+    'crmAdvanced.apiIntegrations': 'Integraciones API',
+    'crmAdvanced.configure': 'Configurar',
+    'crmAdvanced.explore': 'Explorar',
+    
+    // Login page
+    'loginPage.welcome': 'Bienvenido a BotMaster',
+    'loginPage.description': 'La plataforma líder para gestión de chatbots de WhatsApp'
   },
   en: {
     // Login
@@ -148,115 +162,130 @@ const translations = {
     
     // Dashboard
     'dashboard.title': 'Dashboard',
-    'dashboard.welcome': 'Bienvenido de nuevo, aquí tienes un resumen de tu actividad',
+    'dashboard.subtitle': 'Manage your chatbots and monitor performance',
+    'dashboard.quickActions': 'Quick Actions',
+    'dashboard.createBot': 'Create Chatbot',
+    'dashboard.viewAnalytics': 'View Analytics',
+    'dashboard.manageCRM': 'Manage CRM',
+    'dashboard.whatsappConnect': 'Connect WhatsApp',
     
     // Navigation
     'nav.dashboard': 'Dashboard',
     'nav.chatbots': 'Chatbots',
-    'nav.analytics': 'Analytics',
     'nav.clients': 'Clients',
+    'nav.analytics': 'Analytics',
+    'nav.crm': 'CRM',
+    'nav.templates': 'Templates',
+    'nav.multimedia': 'Multimedia',
     'nav.settings': 'Settings',
     'nav.support': 'Support',
-    'nav.integrations': 'Integrations',
-    'nav.marketing': 'Marketing',
-    'nav.crm': 'CRM',
-    'nav.reports': 'Reports',
     'nav.subscription': 'Subscription',
     'nav.store': 'Store',
+    'nav.campaigns': 'Campaigns',
+    'nav.reports': 'Reports',
+    'nav.integrations': 'Integrations',
+    'nav.aiAdvanced': 'Advanced AI',
+    'nav.crmAdvanced': 'Advanced CRM',
+    
+    // Common
+    'common.save': 'Save',
+    'common.cancel': 'Cancel',
+    'common.delete': 'Delete',
+    'common.edit': 'Edit',
+    'common.create': 'Create',
+    'common.back': 'Back',
+    'common.next': 'Next',
+    'common.previous': 'Previous',
+    'common.loading': 'Loading...',
+    'common.search': 'Search',
+    'common.filter': 'Filter',
+    'common.actions': 'Actions',
+    'common.status': 'Status',
+    'common.name': 'Name',
+    'common.email': 'Email',
+    'common.phone': 'Phone',
+    'common.date': 'Date',
+    'common.yes': 'Yes',
+    'common.no': 'No',
+    'common.confirm': 'Confirm',
+    'common.close': 'Close',
     
     // Settings
-    'settings.title': 'Settings',
     'settings.profile': 'Profile',
     'settings.password': 'Password',
     'settings.subscription': 'Subscription',
     'settings.preferences': 'Preferences',
+    'settings.notifications': 'Notifications',
+    'settings.language': 'Language',
+    'settings.timezone': 'Timezone',
+    'settings.theme': 'Theme',
     
     // Profile
-    'profile.title': 'Profile Information',
-    'profile.subtitle': 'Update your personal and contact information',
     'profile.firstName': 'First Name',
     'profile.lastName': 'Last Name',
-    'profile.email': 'Email',
     'profile.company': 'Company',
-    'profile.phone': 'Phone',
     'profile.bio': 'Bio',
-    'profile.save': 'Save Changes',
+    'profile.avatar': 'Avatar',
+    'profile.save': 'Save Profile',
     'profile.saving': 'Saving...',
     
     // Password
-    'password.title': 'Change Password',
-    'password.subtitle': 'Update your password to keep your account secure',
     'password.current': 'Current Password',
     'password.new': 'New Password',
-    'password.confirm': 'Confirm New Password',
-    'password.save': 'Update Password',
-    'password.saving': 'Updating...',
+    'password.confirm': 'Confirm Password',
+    'password.change': 'Change Password',
+    'password.changing': 'Changing...',
     
     // Subscription
-    'subscription.title': 'Subscription Plan',
-    'subscription.subtitle': 'Manage your plan and billing',
     'subscription.current': 'Current Plan',
-    'subscription.status': 'Status',
-    'subscription.active': 'Active',
-    'subscription.daysLeft': 'days remaining',
-    'subscription.renewal': 'Next renewal',
     'subscription.upgrade': 'Upgrade Plan',
-    'subscription.cancel': 'Cancel Subscription',
+    'subscription.billing': 'Billing',
+    'subscription.usage': 'Usage',
     
     // Preferences
-    'preferences.title': 'General Preferences',
-    'preferences.subtitle': 'Customize your platform experience',
-    'preferences.language': 'Language',
+    'preferences.notifications': 'Receive email notifications',
+    'preferences.marketing': 'Receive marketing emails',
+    'preferences.language': 'Interface language',
     'preferences.timezone': 'Timezone',
-    'preferences.notifications': 'Notifications',
-    'preferences.dateFormat': 'Date format',
-    'preferences.timeFormat': 'Time format',
     'preferences.save': 'Save Preferences',
     'preferences.saving': 'Saving...',
     
     // Multimedia
-    'multimedia.title': 'Multimedia',
-    'multimedia.subtitle': 'Manage your images and videos for chatbots',
-    'multimedia.upload': 'Upload Files',
-    'multimedia.library': 'Library',
-    'multimedia.uploadFiles': 'Upload Multimedia Files',
-    'multimedia.uploadFilesDesc': 'Upload images and videos to use in your chatbots',
-    'multimedia.dragDrop': 'Drag files here or click to select',
-    'multimedia.dragDropDesc': 'Supports images (JPG, PNG, GIF) and videos (MP4, MOV)',
-    'multimedia.selectedFiles': 'Selected Files',
-    'multimedia.uploadNow': 'Upload Files',
-    'multimedia.uploading': 'Uploading...',
-    'multimedia.cancel': 'Cancel',
-    'multimedia.mediaLibrary': 'Media Library',
-    'multimedia.mediaLibraryDesc': 'Manage all your multimedia files',
-    'multimedia.noFiles': 'No multimedia files',
-    'multimedia.image': 'Image',
-    'multimedia.video': 'Video',
-    'multimedia.uploadSuccess': 'Files uploaded',
-    'multimedia.uploadSuccessDesc': 'Files uploaded successfully',
-    'multimedia.uploadError': 'Upload error',
-    'multimedia.deleteSuccess': 'File deleted',
-    'multimedia.deleteSuccessDesc': 'File deleted successfully',
-    'multimedia.deleteError': 'Delete error',
-    'multimedia.description': 'Manage your image and video files',
-    'multimedia.files': 'files',
-    'multimedia.dragDropOrClick': 'Drag and drop files here or click to select',
-    'multimedia.supportedFormats': 'Supported formats: JPG, PNG, MP4, MOV (max 10MB)',
+    'multimedia.title': 'Multimedia File Management',
+    'multimedia.subtitle': 'Manage images, videos and audio for your chatbots',
+    'multimedia.uploadArea': 'Drag files here or click to select',
+    'multimedia.supportedFormats': 'Supports images (JPG, PNG), videos (MP4, MOV) and audio (MP3, M4A)',
     'multimedia.selectFiles': 'Select Files',
-    'multimedia.searchFiles': 'Search files...',
-    'multimedia.allFiles': 'All files',
-    'multimedia.images': 'Images',
-    'multimedia.videos': 'Videos',
-    'multimedia.noFilesFound': 'No files found',
-    'multimedia.noFilesYet': 'You have no files yet',
-    'multimedia.tryDifferentSearch': 'Try a different search',
-    'multimedia.uploadFirstFile': 'Upload your first file to get started',
-    'multimedia.fileUploadedSuccessfully': 'File uploaded successfully',
-    'multimedia.fileDeletedSuccessfully': 'File deleted successfully',
-    'multimedia.invalidFileType': 'Invalid file type',
-    'multimedia.onlyImagesAndVideos': 'Only images and videos are allowed',
-    'multimedia.fileTooLarge': 'File too large',
-    'multimedia.maxFileSize': 'Maximum file size is 10MB',
+    'multimedia.uploadSuccess': 'File uploaded successfully',
+    'multimedia.fileUploadedSuccessfully': 'The file has been uploaded successfully',
+    'multimedia.uploadError': 'Error uploading file',
+    'multimedia.deleteSuccess': 'File deleted',
+    'multimedia.fileDeletedSuccessfully': 'The file has been deleted successfully',
+    'multimedia.noFiles': 'No multimedia files',
+    'multimedia.noFilesDescription': 'Upload your first files to get started',
+    
+    // Templates
+    'templates.title': 'Chatbot Templates',
+    'templates.subtitle': 'Pre-designed flows for different industries',
+    'templates.useTemplate': 'Use Template',
+    'templates.preview': 'Preview',
+    'templates.configure': 'Configure',
+    
+    // CRM Advanced
+    'crmAdvanced.title': 'Advanced CRM',
+    'crmAdvanced.subtitle': 'Professional tools for customer management',
+    'crmAdvanced.leadScoring': 'Lead Scoring',
+    'crmAdvanced.salesPipeline': 'Sales Pipeline',
+    'crmAdvanced.customerSegmentation': 'Customer Segmentation',
+    'crmAdvanced.automationWorkflows': 'Automation Workflows',
+    'crmAdvanced.advancedReports': 'Advanced Reports',
+    'crmAdvanced.apiIntegrations': 'API Integrations',
+    'crmAdvanced.configure': 'Configure',
+    'crmAdvanced.explore': 'Explore',
+    
+    // Login page
+    'loginPage.welcome': 'Welcome to BotMaster',
+    'loginPage.description': 'The leading platform for WhatsApp chatbot management'
   },
   pt: {
     // Login
@@ -270,133 +299,154 @@ const translations = {
     'login.emailPlaceholder': 'seu@email.com',
     'login.passwordPlaceholder': 'Sua senha',
     
+    // Dashboard
+    'dashboard.title': 'Painel de Controle',
+    'dashboard.subtitle': 'Gerencie seus chatbots e monitore o desempenho',
+    'dashboard.quickActions': 'Ações Rápidas',
+    'dashboard.createBot': 'Criar Chatbot',
+    'dashboard.viewAnalytics': 'Ver Analíticas',
+    'dashboard.manageCRM': 'Gerenciar CRM',
+    'dashboard.whatsappConnect': 'Conectar WhatsApp',
+    
     // Navigation
-    'nav.dashboard': 'Painel',
+    'nav.dashboard': 'Início',
     'nav.chatbots': 'Chatbots',
-    'nav.analytics': 'Análises',
     'nav.clients': 'Clientes',
+    'nav.analytics': 'Analíticas',
+    'nav.crm': 'CRM',
+    'nav.templates': 'Templates',
+    'nav.multimedia': 'Multimídia',
     'nav.settings': 'Configurações',
     'nav.support': 'Suporte',
-    'nav.integrations': 'Integrações',
-    'nav.marketing': 'Marketing',
-    'nav.crm': 'CRM',
-    'nav.reports': 'Relatórios',
     'nav.subscription': 'Assinatura',
     'nav.store': 'Loja',
+    'nav.campaigns': 'Campanhas',
+    'nav.reports': 'Relatórios',
+    'nav.integrations': 'Integrações',
+    'nav.aiAdvanced': 'IA Avançada',
+    'nav.crmAdvanced': 'CRM Avançado',
+    
+    // Common
+    'common.save': 'Salvar',
+    'common.cancel': 'Cancelar',
+    'common.delete': 'Excluir',
+    'common.edit': 'Editar',
+    'common.create': 'Criar',
+    'common.back': 'Voltar',
+    'common.next': 'Próximo',
+    'common.previous': 'Anterior',
+    'common.loading': 'Carregando...',
+    'common.search': 'Pesquisar',
+    'common.filter': 'Filtrar',
+    'common.actions': 'Ações',
+    'common.status': 'Status',
+    'common.name': 'Nome',
+    'common.email': 'Email',
+    'common.phone': 'Telefone',
+    'common.date': 'Data',
+    'common.yes': 'Sim',
+    'common.no': 'Não',
+    'common.confirm': 'Confirmar',
+    'common.close': 'Fechar',
     
     // Settings
-    'settings.title': 'Configurações',
     'settings.profile': 'Perfil',
     'settings.password': 'Senha',
     'settings.subscription': 'Assinatura',
     'settings.preferences': 'Preferências',
+    'settings.notifications': 'Notificações',
+    'settings.language': 'Idioma',
+    'settings.timezone': 'Fuso Horário',
+    'settings.theme': 'Tema',
     
     // Profile
-    'profile.title': 'Informações do Perfil',
-    'profile.subtitle': 'Atualize suas informações pessoais e de contato',
     'profile.firstName': 'Nome',
     'profile.lastName': 'Sobrenome',
-    'profile.email': 'Email',
     'profile.company': 'Empresa',
-    'profile.phone': 'Telefone',
-    'profile.bio': 'Bio',
-    'profile.save': 'Salvar Alterações',
+    'profile.bio': 'Biografia',
+    'profile.avatar': 'Avatar',
+    'profile.save': 'Salvar Perfil',
     'profile.saving': 'Salvando...',
     
     // Password
-    'password.title': 'Alterar Senha',
-    'password.subtitle': 'Atualize sua senha para manter sua conta segura',
     'password.current': 'Senha Atual',
     'password.new': 'Nova Senha',
-    'password.confirm': 'Confirmar Nova Senha',
-    'password.save': 'Atualizar Senha',
-    'password.saving': 'Atualizando...',
+    'password.confirm': 'Confirmar Senha',
+    'password.change': 'Alterar Senha',
+    'password.changing': 'Alterando...',
     
     // Subscription
-    'subscription.title': 'Plano de Assinatura',
-    'subscription.subtitle': 'Gerencie seu plano e faturamento',
     'subscription.current': 'Plano Atual',
-    'subscription.status': 'Status',
-    'subscription.active': 'Ativo',
-    'subscription.daysLeft': 'dias restantes',
-    'subscription.renewal': 'Próxima renovação',
-    'subscription.upgrade': 'Melhorar Plano',
-    'subscription.cancel': 'Cancelar Assinatura',
+    'subscription.upgrade': 'Atualizar Plano',
+    'subscription.billing': 'Faturamento',
+    'subscription.usage': 'Uso',
     
     // Preferences
-    'preferences.title': 'Preferências Gerais',
-    'preferences.subtitle': 'Personalize sua experiência na plataforma',
-    'preferences.language': 'Idioma',
-    'preferences.timezone': 'Fuso Horário',
-    'preferences.notifications': 'Notificações',
-    'preferences.dateFormat': 'Formato de data',
-    'preferences.timeFormat': 'Formato de hora',
+    'preferences.notifications': 'Receber notificações por email',
+    'preferences.marketing': 'Receber emails de marketing',
+    'preferences.language': 'Idioma da interface',
+    'preferences.timezone': 'Fuso horário',
     'preferences.save': 'Salvar Preferências',
     'preferences.saving': 'Salvando...',
     
     // Multimedia
-    'multimedia.title': 'Multimídia',
-    'multimedia.subtitle': 'Gerencie suas imagens e vídeos para chatbots',
-    'multimedia.upload': 'Enviar Arquivos',
-    'multimedia.library': 'Biblioteca',
-    'multimedia.uploadFiles': 'Enviar Arquivos Multimídia',
-    'multimedia.uploadFilesDesc': 'Envie imagens e vídeos para usar em seus chatbots',
-    'multimedia.dragDrop': 'Arraste arquivos aqui ou clique para selecionar',
-    'multimedia.dragDropDesc': 'Suporta imagens (JPG, PNG, GIF) e vídeos (MP4, MOV)',
-    'multimedia.selectedFiles': 'Arquivos Selecionados',
-    'multimedia.uploadNow': 'Enviar Arquivos',
-    'multimedia.uploading': 'Enviando...',
-    'multimedia.cancel': 'Cancelar',
-    'multimedia.mediaLibrary': 'Biblioteca de Mídia',
-    'multimedia.mediaLibraryDesc': 'Gerencie todos os seus arquivos multimídia',
-    'multimedia.noFiles': 'Nenhum arquivo multimídia',
-    'multimedia.image': 'Imagem',
-    'multimedia.video': 'Vídeo',
-    'multimedia.uploadSuccess': 'Arquivos enviados',
-    'multimedia.uploadSuccessDesc': 'Arquivos enviados com sucesso',
-    'multimedia.uploadError': 'Erro no envio',
-    'multimedia.deleteSuccess': 'Arquivo excluído',
-    'multimedia.deleteSuccessDesc': 'Arquivo excluído com sucesso',
-    'multimedia.deleteError': 'Erro ao excluir',
-    'multimedia.description': 'Gerencie seus arquivos de imagem e vídeo',
-    'multimedia.files': 'arquivos',
-    'multimedia.dragDropOrClick': 'Arraste e solte arquivos aqui ou clique para selecionar',
-    'multimedia.supportedFormats': 'Formatos suportados: JPG, PNG, MP4, MOV (máx. 10MB)',
+    'multimedia.title': 'Gestão de Arquivos Multimídia',
+    'multimedia.subtitle': 'Gerencie imagens, vídeos e áudios para seus chatbots',
+    'multimedia.uploadArea': 'Arraste arquivos aqui ou clique para selecionar',
+    'multimedia.supportedFormats': 'Suporta imagens (JPG, PNG), vídeos (MP4, MOV) e áudios (MP3, M4A)',
     'multimedia.selectFiles': 'Selecionar Arquivos',
-    'multimedia.searchFiles': 'Buscar arquivos...',
-    'multimedia.allFiles': 'Todos os arquivos',
-    'multimedia.images': 'Imagens',
-    'multimedia.videos': 'Vídeos',
-    'multimedia.noFilesFound': 'Nenhum arquivo encontrado',
-    'multimedia.noFilesYet': 'Você ainda não tem arquivos',
-    'multimedia.tryDifferentSearch': 'Tente uma busca diferente',
-    'multimedia.uploadFirstFile': 'Envie seu primeiro arquivo para começar',
-    'multimedia.fileUploadedSuccessfully': 'Arquivo enviado com sucesso',
-    'multimedia.fileDeletedSuccessfully': 'Arquivo excluído com sucesso',
-    'multimedia.invalidFileType': 'Tipo de arquivo inválido',
-    'multimedia.onlyImagesAndVideos': 'Apenas imagens e vídeos são permitidos',
-    'multimedia.fileTooLarge': 'Arquivo muito grande',
-    'multimedia.maxFileSize': 'Tamanho máximo do arquivo é 10MB',
-  },
+    'multimedia.uploadSuccess': 'Arquivo enviado com sucesso',
+    'multimedia.fileUploadedSuccessfully': 'O arquivo foi enviado com sucesso',
+    'multimedia.uploadError': 'Erro ao enviar arquivo',
+    'multimedia.deleteSuccess': 'Arquivo excluído',
+    'multimedia.fileDeletedSuccessfully': 'O arquivo foi excluído com sucesso',
+    'multimedia.noFiles': 'Nenhum arquivo multimídia',
+    'multimedia.noFilesDescription': 'Envie seus primeiros arquivos para começar',
+    
+    // Templates
+    'templates.title': 'Templates de Chatbots',
+    'templates.subtitle': 'Fluxos pré-desenhados para diferentes indústrias',
+    'templates.useTemplate': 'Usar Template',
+    'templates.preview': 'Visualizar',
+    'templates.configure': 'Configurar',
+    
+    // CRM Advanced
+    'crmAdvanced.title': 'CRM Avançado',
+    'crmAdvanced.subtitle': 'Ferramentas profissionais para gestão de clientes',
+    'crmAdvanced.leadScoring': 'Pontuação de Leads',
+    'crmAdvanced.salesPipeline': 'Pipeline de Vendas',
+    'crmAdvanced.customerSegmentation': 'Segmentação de Clientes',
+    'crmAdvanced.automationWorkflows': 'Fluxos de Automação',
+    'crmAdvanced.advancedReports': 'Relatórios Avançados',
+    'crmAdvanced.apiIntegrations': 'Integrações API',
+    'crmAdvanced.configure': 'Configurar',
+    'crmAdvanced.explore': 'Explorar',
+    
+    // Login page
+    'loginPage.welcome': 'Bem-vindo ao BotMaster',
+    'loginPage.description': 'A plataforma líder para gestão de chatbots do WhatsApp'
+  }
 };
+
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem('botmaster-language');
+    const saved = localStorage.getItem('language');
     return (saved as Language) || 'es';
   });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem('botmaster-language', lang);
+    localStorage.setItem('language', lang);
   };
 
   const t = (key: string): string => {
-    return (translations[language] as any)[key] || key;
+    return translations[language][key as keyof typeof translations[typeof language]] || key;
   };
 
   useEffect(() => {
-    document.documentElement.lang = language;
+    localStorage.setItem('language', language);
   }, [language]);
 
   return (
@@ -408,13 +458,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
 export function useLanguage() {
   const context = useContext(LanguageContext);
-  if (!context) {
-    // Return default values instead of throwing error to prevent crashes
-    return {
-      language: 'es' as Language,
-      setLanguage: () => {},
-      t: (key: string) => key
-    };
+  if (context === undefined) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
   }
   return context;
 }

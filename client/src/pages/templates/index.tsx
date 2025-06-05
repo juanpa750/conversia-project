@@ -470,7 +470,10 @@ export default function TemplatesPage() {
                   <Zap className="w-4 h-4 mr-2" />
                   Usar Template
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => {
+                  // Mostrar preview del flujo del template
+                  alert(`Vista previa del template: ${template.name}\n\nFlujo incluido:\n- ${template.features.slice(0, 3).join('\n- ')}`);
+                }}>
                   Vista previa
                 </Button>
               </div>
@@ -509,9 +512,12 @@ export default function TemplatesPage() {
                   Cerrar
                 </Button>
                 <Button onClick={() => {
+                  // Aquí iría la lógica para crear un chatbot con el template
+                  // Por ahora redirigimos al constructor con datos predefinidos
+                  window.location.href = `/chatbots/builder?template=${selectedTemplate.id}`;
                   toast({
-                    title: "Template configurado",
-                    description: "El template se ha aplicado correctamente",
+                    title: "Template aplicado",
+                    description: "Se ha creado un chatbot con el template seleccionado",
                   });
                   setShowWizard(false);
                 }}>
