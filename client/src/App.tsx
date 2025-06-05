@@ -222,11 +222,7 @@ function Router() {
               <Reports />
             </Layout>
           </Route>
-          <Route path="*">
-            <Layout>
-              <NotFound />
-            </Layout>
-          </Route>
+          <Route path="*" component={NotFound} />
         </>
       )}
     </Switch>
