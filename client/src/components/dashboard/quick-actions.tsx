@@ -17,16 +17,18 @@ interface QuickActionItemProps {
 
 function QuickActionItem({ href, icon, iconColor, title, description }: QuickActionItemProps) {
   return (
-    <Link href={href} className="flex items-center rounded-lg bg-gray-50 p-3 transition duration-150 hover:bg-gray-100">
-      <div 
-        className={`flex h-10 w-10 items-center justify-center rounded-md ${iconColor}`}
-      >
-        {icon}
-      </div>
-      <div className="ml-3">
-        <h4 className="text-sm font-medium text-gray-900">{title}</h4>
-        <p className="mt-0.5 text-xs text-gray-500">{description}</p>
-      </div>
+    <Link href={href}>
+      <a className="flex items-center rounded-lg bg-gray-50 p-3 transition duration-150 hover:bg-gray-100">
+        <div 
+          className={`flex h-10 w-10 items-center justify-center rounded-md ${iconColor}`}
+        >
+          {icon}
+        </div>
+        <div className="ml-3">
+          <h4 className="text-sm font-medium text-gray-900">{title}</h4>
+          <p className="mt-0.5 text-xs text-gray-500">{description}</p>
+        </div>
+      </a>
     </Link>
   );
 }

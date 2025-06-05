@@ -31,12 +31,14 @@ interface NavItemProps {
 
 function NavItem({ href, icon, children, active }: NavItemProps) {
   return (
-    <Link href={href} className={cn(
-      "flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50",
-      active && "border-r-4 border-primary bg-primary-50 text-gray-900"
-    )}>
-      <span className={cn("mr-3", active && "text-primary")}>{icon}</span>
-      <span>{children}</span>
+    <Link href={href}>
+      <a className={cn(
+        "flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50",
+        active && "border-r-4 border-primary bg-primary-50 text-gray-900"
+      )}>
+        <span className={cn("mr-3", active && "text-primary")}>{icon}</span>
+        <span>{children}</span>
+      </a>
     </Link>
   );
 }
