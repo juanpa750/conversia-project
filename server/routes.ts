@@ -608,6 +608,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Multimedia routes
+  app.get("/api/multimedia", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const files = await storage.getMultimediaFiles(userId);
+      res.json(files);
+    } catch (error) {
+      console.error("Error fetching multimedia files:", error);
+      res.status(500).json({ message: "Failed to fetch multimedia files" });
+    }
+  });
+
+  app.post("/api/multimedia", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const fileData = { ...req.body, userId };
+      const file = await storage.createMultimediaFile(fileData);
+      res.json(file);
+    } catch (error) {
+      console.error("Error creating multimedia file:", error);
+      res.status(500).json({ message: "Failed to create multimedia file" });
+    }
+  });
+
+  app.delete("/api/multimedia/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteMultimediaFile(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting multimedia file:", error);
+      res.status(500).json({ message: "Failed to delete multimedia file" });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;

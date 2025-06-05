@@ -1,119 +1,168 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Upload, Image, Video, Trash2, Download, Eye } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { MultimediaFile } from "@shared/schema";
+import { useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { 
+  Upload, 
+  Image as ImageIcon, 
+  Video, 
+  FileText, 
+  X, 
+  Trash2,
+  Search,
+  Filter,
+  Grid3X3,
+  List
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { MultimediaFile } from '@shared/schema';
 
-export default function Multimedia() {
+export default function MultimediaPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
-  const [dragActive, setDragActive] = useState(false);
   const queryClient = useQueryClient();
+  
+  const [isDragging, setIsDragging] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // Obtener archivos multimedia
-  const { data: mediaFiles = [], isLoading } = useQuery<MultimediaFile[]>({
+  // Fetch multimedia files
+  const { data: files = [], isLoading } = useQuery({
     queryKey: ['/api/multimedia'],
+    select: (data: MultimediaFile[]) => data
   });
 
-  // Mutation para subir archivos
+  // Upload mutation
   const uploadMutation = useMutation({
-    mutationFn: async (files: FileList) => {
-      const formData = new FormData();
-      Array.from(files).forEach(file => {
-        formData.append('files', file);
-      });
-      
-      const response = await fetch('/api/multimedia/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al subir archivos');
-      }
-      
-      return response.json();
+    mutationFn: async (fileData: {
+      fileName: string;
+      originalName: string;
+      fileType: string;
+      mimeType: string;
+      fileSize: number;
+      filePath: string;
+      url: string;
+    }) => {
+      return await apiRequest('POST', '/api/multimedia', fileData);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/multimedia'] });
       toast({
         title: t('multimedia.uploadSuccess'),
-        description: t('multimedia.uploadSuccessDesc'),
+        description: t('multimedia.fileUploadedSuccessfully'),
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/multimedia'] });
-      setUploadFiles(null);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: t('multimedia.uploadError'),
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     },
   });
 
-  // Mutation para eliminar archivo
+  // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: async (fileId: string) => {
-      await apiRequest('DELETE', `/api/multimedia/${fileId}`);
+    mutationFn: async (fileId: number) => {
+      return await apiRequest('DELETE', `/api/multimedia/${fileId}`);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/multimedia'] });
       toast({
         title: t('multimedia.deleteSuccess'),
-        description: t('multimedia.deleteSuccessDesc'),
+        description: t('multimedia.fileDeletedSuccessfully'),
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/multimedia'] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: t('multimedia.deleteError'),
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     },
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setUploadFiles(e.target.files);
-    }
-  };
-
-  const handleDrag = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
+    setIsDragging(true);
+  }, []);
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
     
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setUploadFiles(e.dataTransfer.files);
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    handleFileUpload(droppedFiles);
+  }, []);
+
+  const handleFileUpload = async (fileList: File[]) => {
+    for (const file of fileList) {
+      // Validate file type
+      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+        toast({
+          title: t('multimedia.invalidFileType'),
+          description: t('multimedia.onlyImagesAndVideos'),
+          variant: 'destructive',
+        });
+        continue;
+      }
+
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: t('multimedia.fileTooLarge'),
+          description: t('multimedia.maxFileSize'),
+          variant: 'destructive',
+        });
+        continue;
+      }
+
+      // Create a simulated file URL (in a real app, you'd upload to cloud storage)
+      const fileUrl = URL.createObjectURL(file);
+      
+      const fileData = {
+        fileName: `${Date.now()}-${file.name}`,
+        originalName: file.name,
+        fileType: file.type.startsWith('image/') ? 'image' : 'video',
+        mimeType: file.type,
+        fileSize: file.size,
+        filePath: `/uploads/${Date.now()}-${file.name}`,
+        url: fileUrl,
+      };
+
+      uploadMutation.mutate(fileData);
     }
   };
 
-  const handleUpload = () => {
-    if (uploadFiles) {
-      uploadMutation.mutate(uploadFiles);
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      handleFileUpload(Array.from(e.target.files));
     }
   };
 
-  const formatFileSize = (bytes: number): string => {
+  const deleteFile = (fileId: number) => {
+    deleteMutation.mutate(fileId);
+  };
+
+  // Filter files based on search and type
+  const filteredFiles = files.filter(file => {
+    const matchesSearch = file.originalName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = filterType === 'all' || file.fileType === filterType;
+    return matchesSearch && matchesType;
+  });
+
+  const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -121,191 +170,211 @@ export default function Multimedia() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (type: string) => {
-    if (type.startsWith('image/')) return <Image className="h-8 w-8" />;
-    if (type.startsWith('video/')) return <Video className="h-8 w-8" />;
-    return <Upload className="h-8 w-8" />;
-  };
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{t('multimedia.title')}</h1>
-        <p className="text-gray-600">{t('multimedia.subtitle')}</p>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">{t('multimedia.title')}</h1>
+          <p className="text-gray-600 mt-2">{t('multimedia.description')}</p>
+        </div>
+        <Badge variant="outline" className="text-sm">
+          {files.length} {t('multimedia.files')}
+        </Badge>
       </div>
 
-      <Tabs defaultValue="upload" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="upload">{t('multimedia.upload')}</TabsTrigger>
-          <TabsTrigger value="library">{t('multimedia.library')}</TabsTrigger>
-        </TabsList>
+      {/* Upload Area */}
+      <Card>
+        <CardContent className="p-6">
+          <div
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+              isDragging
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {t('multimedia.uploadFiles')}
+            </h3>
+            <p className="text-gray-600 mb-4">
+              {t('multimedia.dragDropOrClick')}
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              {t('multimedia.supportedFormats')}
+            </p>
+            <input
+              type="file"
+              id="fileInput"
+              className="hidden"
+              multiple
+              accept="image/*,video/*"
+              onChange={handleFileInputChange}
+            />
+            <Button
+              onClick={() => document.getElementById('fileInput')?.click()}
+              disabled={uploadMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {uploadMutation.isPending ? t('common.uploading') : t('multimedia.selectFiles')}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="upload">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('multimedia.uploadFiles')}</CardTitle>
-              <CardDescription>
-                {t('multimedia.uploadFilesDesc')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Zona de arrastre */}
-              <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                  dragActive
-                    ? 'border-primary bg-primary/5'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-              >
-                <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                <div className="mt-4">
-                  <Label htmlFor="file-upload" className="cursor-pointer">
-                    <span className="mt-2 block text-sm font-medium text-gray-900">
-                      {t('multimedia.dragDrop')}
-                    </span>
-                    <span className="mt-1 block text-sm text-gray-500">
-                      {t('multimedia.dragDropDesc')}
-                    </span>
-                  </Label>
-                  <Input
-                    id="file-upload"
-                    type="file"
-                    multiple
-                    accept="image/*,video/*"
-                    onChange={handleFileChange}
-                    className="sr-only"
-                  />
-                </div>
+      {/* Filters and Search */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-3 flex-1">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder={t('multimedia.searchFiles')}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('multimedia.allFiles')}</SelectItem>
+                  <SelectItem value="image">{t('multimedia.images')}</SelectItem>
+                  <SelectItem value="video">{t('multimedia.videos')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+              >
+                <Grid3X3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-              {/* Archivos seleccionados */}
-              {uploadFiles && uploadFiles.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="font-medium">{t('multimedia.selectedFiles')}</h3>
-                  <div className="space-y-2">
-                    {Array.from(uploadFiles).map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 border rounded-lg"
-                      >
-                        <div className="flex items-center space-x-3">
-                          {getFileIcon(file.type)}
-                          <div>
-                            <p className="font-medium">{file.name}</p>
-                            <p className="text-sm text-gray-500">
-                              {formatFileSize(file.size)}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge variant={file.type.startsWith('image/') ? 'default' : 'secondary'}>
-                          {file.type.startsWith('image/') ? t('multimedia.image') : t('multimedia.video')}
-                        </Badge>
+      {/* Files Grid/List */}
+      {filteredFiles.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <ImageIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {searchTerm || filterType !== 'all'
+                ? t('multimedia.noFilesFound')
+                : t('multimedia.noFilesYet')}
+            </h3>
+            <p className="text-gray-600">
+              {searchTerm || filterType !== 'all'
+                ? t('multimedia.tryDifferentSearch')
+                : t('multimedia.uploadFirstFile')}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className={viewMode === 'grid' 
+          ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+          : "space-y-4"
+        }>
+          {filteredFiles.map((file) => (
+            <Card key={file.id} className="group relative overflow-hidden hover:shadow-md transition-shadow">
+              <CardContent className="p-0">
+                {viewMode === 'grid' ? (
+                  <>
+                    {file.mimeType.startsWith('image/') ? (
+                      <div className="aspect-square relative">
+                        <img 
+                          src={file.url} 
+                          alt={file.originalName} 
+                          className="w-full h-full object-cover" 
+                        />
                       </div>
-                    ))}
-                  </div>
-                  
-                  <div className="flex space-x-4">
-                    <Button
-                      onClick={handleUpload}
-                      disabled={uploadMutation.isPending}
-                      className="flex-1"
-                    >
-                      {uploadMutation.isPending ? (
-                        <div className="flex items-center">
-                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></div>
-                          {t('multimedia.uploading')}
+                    ) : file.mimeType.startsWith('video/') ? (
+                      <div className="aspect-square bg-gray-100 flex items-center justify-center relative">
+                        <Video className="w-12 h-12 text-gray-400" />
+                        <video className="absolute inset-0 w-full h-full object-cover">
+                          <source src={file.url} type={file.mimeType} />
+                        </video>
+                      </div>
+                    ) : (
+                      <div className="aspect-square bg-gray-100 flex items-center justify-center">
+                        <FileText className="w-12 h-12 text-gray-400" />
+                      </div>
+                    )}
+                    
+                    <div className="p-3">
+                      <p className="text-sm font-medium text-gray-900 truncate">{file.originalName}</p>
+                      <p className="text-xs text-gray-500">{formatFileSize(file.fileSize)}</p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center p-4 space-x-4">
+                    <div className="flex-shrink-0">
+                      {file.mimeType.startsWith('image/') ? (
+                        <div className="w-12 h-12 rounded-lg overflow-hidden">
+                          <img src={file.url} alt={file.originalName} className="w-full h-full object-cover" />
+                        </div>
+                      ) : file.mimeType.startsWith('video/') ? (
+                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <Video className="w-6 h-6 text-gray-400" />
                         </div>
                       ) : (
-                        t('multimedia.uploadNow')
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setUploadFiles(null)}
-                    >
-                      {t('multimedia.cancel')}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="library">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('multimedia.mediaLibrary')}</CardTitle>
-              <CardDescription>
-                {t('multimedia.mediaLibraryDesc')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                </div>
-              ) : mediaFiles.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Upload className="mx-auto h-12 w-12 mb-4" />
-                  <p>{t('multimedia.noFiles')}</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {mediaFiles.map((file: MultimediaFile) => (
-                    <div key={file.id} className="border rounded-lg overflow-hidden">
-                      <div className="aspect-video bg-gray-100 flex items-center justify-center">
-                        {file.type === 'image' ? (
-                          <img
-                            src={file.url}
-                            alt={file.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <Video className="h-12 w-12 text-gray-400" />
-                        )}
-                      </div>
-                      <div className="p-3">
-                        <h4 className="font-medium truncate" title={file.name}>
-                          {file.name}
-                        </h4>
-                        <p className="text-sm text-gray-500">
-                          {formatFileSize(file.size)}
-                        </p>
-                        <div className="flex justify-between items-center mt-3">
-                          <Badge variant={file.type === 'image' ? 'default' : 'secondary'}>
-                            {file.type === 'image' ? t('multimedia.image') : t('multimedia.video')}
-                          </Badge>
-                          <div className="flex space-x-1">
-                            <Button size="sm" variant="ghost">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost">
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => deleteMutation.mutate(file.id)}
-                              disabled={deleteMutation.isPending}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <FileText className="w-6 h-6 text-gray-400" />
                         </div>
-                      </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{file.originalName}</p>
+                      <p className="text-sm text-gray-500">{formatFileSize(file.fileSize)} • {file.fileType}</p>
+                      {file.createdAt && (
+                        <p className="text-xs text-gray-400">
+                          {new Date(file.createdAt).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => deleteFile(file.id)}
+                  disabled={deleteMutation.isPending}
+                  className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
