@@ -51,8 +51,8 @@ interface CRMModule {
 
 const crmModules: CRMModule[] = [
   {
-    id: 'lead-scoring',
-    title: 'Puntuación de Leads',
+    id: 'contact-scoring',
+    title: 'Puntuación de Contactos',
     description: 'Sistema inteligente de puntuación automática basado en comportamiento, demografía y engagement',
     icon: <TrendingUp className="w-6 h-6" />,
     status: 'active',
@@ -64,8 +64,8 @@ const crmModules: CRMModule[] = [
       'Alertas automáticas de leads calientes',
       'Historial de puntuación completo'
     ],
-    configPath: '/crm/advanced/lead-scoring/config',
-    explorePath: '/crm/advanced/lead-scoring/dashboard',
+    configPath: '/crm/advanced/contact-scoring',
+    explorePath: '/crm/advanced/contact-scoring',
     color: 'bg-blue-500',
     metrics: [
       { value: 234, label: 'Leads Calificados', change: 12 },
@@ -87,8 +87,8 @@ const crmModules: CRMModule[] = [
       'Reportes de velocidad de ventas',
       'Integración con CRM externo'
     ],
-    configPath: '/crm/advanced/sales-pipeline/config',
-    explorePath: '/crm/advanced/sales-pipeline/dashboard',
+    configPath: '/crm/advanced/sales-pipeline',
+    explorePath: '/crm/advanced/sales-pipeline',
     color: 'bg-green-500',
     metrics: [
       { value: 156, label: 'Oportunidades Activas', change: 8 },
@@ -110,8 +110,8 @@ const crmModules: CRMModule[] = [
       'Campañas dirigidas por segmento',
       'Análisis de cohortes'
     ],
-    configPath: '/crm/advanced/customer-segmentation/config',
-    explorePath: '/crm/advanced/customer-segmentation/dashboard',
+    configPath: '/crm/advanced/relationship-mapping',
+    explorePath: '/crm/advanced/relationship-mapping',
     color: 'bg-purple-500',
     metrics: [
       { value: 12, label: 'Segmentos Activos', change: 2 },
@@ -133,8 +133,8 @@ const crmModules: CRMModule[] = [
       'A/B testing de workflows',
       'Métricas de performance detalladas'
     ],
-    configPath: '/crm/advanced/automation-workflows/config',
-    explorePath: '/crm/advanced/automation-workflows/dashboard',
+    configPath: '/crm/advanced/automations',
+    explorePath: '/crm/advanced/automations',
     color: 'bg-orange-500',
     metrics: [
       { value: 23, label: 'Workflows Activos', change: 4 },
