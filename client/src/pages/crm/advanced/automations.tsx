@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Card, 
@@ -9,505 +10,437 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { 
-  Workflow, 
-  Play, 
-  Pause, 
-  Settings, 
-  Plus,
-  Edit,
-  Trash2,
-  Copy,
-  Activity,
-  Clock,
-  Users,
-  MessageSquare,
+  Zap, 
+  Clock, 
+  Users, 
+  MessageSquare, 
   Mail,
-  Zap,
-  BarChart3
+  Phone,
+  Calendar,
+  Filter,
+  Play,
+  Pause,
+  Settings,
+  Plus,
+  Trash2,
+  ChevronRight
 } from 'lucide-react';
 
-interface AutomationWorkflow {
+interface AutomationRule {
   id: string;
   name: string;
   description: string;
-  isActive: boolean;
   trigger: {
-    type: 'contact_created' | 'message_received' | 'tag_added' | 'time_based';
-    conditions: string;
+    type: string;
+    conditions: Array<{
+      field: string;
+      operator: string;
+      value: string;
+    }>;
   };
-  actions: WorkflowAction[];
-  statistics: {
-    totalExecutions: number;
-    successRate: number;
-    avgExecutionTime: number;
-    lastExecuted: string;
-  };
-  createdAt: string;
-  updatedAt: string;
+  actions: Array<{
+    type: string;
+    config: any;
+  }>;
+  active: boolean;
+  executionCount: number;
+  lastExecuted?: string;
 }
 
-interface WorkflowAction {
+interface AutomationExecution {
   id: string;
-  type: 'send_message' | 'add_tag' | 'create_task' | 'send_email' | 'wait' | 'update_contact';
-  config: any;
-  position: number;
+  automationId: string;
+  contactId: number;
+  contactName: string;
+  status: 'success' | 'failed' | 'pending';
+  executedAt: string;
+  result: string;
 }
-
-const mockAutomations: AutomationWorkflow[] = [
-  {
-    id: '1',
-    name: 'Bienvenida Nuevos Contactos',
-    description: 'Secuencia de bienvenida automática para nuevos contactos de WhatsApp',
-    isActive: true,
-    trigger: {
-      type: 'contact_created',
-      conditions: 'source = "whatsapp"'
-    },
-    actions: [
-      {
-        id: '1',
-        type: 'send_message',
-        config: {
-          message: '¡Hola! Bienvenido a BotMaster. Te ayudaremos con todas tus consultas.',
-          delay: 0
-        },
-        position: 1
-      },
-      {
-        id: '2',
-        type: 'wait',
-        config: {
-          duration: 300,
-          unit: 'seconds'
-        },
-        position: 2
-      },
-      {
-        id: '3',
-        type: 'send_message',
-        config: {
-          message: '¿En qué puedo ayudarte hoy? Escribe "menu" para ver nuestras opciones.',
-          delay: 0
-        },
-        position: 3
-      }
-    ],
-    statistics: {
-      totalExecutions: 234,
-      successRate: 98.5,
-      avgExecutionTime: 45,
-      lastExecuted: '2024-01-15T14:30:00Z'
-    },
-    createdAt: '2024-01-01T10:00:00Z',
-    updatedAt: '2024-01-15T14:30:00Z'
-  },
-  {
-    id: '2',
-    name: 'Seguimiento Leads Calientes',
-    description: 'Automatización para seguimiento de leads con alta puntuación',
-    isActive: true,
-    trigger: {
-      type: 'tag_added',
-      conditions: 'tag = "lead_caliente"'
-    },
-    actions: [
-      {
-        id: '1',
-        type: 'send_message',
-        config: {
-          message: 'Hemos notado tu interés en nuestros servicios. ¿Te gustaría agendar una llamada?',
-          delay: 0
-        },
-        position: 1
-      },
-      {
-        id: '2',
-        type: 'create_task',
-        config: {
-          title: 'Contactar lead caliente',
-          assignee: 'sales_team',
-          priority: 'high'
-        },
-        position: 2
-      }
-    ],
-    statistics: {
-      totalExecutions: 67,
-      successRate: 94.2,
-      avgExecutionTime: 12,
-      lastExecuted: '2024-01-15T16:45:00Z'
-    },
-    createdAt: '2024-01-05T09:00:00Z',
-    updatedAt: '2024-01-15T16:45:00Z'
-  },
-  {
-    id: '3',
-    name: 'Recordatorio Carritos Abandonados',
-    description: 'Recuperación automática de carritos abandonados en e-commerce',
-    isActive: false,
-    trigger: {
-      type: 'time_based',
-      conditions: 'cart_abandoned_hours > 24'
-    },
-    actions: [
-      {
-        id: '1',
-        type: 'send_message',
-        config: {
-          message: '¡No olvides completar tu compra! Tienes productos esperándote en tu carrito.',
-          delay: 0
-        },
-        position: 1
-      },
-      {
-        id: '2',
-        type: 'wait',
-        config: {
-          duration: 24,
-          unit: 'hours'
-        },
-        position: 2
-      },
-      {
-        id: '3',
-        type: 'send_message',
-        config: {
-          message: 'Última oportunidad: 10% de descuento en tu carrito. Usa código: VUELVE10',
-          delay: 0
-        },
-        position: 3
-      }
-    ],
-    statistics: {
-      totalExecutions: 189,
-      successRate: 87.3,
-      avgExecutionTime: 156,
-      lastExecuted: '2024-01-14T20:15:00Z'
-    },
-    createdAt: '2024-01-03T11:30:00Z',
-    updatedAt: '2024-01-14T20:15:00Z'
-  }
-];
 
 export default function AutomationsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const [activeTab, setActiveTab] = useState<'workflows' | 'templates' | 'analytics'>('workflows');
-
-  const { data: automations = mockAutomations, isLoading } = useQuery({
-    queryKey: ['/api/automations'],
-    queryFn: () => Promise.resolve(mockAutomations)
+  const [activeTab, setActiveTab] = useState<'rules' | 'executions'>('rules');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newAutomation, setNewAutomation] = useState<Partial<AutomationRule>>({
+    name: '',
+    description: '',
+    trigger: {
+      type: 'contact_created',
+      conditions: []
+    },
+    actions: [],
+    active: true
   });
 
-  const toggleAutomation = useMutation({
-    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return { success: true };
+  // Fetch automation rules
+  const { data: automationRules = [] } = useQuery({
+    queryKey: ['/api/crm/automations'],
+    initialData: [
+      {
+        id: '1',
+        name: 'Bienvenida Nuevos Contactos',
+        description: 'Envía mensaje de bienvenida automático a nuevos contactos de WhatsApp',
+        trigger: {
+          type: 'contact_created',
+          conditions: [
+            { field: 'source', operator: 'equals', value: 'whatsapp' }
+          ]
+        },
+        actions: [
+          {
+            type: 'send_message',
+            config: {
+              template: 'welcome_message',
+              message: '¡Hola! Gracias por contactarnos. Un especialista te atenderá pronto.'
+            }
+          }
+        ],
+        active: true,
+        executionCount: 127,
+        lastExecuted: '2024-01-15T10:30:00Z'
+      },
+      {
+        id: '2',
+        name: 'Seguimiento Contactos Inactivos',
+        description: 'Envía recordatorio a contactos sin actividad en 7 días',
+        trigger: {
+          type: 'scheduled',
+          conditions: [
+            { field: 'last_interaction', operator: 'older_than', value: '7_days' }
+          ]
+        },
+        actions: [
+          {
+            type: 'send_message',
+            config: {
+              message: 'Hola, queríamos saber si aún estás interesado en nuestros servicios. ¿Podemos ayudarte?'
+            }
+          },
+          {
+            type: 'update_status',
+            config: {
+              status: 'follow_up_sent'
+            }
+          }
+        ],
+        active: true,
+        executionCount: 89,
+        lastExecuted: '2024-01-14T15:00:00Z'
+      },
+      {
+        id: '3',
+        name: 'Asignación Automática Agentes',
+        description: 'Asigna contactos automáticamente según criterios definidos',
+        trigger: {
+          type: 'contact_updated',
+          conditions: [
+            { field: 'score', operator: 'greater_than', value: '80' }
+          ]
+        },
+        actions: [
+          {
+            type: 'assign_agent',
+            config: {
+              agent: 'senior_sales'
+            }
+          },
+          {
+            type: 'send_notification',
+            config: {
+              message: 'Contacto de alto valor asignado'
+            }
+          }
+        ],
+        active: true,
+        executionCount: 34,
+        lastExecuted: '2024-01-15T09:15:00Z'
+      }
+    ]
+  });
+
+  // Fetch automation executions
+  const { data: automationExecutions = [] } = useQuery({
+    queryKey: ['/api/crm/automation-executions'],
+    initialData: [
+      {
+        id: '1',
+        automationId: '1',
+        contactId: 123,
+        contactName: 'María González',
+        status: 'success' as const,
+        executedAt: '2024-01-15T10:30:00Z',
+        result: 'Mensaje de bienvenida enviado correctamente'
+      },
+      {
+        id: '2',
+        automationId: '2',
+        contactId: 124,
+        contactName: 'Carlos Ruiz',
+        status: 'success' as const,
+        executedAt: '2024-01-15T09:45:00Z',
+        result: 'Mensaje de seguimiento enviado'
+      },
+      {
+        id: '3',
+        automationId: '3',
+        contactId: 125,
+        contactName: 'Ana López',
+        status: 'failed' as const,
+        executedAt: '2024-01-15T08:20:00Z',
+        result: 'Error: Agente no disponible'
+      }
+    ]
+  });
+
+  const toggleAutomationMutation = useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      return apiRequest('PATCH', `/api/crm/automations/${id}`, { active });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/automations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/crm/automations'] });
       toast({
         title: "Automatización actualizada",
-        description: "El estado de la automatización ha sido actualizado.",
+        description: "El estado se ha cambiado correctamente.",
       });
     }
   });
 
-  const duplicateAutomation = useMutation({
+  const deleteAutomationMutation = useMutation({
     mutationFn: async (id: string) => {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return { success: true };
+      return apiRequest('DELETE', `/api/crm/automations/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/automations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/crm/automations'] });
       toast({
-        title: "Automatización duplicada",
-        description: "Se ha creado una copia de la automatización.",
+        title: "Automatización eliminada",
+        description: "La automatización se ha eliminado correctamente.",
       });
     }
   });
 
-  const getActionIcon = (type: string) => {
+  const createAutomationMutation = useMutation({
+    mutationFn: async (automation: Partial<AutomationRule>) => {
+      return apiRequest('POST', '/api/crm/automations', automation);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/crm/automations'] });
+      setShowCreateModal(false);
+      setNewAutomation({
+        name: '',
+        description: '',
+        trigger: { type: 'contact_created', conditions: [] },
+        actions: [],
+        active: true
+      });
+      toast({
+        title: "Automatización creada",
+        description: "La nueva automatización se ha configurado correctamente.",
+      });
+    }
+  });
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'success': return 'bg-green-100 text-green-800';
+      case 'failed': return 'bg-red-100 text-red-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getTriggerTypeLabel = (type: string) => {
+    switch (type) {
+      case 'contact_created': return 'Contacto Creado';
+      case 'contact_updated': return 'Contacto Actualizado';
+      case 'message_received': return 'Mensaje Recibido';
+      case 'scheduled': return 'Programado';
+      default: return type;
+    }
+  };
+
+  const getActionTypeIcon = (type: string) => {
     switch (type) {
       case 'send_message': return <MessageSquare className="w-4 h-4" />;
       case 'send_email': return <Mail className="w-4 h-4" />;
-      case 'wait': return <Clock className="w-4 h-4" />;
-      case 'add_tag': return <Plus className="w-4 h-4" />;
-      case 'create_task': return <Activity className="w-4 h-4" />;
-      default: return <Zap className="w-4 h-4" />;
+      case 'assign_agent': return <Users className="w-4 h-4" />;
+      case 'update_status': return <Settings className="w-4 h-4" />;
+      case 'send_notification': return <Zap className="w-4 h-4" />;
+      default: return <Settings className="w-4 h-4" />;
     }
   };
-
-  const getActionLabel = (type: string) => {
-    switch (type) {
-      case 'send_message': return 'Enviar Mensaje';
-      case 'send_email': return 'Enviar Email';
-      case 'wait': return 'Esperar';
-      case 'add_tag': return 'Agregar Etiqueta';
-      case 'create_task': return 'Crear Tarea';
-      case 'update_contact': return 'Actualizar Contacto';
-      default: return type;
-    }
-  };
-
-  const getTriggerLabel = (type: string) => {
-    switch (type) {
-      case 'contact_created': return 'Contacto Creado';
-      case 'message_received': return 'Mensaje Recibido';
-      case 'tag_added': return 'Etiqueta Agregada';
-      case 'time_based': return 'Basado en Tiempo';
-      default: return type;
-    }
-  };
-
-  const totalExecutions = automations.reduce((sum, auto) => sum + auto.statistics.totalExecutions, 0);
-  const activeAutomations = automations.filter(auto => auto.isActive).length;
-  const avgSuccessRate = automations.reduce((sum, auto) => sum + auto.statistics.successRate, 0) / automations.length;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Automatizaciones</h1>
-          <p className="text-gray-600">Workflows inteligentes para automatizar tu comunicación</p>
+          <h1 className="text-2xl font-bold text-gray-900">Automatizaciones Avanzadas</h1>
+          <p className="text-gray-600">Configura flujos automáticos para optimizar tu CRM</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">
-            <Settings className="w-4 h-4 mr-2" />
-            Configurar
+          <Button
+            variant={activeTab === 'rules' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('rules')}
+          >
+            <Zap className="w-4 h-4 mr-2" />
+            Reglas
           </Button>
-          <Button>
+          <Button
+            variant={activeTab === 'executions' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('executions')}
+          >
+            <Clock className="w-4 h-4 mr-2" />
+            Ejecuciones
+          </Button>
+          <Button onClick={() => setShowCreateModal(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Nueva Automatización
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Workflow className="w-8 h-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Automatizaciones</p>
-                <p className="text-2xl font-bold text-gray-900">{automations.length}</p>
-                <p className="text-xs text-green-600">{activeAutomations} activas</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {activeTab === 'rules' && (
+        <div className="space-y-6">
+          {/* Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Total Automatizaciones</p>
+                    <p className="text-2xl font-bold">{automationRules.length}</p>
+                  </div>
+                  <Zap className="w-8 h-8 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Activas</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {automationRules.filter((r: AutomationRule) => r.active).length}
+                    </p>
+                  </div>
+                  <Play className="w-8 h-8 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Ejecuciones Hoy</p>
+                    <p className="text-2xl font-bold text-orange-600">247</p>
+                  </div>
+                  <Clock className="w-8 h-8 text-orange-600" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Tasa de Éxito</p>
+                    <p className="text-2xl font-bold text-purple-600">94%</p>
+                  </div>
+                  <Settings className="w-8 h-8 text-purple-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Activity className="w-8 h-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Ejecuciones Totales</p>
-                <p className="text-2xl font-bold text-gray-900">{totalExecutions.toLocaleString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <BarChart3 className="w-8 h-8 text-orange-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Tasa de Éxito</p>
-                <p className="text-2xl font-bold text-gray-900">{avgSuccessRate.toFixed(1)}%</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Users className="w-8 h-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Contactos Impactados</p>
-                <p className="text-2xl font-bold text-gray-900">2,847</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { id: 'workflows', label: 'Automatizaciones' },
-            { id: 'templates', label: 'Plantillas' },
-            { id: 'analytics', label: 'Analíticas' }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Content */}
-      {activeTab === 'workflows' && (
-        <div className="space-y-4">
-          {isLoading ? (
-            <div className="text-center py-8">Cargando automatizaciones...</div>
-          ) : (
-            automations.map((automation) => (
-              <Card key={automation.id}>
+          {/* Automation Rules */}
+          <div className="space-y-4">
+            {automationRules.map((rule: AutomationRule) => (
+              <Card key={rule.id}>
                 <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-4 mb-4">
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            checked={automation.isActive}
-                            onCheckedChange={(checked) => 
-                              toggleAutomation.mutate({ id: automation.id, isActive: checked })
-                            }
-                          />
-                          <h3 className="text-lg font-semibold">{automation.name}</h3>
-                        </div>
-                        <Badge variant={automation.isActive ? 'default' : 'secondary'}>
-                          {automation.isActive ? 'Activa' : 'Inactiva'}
-                        </Badge>
-                      </div>
-                      
-                      <p className="text-gray-600 mb-4">{automation.description}</p>
-                      
-                      {/* Trigger */}
-                      <div className="mb-4">
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">Trigger:</h4>
-                        <div className="flex items-center space-x-2 text-sm">
-                          <Badge variant="outline">
-                            {getTriggerLabel(automation.trigger.type)}
-                          </Badge>
-                          <span className="text-gray-600">{automation.trigger.conditions}</span>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="mb-4">
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">Acciones ({automation.actions.length}):</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {automation.actions.slice(0, 3).map((action) => (
-                            <div key={action.id} className="flex items-center space-x-1 bg-gray-100 rounded px-2 py-1">
-                              {getActionIcon(action.type)}
-                              <span className="text-xs">{getActionLabel(action.type)}</span>
-                            </div>
-                          ))}
-                          {automation.actions.length > 3 && (
-                            <span className="text-xs text-gray-500">+{automation.actions.length - 3} más</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Statistics */}
-                      <div className="grid grid-cols-4 gap-4 pt-4 border-t">
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-gray-900">{automation.statistics.totalExecutions}</p>
-                          <p className="text-xs text-gray-600">Ejecuciones</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-green-600">{automation.statistics.successRate}%</p>
-                          <p className="text-xs text-gray-600">Éxito</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-blue-600">{automation.statistics.avgExecutionTime}s</p>
-                          <p className="text-xs text-gray-600">Tiempo Prom.</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-purple-600">
-                            {new Date(automation.statistics.lastExecuted).toLocaleDateString()}
-                          </p>
-                          <p className="text-xs text-gray-600">Última Ejecución</p>
-                        </div>
-                      </div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <h3 className="text-lg font-semibold">{rule.name}</h3>
+                      <Badge variant={rule.active ? 'default' : 'secondary'}>
+                        {rule.active ? 'Activa' : 'Inactiva'}
+                      </Badge>
+                      <Badge variant="outline">
+                        {rule.executionCount} ejecuciones
+                      </Badge>
                     </div>
-                    
-                    <div className="flex flex-col space-y-2 ml-4">
-                      <Button variant="outline" size="sm">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={rule.active}
+                        onCheckedChange={(checked) => 
+                          toggleAutomationMutation.mutate({ id: rule.id, active: checked })
+                        }
+                      />
+                      <Button
+                        variant="ghost"
                         size="sm"
-                        onClick={() => duplicateAutomation.mutate(automation.id)}
+                        onClick={() => deleteAutomationMutation.mutate(rule.id)}
                       >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      )}
-
-      {activeTab === 'templates' && (
-        <div className="space-y-6">
-          <h2 className="text-lg font-semibold">Plantillas de Automatización</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                name: 'Onboarding de Clientes',
-                description: 'Secuencia completa de bienvenida para nuevos clientes',
-                actions: 5,
-                category: 'Bienvenida'
-              },
-              {
-                name: 'Recuperación de Carritos',
-                description: 'Serie de mensajes para recuperar carritos abandonados',
-                actions: 3,
-                category: 'E-commerce'
-              },
-              {
-                name: 'Seguimiento Post-Venta',
-                description: 'Automatización para seguimiento después de una compra',
-                actions: 4,
-                category: 'Retención'
-              },
-              {
-                name: 'Calificación de Leads',
-                description: 'Flujo para calificar y segmentar nuevos leads',
-                actions: 6,
-                category: 'Ventas'
-              }
-            ].map((template, index) => (
-              <Card key={index}>
-                <CardContent className="p-6">
-                  <h3 className="font-semibold mb-2">{template.name}</h3>
-                  <p className="text-sm text-gray-600 mb-4">{template.description}</p>
                   
-                  <div className="flex items-center justify-between mb-4">
-                    <Badge variant="outline">{template.category}</Badge>
-                    <span className="text-xs text-gray-500">{template.actions} acciones</span>
+                  <p className="text-gray-600 mb-4">{rule.description}</p>
+                  
+                  <div className="flex items-center space-x-6">
+                    {/* Trigger */}
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Filter className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Activador</p>
+                        <p className="text-xs text-gray-600">
+                          {getTriggerTypeLabel(rule.trigger.type)}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    
+                    {/* Actions */}
+                    <div className="flex items-center space-x-4">
+                      <div>
+                        <p className="text-sm font-medium">Acciones ({rule.actions.length})</p>
+                        <div className="flex space-x-1 mt-1">
+                          {rule.actions.map((action, index) => (
+                            <div
+                              key={index}
+                              className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center"
+                            >
+                              {getActionTypeIcon(action.type)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {rule.lastExecuted && (
+                      <>
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <p className="text-sm font-medium">Última ejecución</p>
+                          <p className="text-xs text-gray-600">
+                            {new Date(rule.lastExecuted).toLocaleString()}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  
-                  <Button className="w-full" variant="outline">
-                    Usar Plantilla
-                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -515,59 +448,126 @@ export default function AutomationsPage() {
         </div>
       )}
 
-      {activeTab === 'analytics' && (
+      {activeTab === 'executions' && (
         <div className="space-y-6">
-          <h2 className="text-lg font-semibold">Analíticas de Automatización</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Rendimiento por Automatización</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {automations.map((automation) => (
-                    <div key={automation.id} className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{automation.name}</p>
-                        <p className="text-xs text-gray-600">{automation.statistics.totalExecutions} ejecuciones</p>
+          {/* Execution History */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Historial de Ejecuciones</CardTitle>
+              <CardDescription>
+                Registro detallado de todas las automatizaciones ejecutadas
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {automationExecutions.map((execution: AutomationExecution) => {
+                  const rule = automationRules.find((r: AutomationRule) => r.id === execution.automationId);
+                  return (
+                    <div key={execution.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                          <Users className="w-5 h-5 text-gray-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium">{rule?.name}</h4>
+                          <p className="text-sm text-gray-600">
+                            Contacto: {execution.contactName}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(execution.executedAt).toLocaleString()}
+                          </p>
+                        </div>
                       </div>
+                      
                       <div className="text-right">
-                        <p className="font-bold text-green-600">{automation.statistics.successRate}%</p>
-                        <p className="text-xs text-gray-600">éxito</p>
+                        <Badge className={getStatusBadgeColor(execution.status)}>
+                          {execution.status === 'success' ? 'Éxito' : 
+                           execution.status === 'failed' ? 'Error' : 'Pendiente'}
+                        </Badge>
+                        <p className="text-sm text-gray-600 mt-1 max-w-xs">
+                          {execution.result}
+                        </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Impacto en Conversiones</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Leads generados</span>
-                    <span className="font-bold">+156</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Ventas completadas</span>
-                    <span className="font-bold">+23</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Tiempo de respuesta</span>
-                    <span className="font-bold text-green-600">-85%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Satisfacción cliente</span>
-                    <span className="font-bold text-green-600">+42%</span>
-                  </div>
+      {/* Create Automation Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle>Nueva Automatización</CardTitle>
+              <CardDescription>
+                Configura una nueva regla de automatización para tu CRM
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="automation-name">Nombre</Label>
+                  <Input
+                    id="automation-name"
+                    placeholder="Nombre de la automatización"
+                    value={newAutomation.name || ''}
+                    onChange={(e) => setNewAutomation({...newAutomation, name: e.target.value})}
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                <div>
+                  <Label htmlFor="trigger-type">Tipo de Activador</Label>
+                  <select
+                    id="trigger-type"
+                    className="w-full p-2 border rounded-md"
+                    value={newAutomation.trigger?.type}
+                    onChange={(e) => setNewAutomation({
+                      ...newAutomation,
+                      trigger: { ...newAutomation.trigger!, type: e.target.value }
+                    })}
+                  >
+                    <option value="contact_created">Contacto Creado</option>
+                    <option value="contact_updated">Contacto Actualizado</option>
+                    <option value="message_received">Mensaje Recibido</option>
+                    <option value="scheduled">Programado</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="automation-description">Descripción</Label>
+                <Textarea
+                  id="automation-description"
+                  placeholder="Describe qué hace esta automatización"
+                  value={newAutomation.description || ''}
+                  onChange={(e) => setNewAutomation({...newAutomation, description: e.target.value})}
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={newAutomation.active}
+                  onCheckedChange={(checked) => setNewAutomation({...newAutomation, active: checked})}
+                />
+                <Label>Activar automatización</Label>
+              </div>
+              
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button variant="outline" onClick={() => setShowCreateModal(false)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={() => createAutomationMutation.mutate(newAutomation)}
+                  disabled={createAutomationMutation.isPending}
+                >
+                  Crear Automatización
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

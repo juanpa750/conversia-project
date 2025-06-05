@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 import { 
   Card, 
   CardContent, 
@@ -13,225 +12,171 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { 
   TrendingUp, 
-  Brain, 
+  TrendingDown, 
   Target, 
+  Brain, 
+  BarChart3,
+  PieChart,
+  Calendar,
   Users,
   DollarSign,
-  Calendar,
+  Zap,
   AlertTriangle,
-  CheckCircle,
-  Clock,
-  BarChart3,
-  LineChart,
-  PieChart,
-  Settings,
-  Download,
-  RefreshCw
+  CheckCircle
 } from 'lucide-react';
 
-interface Prediction {
+interface PredictiveInsight {
   id: string;
-  type: 'churn_risk' | 'conversion_probability' | 'revenue_forecast' | 'lifetime_value';
+  type: 'conversion' | 'churn' | 'revenue' | 'engagement';
   title: string;
-  description: string;
-  probability: number;
+  prediction: string;
   confidence: number;
   impact: 'high' | 'medium' | 'low';
-  timeframe: string;
-  factors: PredictionFactor[];
-  recommendations: string[];
-  createdAt: string;
+  timeline: string;
+  actions: string[];
+  data: any;
 }
 
-interface PredictionFactor {
+interface ContactPrediction {
+  contactId: number;
   name: string;
-  weight: number;
-  impact: 'positive' | 'negative' | 'neutral';
-  value: string;
+  email: string;
+  conversionProbability: number;
+  churnRisk: number;
+  expectedRevenue: number;
+  nextBestAction: string;
+  riskFactors: string[];
+  opportunities: string[];
 }
-
-interface ModelMetrics {
-  id: string;
-  name: string;
-  type: string;
-  accuracy: number;
-  precision: number;
-  recall: number;
-  f1Score: number;
-  lastTrained: string;
-  status: 'active' | 'training' | 'outdated';
-}
-
-const mockPredictions: Prediction[] = [
-  {
-    id: '1',
-    type: 'churn_risk',
-    title: 'Riesgo de Abandono - TechCorp Solutions',
-    description: 'Cliente con alta probabilidad de cancelar servicios en los próximos 30 días',
-    probability: 78,
-    confidence: 85,
-    impact: 'high',
-    timeframe: '30 días',
-    factors: [
-      { name: 'Reducción en engagement', weight: 0.35, impact: 'negative', value: '-45% vs mes anterior' },
-      { name: 'Tickets de soporte aumentados', weight: 0.25, impact: 'negative', value: '+67% vs promedio' },
-      { name: 'Tiempo sin contacto', weight: 0.20, impact: 'negative', value: '15 días sin interacción' },
-      { name: 'Satisfacción reportada', weight: 0.20, impact: 'negative', value: '2.3/5 última encuesta' }
-    ],
-    recommendations: [
-      'Contactar inmediatamente al cliente para entender sus preocupaciones',
-      'Ofrecer sesión de consultoría gratuita para optimizar uso del servicio',
-      'Asignar account manager dedicado para próximos 60 días',
-      'Proporcionar descuento temporal para retener cliente'
-    ],
-    createdAt: '2024-01-15T10:30:00Z'
-  },
-  {
-    id: '2',
-    type: 'conversion_probability',
-    title: 'Probabilidad de Conversión - InnovaTech',
-    description: 'Prospecto con alta probabilidad de convertirse en cliente',
-    probability: 82,
-    confidence: 92,
-    impact: 'high',
-    timeframe: '14 días',
-    factors: [
-      { name: 'Engagement con contenido', weight: 0.30, impact: 'positive', value: '15 recursos descargados' },
-      { name: 'Tiempo en sitio web', weight: 0.25, impact: 'positive', value: '23 minutos promedio' },
-      { name: 'Interacciones WhatsApp', weight: 0.25, impact: 'positive', value: '8 conversaciones activas' },
-      { name: 'Perfil de empresa objetivo', weight: 0.20, impact: 'positive', value: 'Match 95% ICP' }
-    ],
-    recommendations: [
-      'Enviar propuesta personalizada en próximas 48 horas',
-      'Agendar demo del producto específico para su industria',
-      'Incluir case study de cliente similar en propuesta',
-      'Ofrecer prueba gratuita de 30 días'
-    ],
-    createdAt: '2024-01-15T09:15:00Z'
-  },
-  {
-    id: '3',
-    type: 'lifetime_value',
-    title: 'Valor de Vida Proyectado - Restaurante Bella Vista',
-    description: 'Cliente con potencial de alto valor a largo plazo',
-    probability: 91,
-    confidence: 88,
-    impact: 'medium',
-    timeframe: '24 meses',
-    factors: [
-      { name: 'Crecimiento de negocio', weight: 0.35, impact: 'positive', value: '+30% revenue anual' },
-      { name: 'Adopción de servicios', weight: 0.30, impact: 'positive', value: '85% features utilizadas' },
-      { name: 'Satisfacción del cliente', weight: 0.20, impact: 'positive', value: '4.8/5 rating promedio' },
-      { name: 'Referidos generados', weight: 0.15, impact: 'positive', value: '3 nuevos clientes' }
-    ],
-    recommendations: [
-      'Proponer upgrade a plan premium con descuento',
-      'Ofrecer servicios adicionales de consultoría',
-      'Invitar a programa de referidos con incentivos',
-      'Considerar para programa de clientes VIP'
-    ],
-    createdAt: '2024-01-15T08:45:00Z'
-  }
-];
-
-const mockModelMetrics: ModelMetrics[] = [
-  {
-    id: '1',
-    name: 'Churn Prediction Model',
-    type: 'Classification',
-    accuracy: 89.5,
-    precision: 87.2,
-    recall: 91.8,
-    f1Score: 89.4,
-    lastTrained: '2024-01-10T14:30:00Z',
-    status: 'active'
-  },
-  {
-    id: '2',
-    name: 'Lead Scoring Model',
-    type: 'Regression',
-    accuracy: 92.1,
-    precision: 90.5,
-    recall: 93.7,
-    f1Score: 92.1,
-    lastTrained: '2024-01-12T09:15:00Z',
-    status: 'active'
-  },
-  {
-    id: '3',
-    name: 'Revenue Forecasting Model',
-    type: 'Time Series',
-    accuracy: 85.3,
-    precision: 83.9,
-    recall: 87.1,
-    f1Score: 85.5,
-    lastTrained: '2024-01-08T16:45:00Z',
-    status: 'outdated'
-  }
-];
 
 export default function PredictiveAnalysisPage() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const [activeTab, setActiveTab] = useState<'predictions' | 'models' | 'insights'>('predictions');
-  const [selectedPredictionType, setSelectedPredictionType] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<'insights' | 'contacts' | 'forecasts'>('insights');
+  const [timeframe, setTimeframe] = useState('30d');
 
-  const { data: predictions = mockPredictions, isLoading: predictionsLoading } = useQuery({
-    queryKey: ['/api/predictions'],
-    queryFn: () => Promise.resolve(mockPredictions)
+  // Fetch predictive insights
+  const { data: insights = [] } = useQuery({
+    queryKey: ['/api/crm/predictive-insights', timeframe],
+    initialData: [
+      {
+        id: '1',
+        type: 'conversion' as const,
+        title: 'Incremento en Conversiones',
+        prediction: 'Se espera un aumento del 23% en conversiones en los próximos 30 días',
+        confidence: 87,
+        impact: 'high' as const,
+        timeline: '30 días',
+        actions: [
+          'Enfocar esfuerzos en contactos con score >70',
+          'Implementar seguimiento automático',
+          'Optimizar mensajes de bienvenida'
+        ],
+        data: { current: 156, predicted: 192, increase: 23 }
+      },
+      {
+        id: '2',
+        type: 'churn' as const,
+        title: 'Riesgo de Abandono',
+        prediction: '12 contactos tienen alto riesgo de abandono esta semana',
+        confidence: 92,
+        impact: 'high' as const,
+        timeline: '7 días',
+        actions: [
+          'Contacto personalizado inmediato',
+          'Ofrecer incentivos especiales',
+          'Revisar experiencia del cliente'
+        ],
+        data: { atRisk: 12, totalContacts: 847, percentage: 1.4 }
+      },
+      {
+        id: '3',
+        type: 'revenue' as const,
+        title: 'Proyección de Ingresos',
+        prediction: 'Ingresos potenciales de €45,230 en el próximo trimestre',
+        confidence: 78,
+        impact: 'medium' as const,
+        timeline: '90 días',
+        actions: [
+          'Priorizar leads calificados',
+          'Acelerar ciclos de venta',
+          'Expandir ofertas de servicios'
+        ],
+        data: { projected: 45230, current: 38950, growth: 16.1 }
+      },
+      {
+        id: '4',
+        type: 'engagement' as const,
+        title: 'Engagement de Contactos',
+        prediction: 'El engagement aumentará 15% con optimizaciones de horarios',
+        confidence: 83,
+        impact: 'medium' as const,
+        timeline: '14 días',
+        actions: [
+          'Ajustar horarios de envío',
+          'Personalizar contenido',
+          'Segmentar audiencias'
+        ],
+        data: { currentRate: 34, optimizedRate: 39, improvement: 15 }
+      }
+    ]
   });
 
-  const { data: modelMetrics = mockModelMetrics, isLoading: modelsLoading } = useQuery({
-    queryKey: ['/api/ml-models'],
-    queryFn: () => Promise.resolve(mockModelMetrics)
+  // Fetch contact predictions
+  const { data: contactPredictions = [] } = useQuery({
+    queryKey: ['/api/crm/contact-predictions'],
+    initialData: [
+      {
+        contactId: 1,
+        name: 'María González',
+        email: 'maria@techcorp.com',
+        conversionProbability: 89,
+        churnRisk: 15,
+        expectedRevenue: 12500,
+        nextBestAction: 'Programar demo personalizada',
+        riskFactors: ['Baja actividad reciente', 'No respondió último follow-up'],
+        opportunities: ['Alto score de engagement', 'Empresa en crecimiento', 'Budget confirmado']
+      },
+      {
+        contactId: 2,
+        name: 'Carlos Ruiz',
+        email: 'carlos@innovatech.es',
+        conversionProbability: 72,
+        churnRisk: 8,
+        expectedRevenue: 8750,
+        nextBestAction: 'Enviar propuesta comercial',
+        riskFactors: ['Competencia activa'],
+        opportunities: ['Decisor principal', 'Timeline definido', 'Referencias positivas']
+      },
+      {
+        contactId: 3,
+        name: 'Ana López',
+        email: 'ana@startup.com',
+        conversionProbability: 45,
+        churnRisk: 62,
+        expectedRevenue: 3200,
+        nextBestAction: 'Llamada de retención urgente',
+        riskFactors: ['No responde mensajes', 'Reducción de actividad', 'Menciones de alternativas'],
+        opportunities: ['Histórico positivo', 'Referido por cliente']
+      }
+    ]
   });
 
-  const refreshPredictions = useMutation({
-    mutationFn: async () => {
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      return { success: true };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/predictions'] });
-      toast({
-        title: "Predicciones actualizadas",
-        description: "Se han recalculado todas las predicciones con los datos más recientes.",
-      });
-    }
-  });
-
-  const retrainModel = useMutation({
-    mutationFn: async (modelId: string) => {
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      return { success: true };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/ml-models'] });
-      toast({
-        title: "Modelo reentrenado",
-        description: "El modelo ha sido reentrenado con los datos más recientes.",
-      });
-    }
-  });
-
-  const getPredictionTypeIcon = (type: string) => {
+  const getInsightIcon = (type: string) => {
     switch (type) {
-      case 'churn_risk': return <AlertTriangle className="w-5 h-5" />;
-      case 'conversion_probability': return <Target className="w-5 h-5" />;
-      case 'revenue_forecast': return <DollarSign className="w-5 h-5" />;
-      case 'lifetime_value': return <TrendingUp className="w-5 h-5" />;
+      case 'conversion': return <Target className="w-5 h-5" />;
+      case 'churn': return <AlertTriangle className="w-5 h-5" />;
+      case 'revenue': return <DollarSign className="w-5 h-5" />;
+      case 'engagement': return <Users className="w-5 h-5" />;
       default: return <Brain className="w-5 h-5" />;
     }
   };
 
-  const getPredictionTypeLabel = (type: string) => {
+  const getInsightColor = (type: string) => {
     switch (type) {
-      case 'churn_risk': return 'Riesgo de Abandono';
-      case 'conversion_probability': return 'Probabilidad de Conversión';
-      case 'revenue_forecast': return 'Proyección de Revenue';
-      case 'lifetime_value': return 'Valor de Vida';
-      default: return type;
+      case 'conversion': return 'bg-green-100 text-green-800 border-green-200';
+      case 'churn': return 'bg-red-100 text-red-800 border-red-200';
+      case 'revenue': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'engagement': return 'bg-purple-100 text-purple-800 border-purple-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -244,32 +189,17 @@ export default function PredictiveAnalysisPage() {
     }
   };
 
-  const getFactorImpactColor = (impact: string) => {
-    switch (impact) {
-      case 'positive': return 'text-green-600';
-      case 'negative': return 'text-red-600';
-      case 'neutral': return 'text-gray-600';
-      default: return 'text-gray-600';
-    }
+  const getConfidenceColor = (confidence: number) => {
+    if (confidence >= 85) return 'text-green-600';
+    if (confidence >= 70) return 'text-yellow-600';
+    return 'text-red-600';
   };
 
-  const getModelStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'training': return 'bg-blue-100 text-blue-800';
-      case 'outdated': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const getRiskColor = (risk: number) => {
+    if (risk >= 70) return 'text-red-600 bg-red-50';
+    if (risk >= 40) return 'text-yellow-600 bg-yellow-50';
+    return 'text-green-600 bg-green-50';
   };
-
-  const filteredPredictions = predictions.filter(pred => 
-    selectedPredictionType === 'all' || pred.type === selectedPredictionType
-  );
-
-  const totalPredictions = predictions.length;
-  const highImpactPredictions = predictions.filter(p => p.impact === 'high').length;
-  const avgConfidence = predictions.reduce((sum, pred) => sum + pred.confidence, 0) / predictions.length;
-  const activeModels = modelMetrics.filter(m => m.status === 'active').length;
 
   return (
     <div className="space-y-6">
@@ -277,330 +207,328 @@ export default function PredictiveAnalysisPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Análisis Predictivo</h1>
-          <p className="text-gray-600">Insights y predicciones basadas en IA para optimizar tu CRM</p>
+          <p className="text-gray-600">Insights impulsados por IA para optimizar tu estrategia CRM</p>
         </div>
         <div className="flex space-x-2">
-          <Button 
-            variant="outline"
-            onClick={() => refreshPredictions.mutate()}
-            disabled={refreshPredictions.isPending}
+          <select
+            className="p-2 border rounded-md"
+            value={timeframe}
+            onChange={(e) => setTimeframe(e.target.value)}
           >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            {refreshPredictions.isPending ? 'Actualizando...' : 'Actualizar'}
+            <option value="7d">Últimos 7 días</option>
+            <option value="30d">Últimos 30 días</option>
+            <option value="90d">Últimos 90 días</option>
+          </select>
+          <Button
+            variant={activeTab === 'insights' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('insights')}
+          >
+            <Brain className="w-4 h-4 mr-2" />
+            Insights
           </Button>
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
+          <Button
+            variant={activeTab === 'contacts' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('contacts')}
+          >
+            <Users className="w-4 h-4 mr-2" />
+            Contactos
           </Button>
-          <Button>
-            <Settings className="w-4 h-4 mr-2" />
-            Configurar Modelos
+          <Button
+            variant={activeTab === 'forecasts' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('forecasts')}
+          >
+            <TrendingUp className="w-4 h-4 mr-2" />
+            Pronósticos
           </Button>
         </div>
       </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Brain className="w-8 h-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Predicciones Activas</p>
-                <p className="text-2xl font-bold text-gray-900">{totalPredictions}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <AlertTriangle className="w-8 h-8 text-red-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Alto Impacto</p>
-                <p className="text-2xl font-bold text-gray-900">{highImpactPredictions}</p>
-                <p className="text-xs text-red-600">Requieren atención</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <CheckCircle className="w-8 h-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Confianza Promedio</p>
-                <p className="text-2xl font-bold text-gray-900">{avgConfidence.toFixed(1)}%</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <BarChart3 className="w-8 h-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Modelos Activos</p>
-                <p className="text-2xl font-bold text-gray-900">{activeModels}</p>
-                <p className="text-xs text-green-600">de {modelMetrics.length} total</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { id: 'predictions', label: 'Predicciones' },
-            { id: 'models', label: 'Modelos ML' },
-            { id: 'insights', label: 'Insights' }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Content */}
-      {activeTab === 'predictions' && (
-        <div className="space-y-4">
-          {/* Filters */}
-          <div className="flex space-x-4">
-            <select
-              className="px-3 py-2 border border-gray-300 rounded-md"
-              value={selectedPredictionType}
-              onChange={(e) => setSelectedPredictionType(e.target.value)}
-            >
-              <option value="all">Todos los tipos</option>
-              <option value="churn_risk">Riesgo de Abandono</option>
-              <option value="conversion_probability">Probabilidad de Conversión</option>
-              <option value="revenue_forecast">Proyección de Revenue</option>
-              <option value="lifetime_value">Valor de Vida</option>
-            </select>
-          </div>
-
-          {/* Predictions List */}
-          <div className="space-y-4">
-            {predictionsLoading ? (
-              <div className="text-center py-8">Cargando predicciones...</div>
-            ) : (
-              filteredPredictions.map((prediction) => (
-                <Card key={prediction.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        {getPredictionTypeIcon(prediction.type)}
-                        <div>
-                          <h3 className="text-lg font-semibold">{prediction.title}</h3>
-                          <p className="text-gray-600">{prediction.description}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge className={getImpactColor(prediction.impact)}>
-                          {prediction.impact} impacto
-                        </Badge>
-                        <p className="text-sm text-gray-600 mt-1">{prediction.timeframe}</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                      {/* Probability */}
-                      <div>
-                        <h4 className="font-medium mb-2">Probabilidad</h4>
-                        <div className="flex items-center space-x-2">
-                          <Progress value={prediction.probability} className="flex-1" />
-                          <span className="text-lg font-bold text-blue-600">{prediction.probability}%</span>
-                        </div>
-                      </div>
-
-                      {/* Confidence */}
-                      <div>
-                        <h4 className="font-medium mb-2">Confianza</h4>
-                        <div className="flex items-center space-x-2">
-                          <Progress value={prediction.confidence} className="flex-1" />
-                          <span className="text-lg font-bold text-green-600">{prediction.confidence}%</span>
-                        </div>
-                      </div>
-
-                      {/* Type */}
-                      <div>
-                        <h4 className="font-medium mb-2">Tipo</h4>
-                        <Badge variant="outline">
-                          {getPredictionTypeLabel(prediction.type)}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {/* Factors */}
-                    <div className="mb-6">
-                      <h4 className="font-medium mb-3">Factores Principales:</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {prediction.factors.map((factor, index) => (
-                          <div key={index} className="flex items-center justify-between bg-gray-50 rounded p-3">
-                            <div>
-                              <p className="font-medium">{factor.name}</p>
-                              <p className={`text-sm ${getFactorImpactColor(factor.impact)}`}>
-                                {factor.value}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm text-gray-600">Peso: {(factor.weight * 100).toFixed(0)}%</p>
-                              <div className={`w-2 h-2 rounded-full ${
-                                factor.impact === 'positive' ? 'bg-green-500' : 
-                                factor.impact === 'negative' ? 'bg-red-500' : 'bg-gray-500'
-                              }`}></div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Recommendations */}
-                    <div>
-                      <h4 className="font-medium mb-3">Recomendaciones:</h4>
-                      <ul className="space-y-2">
-                        {prediction.recommendations.map((rec, index) => (
-                          <li key={index} className="flex items-start space-x-2">
-                            <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                            <span className="text-sm text-gray-700">{rec}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'models' && (
-        <div className="space-y-4">
-          {modelsLoading ? (
-            <div className="text-center py-8">Cargando modelos...</div>
-          ) : (
-            modelMetrics.map((model) => (
-              <Card key={model.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">{model.name}</h3>
-                      <p className="text-gray-600">{model.type}</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge className={getModelStatusColor(model.status)}>
-                        {model.status}
-                      </Badge>
-                      {model.status === 'outdated' && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => retrainModel.mutate(model.id)}
-                          disabled={retrainModel.isPending}
-                        >
-                          {retrainModel.isPending ? 'Reentrenando...' : 'Reentrenar'}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">{model.accuracy}%</p>
-                      <p className="text-xs text-gray-600">Precisión</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">{model.precision}%</p>
-                      <p className="text-xs text-gray-600">Precision</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-orange-600">{model.recall}%</p>
-                      <p className="text-xs text-gray-600">Recall</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-purple-600">{model.f1Score}%</p>
-                      <p className="text-xs text-gray-600">F1 Score</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm text-gray-600">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-4 h-4" />
-                      <span>Último entrenamiento: {new Date(model.lastTrained).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      )}
 
       {activeTab === 'insights' && (
         <div className="space-y-6">
-          <h2 className="text-lg font-semibold">Insights Generales</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Tendencias de Predicciones</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Riesgo de Abandono</span>
-                    <span className="font-bold text-red-600">↑ +15%</span>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Precisión IA</p>
+                    <p className="text-2xl font-bold text-green-600">94.2%</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Conversiones Esperadas</span>
-                    <span className="font-bold text-green-600">↑ +8%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Revenue Proyectado</span>
-                    <span className="font-bold text-blue-600">↑ +12%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Valor de Vida Promedio</span>
-                    <span className="font-bold text-purple-600">↑ +5%</span>
-                  </div>
+                  <Brain className="w-8 h-8 text-green-600" />
                 </div>
               </CardContent>
             </Card>
-
+            
             <Card>
-              <CardHeader>
-                <CardTitle>Rendimiento de Modelos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {modelMetrics.map((model) => (
-                    <div key={model.id} className="flex items-center justify-between">
-                      <span className="text-sm">{model.name}</span>
-                      <div className="flex items-center space-x-2">
-                        <Progress value={model.accuracy} className="w-16 h-2" />
-                        <span className="text-sm font-medium">{model.accuracy}%</span>
-                      </div>
-                    </div>
-                  ))}
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Insights Activos</p>
+                    <p className="text-2xl font-bold">{insights.length}</p>
+                  </div>
+                  <Zap className="w-8 h-8 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Alto Impacto</p>
+                    <p className="text-2xl font-bold text-orange-600">
+                      {insights.filter(i => i.impact === 'high').length}
+                    </p>
+                  </div>
+                  <AlertTriangle className="w-8 h-8 text-orange-600" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Acciones Pendientes</p>
+                    <p className="text-2xl font-bold text-purple-600">12</p>
+                  </div>
+                  <CheckCircle className="w-8 h-8 text-purple-600" />
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          {/* Predictive Insights */}
+          <div className="space-y-4">
+            {insights.map((insight: PredictiveInsight) => (
+              <Card key={insight.id} className={`border-l-4 ${getInsightColor(insight.type)}`}>
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-lg ${getInsightColor(insight.type)}`}>
+                        {getInsightIcon(insight.type)}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold">{insight.title}</h3>
+                        <p className="text-gray-600">{insight.prediction}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge className={getImpactColor(insight.impact)}>
+                        {insight.impact === 'high' ? 'Alto Impacto' : 
+                         insight.impact === 'medium' ? 'Impacto Medio' : 'Bajo Impacto'}
+                      </Badge>
+                      <Badge variant="outline">{insight.timeline}</Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Confianza</span>
+                      <span className={`text-sm font-bold ${getConfidenceColor(insight.confidence)}`}>
+                        {insight.confidence}%
+                      </span>
+                    </div>
+                    <Progress value={insight.confidence} className="h-2" />
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium mb-2">Acciones Recomendadas:</h4>
+                    <ul className="space-y-1">
+                      {insight.actions.map((action, index) => (
+                        <li key={index} className="flex items-center text-sm text-gray-600">
+                          <CheckCircle className="w-3 h-3 mr-2 text-green-500" />
+                          {action}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'contacts' && (
+        <div className="space-y-6">
+          {/* Contact Predictions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Predicciones por Contacto</CardTitle>
+              <CardDescription>
+                Análisis predictivo individual para cada contacto
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {contactPredictions.map((contact: ContactPrediction) => (
+                  <div key={contact.contactId} className="border rounded-lg p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold">{contact.name}</h3>
+                        <p className="text-gray-600">{contact.email}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-600">Ingresos Esperados</p>
+                        <p className="text-xl font-bold text-green-600">
+                          €{contact.expectedRevenue.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">Probabilidad de Conversión</span>
+                          <span className="text-sm font-bold text-green-600">
+                            {contact.conversionProbability}%
+                          </span>
+                        </div>
+                        <Progress value={contact.conversionProbability} className="h-3 mb-4" />
+                      </div>
+                      
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">Riesgo de Abandono</span>
+                          <span className={`text-sm font-bold ${getRiskColor(contact.churnRisk).split(' ')[0]}`}>
+                            {contact.churnRisk}%
+                          </span>
+                        </div>
+                        <Progress 
+                          value={contact.churnRisk} 
+                          className="h-3 mb-4"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <h4 className="font-medium mb-2 flex items-center">
+                        <Target className="w-4 h-4 mr-2" />
+                        Próxima Mejor Acción
+                      </h4>
+                      <p className="text-sm bg-blue-50 text-blue-800 p-3 rounded-lg">
+                        {contact.nextBestAction}
+                      </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="font-medium mb-2 text-red-600 flex items-center">
+                          <AlertTriangle className="w-4 h-4 mr-2" />
+                          Factores de Riesgo
+                        </h4>
+                        <ul className="space-y-1">
+                          {contact.riskFactors.map((factor, index) => (
+                            <li key={index} className="text-sm text-red-600 flex items-center">
+                              <div className="w-1 h-1 bg-red-500 rounded-full mr-2"></div>
+                              {factor}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium mb-2 text-green-600 flex items-center">
+                          <TrendingUp className="w-4 h-4 mr-2" />
+                          Oportunidades
+                        </h4>
+                        <ul className="space-y-1">
+                          {contact.opportunities.map((opportunity, index) => (
+                            <li key={index} className="text-sm text-green-600 flex items-center">
+                              <div className="w-1 h-1 bg-green-500 rounded-full mr-2"></div>
+                              {opportunity}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === 'forecasts' && (
+        <div className="space-y-6">
+          {/* Revenue Forecast */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <DollarSign className="w-5 h-5 mr-2" />
+                  Pronóstico de Ingresos
+                </CardTitle>
+                <CardDescription>
+                  Proyección de ingresos para los próximos meses
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">Gráfico de Pronóstico de Ingresos</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <PieChart className="w-5 h-5 mr-2" />
+                  Distribución de Conversiones
+                </CardTitle>
+                <CardDescription>
+                  Predicción de conversiones por canal
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <PieChart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">Gráfico de Distribución</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Forecast Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Resumen de Pronósticos</CardTitle>
+              <CardDescription>
+                Métricas clave proyectadas para el próximo trimestre
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center p-4 border rounded-lg">
+                  <TrendingUp className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                  <h3 className="font-semibold text-lg">Crecimiento Esperado</h3>
+                  <p className="text-2xl font-bold text-green-600">+24.5%</p>
+                  <p className="text-sm text-gray-600">vs trimestre anterior</p>
+                </div>
+                
+                <div className="text-center p-4 border rounded-lg">
+                  <Users className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                  <h3 className="font-semibold text-lg">Nuevos Clientes</h3>
+                  <p className="text-2xl font-bold text-blue-600">127</p>
+                  <p className="text-sm text-gray-600">conversiones proyectadas</p>
+                </div>
+                
+                <div className="text-center p-4 border rounded-lg">
+                  <DollarSign className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                  <h3 className="font-semibold text-lg">Valor Promedio</h3>
+                  <p className="text-2xl font-bold text-purple-600">€2,840</p>
+                  <p className="text-sm text-gray-600">por cliente</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

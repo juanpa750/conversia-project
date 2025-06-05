@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +30,7 @@ import {
   PieChart,
   LineChart
 } from 'lucide-react';
+import { Link } from 'wouter';
 
 interface CRMModule {
   id: string;
@@ -51,8 +51,8 @@ interface CRMModule {
 
 const crmModules: CRMModule[] = [
   {
-    id: 'contact-scoring',
-    title: 'Puntuación de Contactos',
+    id: 'lead-scoring',
+    title: 'Puntuación de Leads',
     description: 'Sistema inteligente de puntuación automática basado en comportamiento, demografía y engagement',
     icon: <TrendingUp className="w-6 h-6" />,
     status: 'active',
@@ -64,8 +64,8 @@ const crmModules: CRMModule[] = [
       'Alertas automáticas de leads calientes',
       'Historial de puntuación completo'
     ],
-    configPath: '/crm/advanced/contact-scoring',
-    explorePath: '/crm/advanced/contact-scoring',
+    configPath: '/crm/advanced/lead-scoring/config',
+    explorePath: '/crm/advanced/lead-scoring/dashboard',
     color: 'bg-blue-500',
     metrics: [
       { value: 234, label: 'Leads Calificados', change: 12 },
@@ -87,8 +87,8 @@ const crmModules: CRMModule[] = [
       'Reportes de velocidad de ventas',
       'Integración con CRM externo'
     ],
-    configPath: '/crm/advanced/sales-pipeline',
-    explorePath: '/crm/advanced/sales-pipeline',
+    configPath: '/crm/advanced/sales-pipeline/config',
+    explorePath: '/crm/advanced/sales-pipeline/dashboard',
     color: 'bg-green-500',
     metrics: [
       { value: 156, label: 'Oportunidades Activas', change: 8 },
@@ -110,8 +110,8 @@ const crmModules: CRMModule[] = [
       'Campañas dirigidas por segmento',
       'Análisis de cohortes'
     ],
-    configPath: '/crm/advanced/relationship-mapping',
-    explorePath: '/crm/advanced/relationship-mapping',
+    configPath: '/crm/advanced/customer-segmentation/config',
+    explorePath: '/crm/advanced/customer-segmentation/dashboard',
     color: 'bg-purple-500',
     metrics: [
       { value: 12, label: 'Segmentos Activos', change: 2 },
@@ -133,8 +133,8 @@ const crmModules: CRMModule[] = [
       'A/B testing de workflows',
       'Métricas de performance detalladas'
     ],
-    configPath: '/crm/advanced/automations',
-    explorePath: '/crm/advanced/automations',
+    configPath: '/crm/advanced/automation-workflows/config',
+    explorePath: '/crm/advanced/automation-workflows/dashboard',
     color: 'bg-orange-500',
     metrics: [
       { value: 23, label: 'Workflows Activos', change: 4 },
@@ -333,18 +333,18 @@ export default function CRMAdvanced() {
 
               {/* Actions */}
               <div className="flex gap-2 pt-4">
-                <Link href={module.explorePath} className="flex-1">
-                  <Button className="w-full">
+                <Button asChild className="flex-1">
+                  <Link href={module.explorePath}>
                     <Activity className="w-4 h-4 mr-2" />
                     Explorar
-                  </Button>
-                </Link>
-                <Link href={module.configPath}>
-                  <Button variant="outline">
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href={module.configPath}>
                     <Settings className="w-4 h-4 mr-2" />
                     Configurar
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
