@@ -1382,11 +1382,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const variantData = {
             productId: product.id,
             variantName: variant.variant || variant.variantName || `Variante ${i + 1}`,
-            characteristics: variant.variant || variant.characteristics || `Características de ${variant.variant || 'variante'}`,
+            characteristics: variant.characteristics || variant.variant || `Características de ${variant.variant || 'variante'}`,
             price: String(variant.price || '0'),
             currency: variant.currency || 'USD',
             variantImage: variant.image || variant.variantImage || null,
             stock: Number(variant.stock) || 0,
+            available: Boolean(variant.available !== undefined ? variant.available : true),
+            category: variant.category || null,
+            sku: variant.sku || null,
             isDefault: i === 0,
             sortOrder: i
           };
@@ -1443,11 +1446,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const variantData = {
             productId: id,
             variantName: variant.variant || variant.variantName || `Variante ${i + 1}`,
-            characteristics: variant.variant || variant.characteristics || `Características de ${variant.variant || 'variante'}`,
+            characteristics: variant.characteristics || variant.variant || `Características de ${variant.variant || 'variante'}`,
             price: String(variant.price || '0'),
             currency: variant.currency || 'USD',
             variantImage: variant.image || variant.variantImage || null,
             stock: Number(variant.stock) || 0,
+            available: Boolean(variant.available !== undefined ? variant.available : true),
+            category: variant.category || null,
+            sku: variant.sku || null,
             isDefault: i === 0,
             sortOrder: i
           };

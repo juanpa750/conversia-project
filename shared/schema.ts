@@ -236,6 +236,9 @@ export const productVariants = pgTable("product_variants", {
   variantImage: varchar("variant_image"), // Imagen específica para esta variante
   priceImages: text("price_images").array(), // Imágenes de precios específicas para esta variante
   stock: integer("stock").default(0),
+  available: boolean("available").default(true), // Si la variante está disponible
+  category: varchar("category"), // Categoría específica de la variante
+  sku: varchar("sku"), // SKU específico de la variante
   isDefault: boolean("is_default").default(false), // Marcar una variante como predeterminada
   sortOrder: integer("sort_order").default(0), // Para ordenar las variantes
   createdAt: timestamp("created_at").defaultNow(),
