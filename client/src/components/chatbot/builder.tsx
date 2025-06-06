@@ -61,9 +61,12 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
 
   // Obtener datos del chatbot si existe
   const { data: chatbot, isLoading: isChatbotLoading } = useQuery({
-    queryKey: ['/api/chatbots', chatbotId],
+    queryKey: [`/api/chatbots/${chatbotId}`],
     enabled: !!chatbotId,
   });
+
+  console.log('🎯 Builder - chatbotId:', chatbotId);
+  console.log('🎯 Builder - chatbot data:', chatbot);
 
   // Obtener productos disponibles
   const { data: products } = useQuery({
@@ -72,18 +75,19 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
 
   useEffect(() => {
     if (chatbot && !isInitialized) {
-      setChatbotName(chatbot.name || 'Chatbot');
-      setSelectedProductId(chatbot.productId?.toString() || 'none');
-      setTriggerKeywords(chatbot.triggerKeywords || []);
-      setAiInstructions(chatbot.aiInstructions || '');
-      setAiPersonality(chatbot.aiPersonality || '');
-      setConversationObjective(chatbot.conversationObjective || '');
+      console.log('🎯 Initializing chatbot with data:', chatbot);
+      setChatbotName((chatbot as any).name || 'Chatbot');
+      setSelectedProductId((chatbot as any).productId?.toString() || 'none');
+      setTriggerKeywords((chatbot as any).triggerKeywords || []);
+      setAiInstructions((chatbot as any).aiInstructions || '');
+      setAiPersonality((chatbot as any).aiPersonality || '');
+      setConversationObjective((chatbot as any).conversationObjective || '');
       
-      if (chatbot.configuration) {
+      if ((chatbot as any).configuration) {
         try {
-          const config = typeof chatbot.configuration === 'string' 
-            ? JSON.parse(chatbot.configuration) 
-            : chatbot.configuration;
+          const config = typeof (chatbot as any).configuration === 'string' 
+            ? JSON.parse((chatbot as any).configuration) 
+            : (chatbot as any).configuration;
           setNodes(config.nodes || initialNodes);
           setEdges(config.edges || []);
         } catch (error) {
