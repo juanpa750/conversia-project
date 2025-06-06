@@ -22,7 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RiSave3Line, RiTestTubeLine, RiWhatsappLine, RiSettings3Line } from '@/lib/icons';
+import { RiSave3Line, RiTestTubeLine, RiWhatsappLine, RiSettings3Line, RiBrainLine, RiTargetLine } from 'react-icons/ri';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -52,6 +52,8 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   const [triggerKeywords, setTriggerKeywords] = useState<string[]>([]);
   const [aiInstructions, setAiInstructions] = useState<string>('');
   const [newKeyword, setNewKeyword] = useState<string>('');
+  const [conversationObjective, setConversationObjective] = useState<string>('sales');
+  const [aiPersonality, setAiPersonality] = useState<string>('');
   const [location] = useLocation();
   const { toast } = useToast();
 
@@ -392,7 +394,8 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
             <div className="border-b border-gray-200">
               <TabsList className="ml-4 mt-1">
                 <TabsTrigger value="flow">Flujo</TabsTrigger>
-                <TabsTrigger value="product">Producto</TabsTrigger>
+                <TabsTrigger value="instruction">Instrucción</TabsTrigger>
+                <TabsTrigger value="objective">Objetivo</TabsTrigger>
                 <TabsTrigger value="settings">Configuración</TabsTrigger>
                 <TabsTrigger value="integrations">Integraciones</TabsTrigger>
               </TabsList>
@@ -419,12 +422,12 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
               </div>
             </TabsContent>
             
-            <TabsContent value="product" className="m-0 flex-1 outline-none overflow-hidden">
-              <div className="h-full overflow-y-scroll p-4">
+            <TabsContent value="instruction" className="m-0 flex-1 outline-none overflow-hidden">
+              <div className="h-full overflow-y-auto p-4">
                 <div className="space-y-6 pb-8">
                   <div className="flex items-center gap-2">
-                    <RiSettings3Line className="h-5 w-5" />
-                    <h3 className="text-lg font-medium">Configuración de Producto</h3>
+                    <RiBrainLine className="h-5 w-5" />
+                    <h3 className="text-lg font-medium">Instrucciones de IA</h3>
                   </div>
                 
                 {/* Selección de Producto */}
@@ -452,50 +455,26 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                   </CardContent>
                 </Card>
 
-                {/* Palabras Clave Activadoras */}
+                {/* Personalidad de IA */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Palabras Clave Activadoras</CardTitle>
+                    <CardTitle>Personalidad de la IA</CardTitle>
+                    <p className="text-sm text-gray-600">Define cómo debe comportarse y comunicarse tu asistente IA</p>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label>Palabras que activan este chatbot</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Agregar palabra clave..."
-                          value={newKeyword}
-                          onChange={(e) => setNewKeyword(e.target.value)}
-                          onKeyPress={handleKeyPress}
-                        />
-                        <Button onClick={addKeyword} variant="outline">
-                          Agregar
-                        </Button>
-                      </div>
+                      <Label>Personalidad y tono de comunicación</Label>
+                      <Textarea
+                        placeholder="Ej: Eres un asistente amigable y profesional. Siempre saludas cordialmente y mantienes un tono cálido pero informativo. Te enfocas en ayudar al cliente de manera eficiente..."
+                        value={aiPersonality}
+                        onChange={(e) => setAiPersonality(e.target.value)}
+                        rows={4}
+                      />
                     </div>
-                    
-                    {triggerKeywords.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {triggerKeywords.map((keyword) => (
-                          <Badge 
-                            key={keyword} 
-                            variant="secondary" 
-                            className="flex items-center gap-1"
-                          >
-                            {keyword}
-                            <button
-                              onClick={() => removeKeyword(keyword)}
-                              className="ml-1 text-red-500 hover:text-red-700"
-                            >
-                              ×
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
 
-                {/* Instrucciones de IA */}
+                {/* Instrucciones Específicas */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Instrucciones para la IA</CardTitle>

@@ -54,6 +54,8 @@ export const chatbots = pgTable("chatbots", {
   productId: integer("product_id").references(() => products.id, { onDelete: 'set null' }),
   triggerKeywords: text("trigger_keywords").array(),
   aiInstructions: text("ai_instructions"),
+  aiPersonality: text("ai_personality"),
+  conversationObjective: varchar("conversation_objective").default('sales'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
