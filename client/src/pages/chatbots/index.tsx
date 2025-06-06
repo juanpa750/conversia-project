@@ -25,6 +25,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { AssistantWizard } from "@/components/chatbot/assistant-wizard";
@@ -36,6 +44,11 @@ import {
   RiBarChart2Line,
   RiMenuLine,
   RiAddLine,
+  RiLayoutGridLine,
+  RiFileList3Line,
+  RiMoreLine,
+  RiEditLine,
+  RiDeleteBinLine,
 } from "@/lib/icons";
 
 interface Chatbot {
@@ -80,6 +93,7 @@ export function Chatbots() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("all");
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
   // Fetch chatbots data
   const { data: chatbots = [], isLoading } = useQuery({
@@ -307,17 +321,38 @@ export function Chatbots() {
           </TabsList>
         </Tabs>
 
-        <div className="relative w-full md:w-64">
-          <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-            <RiSearchLine />
-          </span>
-          <Input
-            type="text"
-            placeholder="Buscar chatbot..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center rounded-lg border p-1">
+            <Button
+              variant={viewMode === 'cards' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('cards')}
+              className="h-8 px-3"
+            >
+              <RiLayoutGridLine className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+              className="h-8 px-3"
+            >
+              <RiFileList3Line className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="relative w-full md:w-64">
+            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+              <RiSearchLine />
+            </span>
+            <Input
+              type="text"
+              placeholder="Buscar chatbot..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
