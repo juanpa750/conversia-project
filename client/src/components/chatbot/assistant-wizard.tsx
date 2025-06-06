@@ -71,11 +71,12 @@ const objectives: ChatbotObjective[] = [
     recommendations: {
       tone: 'Persuasivo y amigable, enfocado en beneficios',
       structure: [
-        'Saludo personalizado',
-        'Identificar necesidades',
-        'Presentar soluciones',
-        'Manejar objeciones',
-        'Cerrar venta'
+        'Atención - Captar interés inicial',
+        'Interés - Despertar curiosidad',
+        'Deseo - Crear necesidad del producto',
+        'Acción - Motivar la compra',
+        'Seguimiento - Cerrar y acompañar',
+        'Post-venta - Fidelización'
       ],
       keyMessages: [
         'Ofrecer valor inmediato',

@@ -297,7 +297,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
             </TabsContent>
             
             <TabsContent value="settings">
-              <div className="p-4 space-y-6">
+              <div className="p-4 space-y-6 max-h-[600px] overflow-y-auto">
                 <h3 className="mb-4 text-lg font-medium">Configuración del Chatbot</h3>
                 
                 {/* Configuración Básica */}
@@ -452,7 +452,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
             </TabsContent>
             
             <TabsContent value="integrations">
-              <div className="p-4 space-y-6">
+              <div className="p-4 space-y-6 max-h-[600px] overflow-y-auto">
                 <h3 className="mb-4 text-lg font-medium">Integraciones</h3>
                 
                 {/* WhatsApp Integration */}
