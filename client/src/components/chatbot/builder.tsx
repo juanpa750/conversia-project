@@ -120,15 +120,21 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
       setChatbotName((chatbot as any).name || 'Chatbot');
       const flow = (chatbot as any).flow;
       
-      if (flow && typeof flow === 'object' && flow.nodes && Array.isArray(flow.nodes) && flow.nodes.length > 0) {
-        console.log('Loading flow with', flow.nodes.length, 'nodes');
+      console.log('Flow object:', flow);
+      console.log('Flow nodes:', flow?.nodes);
+      console.log('Nodes is array:', Array.isArray(flow?.nodes));
+      console.log('Nodes length:', flow?.nodes?.length);
+      
+      if (flow && flow.nodes && Array.isArray(flow.nodes) && flow.nodes.length > 0) {
+        console.log('✅ Loading AI-generated flow with', flow.nodes.length, 'nodes');
         setNodes(flow.nodes);
         if (flow.edges && Array.isArray(flow.edges)) {
           setEdges(flow.edges);
+          console.log('✅ Loading', flow.edges.length, 'edges');
         }
         setIsInitialized(true);
       } else {
-        console.log('No flow found, using default nodes');
+        console.log('❌ No valid flow found, using default nodes');
         setNodes(initialNodes);
         setIsInitialized(true);
       }
