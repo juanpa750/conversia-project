@@ -22,7 +22,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RiSave3Line, RiTestTubeLine, RiWhatsappLine } from '@/lib/icons';
+import { RiSave3Line, RiTestTubeLine, RiWhatsappLine, RiSettings4Line } from '@/lib/icons';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 
 const initialNodes: Node[] = [
   {
@@ -44,6 +48,10 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [triggerKeywords, setTriggerKeywords] = useState<string[]>([]);
+  const [aiInstructions, setAiInstructions] = useState<string>('');
+  const [newKeyword, setNewKeyword] = useState<string>('');
   const { toast } = useToast();
 
   // Fetch chatbot data if editing existing chatbot
