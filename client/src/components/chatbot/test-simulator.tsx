@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { RiSendPlane2Fill, RiRobotLine, RiUserLine } from '@/lib/icons';
+import { RiArrowRightSLine, RiRobotLine, RiUserLine } from '@/lib/icons';
 
 interface Message {
   id: string;
@@ -203,7 +203,7 @@ export function TestSimulator({ isOpen, onClose, chatbotName, nodes, edges }: Te
               className="flex-1"
             />
             <Button onClick={handleSendMessage} size="sm">
-              <RiSendPlaneFill className="w-4 h-4" />
+              <RiArrowRightSLine className="w-4 h-4" />
             </Button>
           </div>
         </div>

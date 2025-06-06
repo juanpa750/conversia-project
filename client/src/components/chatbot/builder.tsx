@@ -38,10 +38,11 @@ interface ChatbotBuilderProps {
 }
 
 export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [chatbotName, setChatbotName] = useState('Nuevo Chatbot');
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { toast } = useToast();
 
   // Fetch chatbot data if editing existing chatbot
@@ -114,25 +115,29 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
 
   // Load chatbot flow when data is available
   useEffect(() => {
-    if (chatbot) {
+    if (chatbot && !isInitialized) {
       console.log('Loading chatbot:', chatbot);
       setChatbotName((chatbot as any).name || 'Chatbot');
       const flow = (chatbot as any).flow;
       
-      if (flow && typeof flow === 'object') {
-        console.log('Loading flow:', flow);
-        if (flow.nodes && Array.isArray(flow.nodes) && flow.nodes.length > 0) {
-          setNodes(flow.nodes);
-        }
+      if (flow && typeof flow === 'object' && flow.nodes && Array.isArray(flow.nodes) && flow.nodes.length > 0) {
+        console.log('Loading flow with', flow.nodes.length, 'nodes');
+        setNodes(flow.nodes);
         if (flow.edges && Array.isArray(flow.edges)) {
           setEdges(flow.edges);
         }
+        setIsInitialized(true);
       } else {
-        // If no flow exists, keep default initial nodes
         console.log('No flow found, using default nodes');
+        setNodes(initialNodes);
+        setIsInitialized(true);
       }
+    } else if (!chatbotId && !isInitialized) {
+      // New chatbot - use default nodes
+      setNodes(initialNodes);
+      setIsInitialized(true);
     }
-  }, [chatbot, setNodes, setEdges]);
+  }, [chatbot, chatbotId, isInitialized, setNodes, setEdges]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
