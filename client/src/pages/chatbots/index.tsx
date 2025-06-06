@@ -356,22 +356,23 @@ export function Chatbots() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredChatbots.map((chatbot) => (
+      {viewMode === 'cards' ? (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredChatbots.map((chatbot) => (
           <Card key={chatbot.id} className="overflow-hidden">
             <CardHeader className="border-b border-gray-100 bg-gray-50">
               <div className="flex justify-between">
                 <Badge
                   variant="outline"
-                  className={TYPE_BADGES[chatbot.type]}
+                  className={TYPE_BADGES[chatbot.type as keyof typeof TYPE_BADGES]}
                 >
-                  {TYPE_LABELS[chatbot.type]}
+                  {TYPE_LABELS[chatbot.type as keyof typeof TYPE_LABELS]}
                 </Badge>
                 <Badge
                   variant="outline"
-                  className={STATUS_BADGES[chatbot.status]}
+                  className={STATUS_BADGES[chatbot.status as keyof typeof STATUS_BADGES]}
                 >
-                  {STATUS_LABELS[chatbot.status]}
+                  {STATUS_LABELS[chatbot.status as keyof typeof STATUS_LABELS]}
                 </Badge>
               </div>
               <CardTitle className="mt-2">{chatbot.name}</CardTitle>
@@ -465,8 +466,115 @@ export function Chatbots() {
               </div>
             </CardFooter>
           </Card>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Mensajes</TableHead>
+                <TableHead>Contactos</TableHead>
+                <TableHead>Fecha</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredChatbots.map((chatbot) => (
+                <TableRow key={chatbot.id}>
+                  <TableCell className="font-medium">
+                    <div>
+                      <div className="font-semibold">{chatbot.name}</div>
+                      <div className="text-sm text-gray-500">{chatbot.description}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={TYPE_BADGES[chatbot.type as keyof typeof TYPE_BADGES]}
+                    >
+                      {TYPE_LABELS[chatbot.type as keyof typeof TYPE_LABELS]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={STATUS_BADGES[chatbot.status as keyof typeof STATUS_BADGES]}
+                    >
+                      {STATUS_LABELS[chatbot.status as keyof typeof STATUS_LABELS]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{chatbot.messages}</TableCell>
+                  <TableCell>{chatbot.contacts}</TableCell>
+                  <TableCell>
+                    {new Date(chatbot.createdAt).toLocaleDateString("es-ES", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link 
+                          href={`/chatbots/builder/${chatbot.id}`}
+                          onClick={() => {
+                            console.log('🔗 Edit link clicked for chatbot:', chatbot.id, chatbot.name);
+                            console.log('🔗 Generated URL:', `/chatbots/builder/${chatbot.id}`);
+                          }}
+                        >
+                          <RiEditLine className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-gray-500"
+                        asChild
+                      >
+                        <Link href={`/analytics?chatbot=${chatbot.id}`}>
+                          <RiBarChart2Line className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-gray-500">
+                            <RiMoreLine className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleDuplicateChatbot(chatbot)}>
+                            Duplicar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleShareChatbot(chatbot)}>
+                            Compartir
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleToggleStatus(chatbot)}>
+                            {chatbot.status === 'active' ? 'Desactivar' : 'Activar'}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            onClick={() => handleDeleteChatbot(chatbot.id)}
+                          >
+                            <RiDeleteBinLine className="mr-2 h-4 w-4" />
+                            Eliminar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {filteredChatbots.length === 0 && (
         <Card className="mt-6 border-dashed">
