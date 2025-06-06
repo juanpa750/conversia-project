@@ -559,6 +559,11 @@ export function Chatbots() {
                           <DropdownMenuItem onClick={() => handleShareChatbot(chatbot)}>
                             Compartir
                           </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/chatbots/${chatbot.id}/product-config`}>
+                              Configurar Producto
+                            </Link>
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleToggleStatus(chatbot)}>
                             {chatbot.status === 'active' ? 'Desactivar' : 'Activar'}
                           </DropdownMenuItem>
