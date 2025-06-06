@@ -142,7 +142,7 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
                         const currentImages = basicProduct?.priceImages || [];
                         const updatedImages = [...currentImages, url];
                         onBasicProductChange('priceImages', updatedImages);
-                        console.log('Foto de precio agregada:', url);
+                        console.log('Foto de precio agregada:', url, 'Total:', updatedImages.length);
                       }
                     });
                   }
@@ -168,7 +168,7 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
             {basicProduct?.priceImages && basicProduct.priceImages.length > 0 && (
               <div className="mt-2">
                 <div className="flex flex-wrap gap-2">
-                  {basicProduct.priceImages.map((imageUrl, index) => (
+                  {basicProduct.priceImages.map((imageUrl: string, index: number) => (
                     <div key={index} className="relative group">
                       <img 
                         src={imageUrl} 
@@ -178,8 +178,8 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
                       <button
                         type="button"
                         onClick={() => {
-                          if (onBasicProductChange) {
-                            const updatedImages = basicProduct.priceImages.filter((_, i) => i !== index);
+                          if (onBasicProductChange && basicProduct?.priceImages) {
+                            const updatedImages = basicProduct.priceImages.filter((_: string, i: number) => i !== index);
                             onBasicProductChange('priceImages', updatedImages);
                           }
                         }}

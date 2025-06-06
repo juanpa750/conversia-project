@@ -327,7 +327,8 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
                 currency: form.watch('currency') || 'USD',
                 stock: form.watch('stock') || 0,
                 category: form.watch('category') || '',
-                sku: form.watch('sku') || ''
+                sku: form.watch('sku') || '',
+                priceImages: form.watch('priceImages') || []
               }}
               onBasicProductChange={(field, value) => {
                 form.setValue(field as any, value);
