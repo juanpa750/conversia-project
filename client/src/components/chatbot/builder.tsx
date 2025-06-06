@@ -611,7 +611,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
             
             <TabsContent value="settings" className="m-0 flex-1 outline-none">
               <div className="max-h-[calc(100vh-12rem)] overflow-y-auto p-4">
-                <div className="space-y-6 pb-40">
+                <div className="space-y-6 pb-96">
                   <div className="flex items-center gap-2">
                     <RiSettings3Line className="h-5 w-5" />
                     <h3 className="text-lg font-medium">Configuración del Chatbot</h3>
@@ -773,7 +773,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
             
             <TabsContent value="integrations" className="m-0 flex-1 outline-none">
               <div className="max-h-[calc(100vh-12rem)] overflow-y-auto p-4">
-                <div className="space-y-6 pb-40">
+                <div className="space-y-6 pb-96">
                   <div className="flex items-center gap-2">
                     <RiWhatsappLine className="h-5 w-5" />
                     <h3 className="text-lg font-medium">Integraciones</h3>
