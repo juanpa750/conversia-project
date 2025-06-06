@@ -882,6 +882,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // URL analysis route for automatic product information extraction
+  app.post('/api/analyze-product-url', isAuthenticated, async (req: any, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ error: 'URL is required' });
+      }
+
+      // Validate URL format
+      try {
+        new URL(url);
+      } catch {
+        return res.status(400).json({ error: 'Invalid URL format' });
+      }
+
+      // Extract product information from the URL
+      const productInfo = await extractProductInfoFromUrl(url);
+      
+      res.json(productInfo);
+    } catch (error) {
+      console.error('Error analyzing product URL:', error);
+      res.status(500).json({ error: 'Failed to analyze product URL' });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;

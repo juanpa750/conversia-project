@@ -19,7 +19,7 @@ import {
   FormLabel, 
   FormMessage 
 } from '@/components/ui/form';
-import { Plus, X, Upload, Image as ImageIcon, FileText, Truck, CreditCard } from 'lucide-react';
+import { Plus, X, Upload, Image as ImageIcon, FileText, Truck, CreditCard, LinkIcon, Sparkles, Loader2 } from 'lucide-react';
 import type { Product } from '@shared/schema';
 
 const productSchema = z.object({
@@ -52,6 +52,8 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
   const [newTag, setNewTag] = useState('');
   const [newTestimonialImage, setNewTestimonialImage] = useState('');
   const [newPriceImage, setNewPriceImage] = useState('');
+  const [productUrl, setProductUrl] = useState('');
+  const [isAnalyzingUrl, setIsAnalyzingUrl] = useState(false);
   
   // File upload refs
   const productImageRef = useRef<HTMLInputElement>(null);
@@ -161,6 +163,42 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
     }
   };
 
+  const analyzeProductUrl = async () => {
+    if (!productUrl.trim()) return;
+    
+    setIsAnalyzingUrl(true);
+    try {
+      const response = await fetch('/api/analyze-product-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: productUrl }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al analizar la URL');
+      }
+      
+      const result = await response.json();
+      
+      // Rellenar los campos del formulario con la información extraída
+      if (result.name) form.setValue('name', result.name);
+      if (result.description) form.setValue('description', result.description);
+      if (result.price) form.setValue('price', result.price);
+      if (result.category) form.setValue('category', result.category);
+      if (result.productImage) form.setValue('productImage', result.productImage);
+      if (result.tags && result.tags.length > 0) form.setValue('tags', result.tags);
+      
+      setProductUrl('');
+    } catch (error) {
+      console.error('Error analyzing URL:', error);
+      alert('Error al analizar la URL. Por favor, inténtalo de nuevo.');
+    } finally {
+      setIsAnalyzingUrl(false);
+    }
+  };
+
   const handleSubmit = (data: ProductFormData) => {
     onSubmit(data);
   };
@@ -211,6 +249,49 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
                 </FormItem>
               )}
             />
+
+            {/* Análisis de URL para extraer información del producto */}
+            <Card className="border-dashed border-blue-300 bg-blue-50/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <LinkIcon className="h-4 w-4" />
+                  Análisis Automático con IA
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Pega la URL de una página web del producto para extraer automáticamente la información
+                </p>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="flex gap-2">
+                  <Input
+                    value={productUrl}
+                    onChange={(e) => setProductUrl(e.target.value)}
+                    placeholder="https://ejemplo.com/producto"
+                    className="flex-1"
+                    disabled={isAnalyzingUrl}
+                  />
+                  <Button
+                    type="button"
+                    onClick={analyzeProductUrl}
+                    disabled={!productUrl.trim() || isAnalyzingUrl}
+                    size="sm"
+                    className="shrink-0"
+                  >
+                    {isAnalyzingUrl ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Analizando...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Analizar
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField
@@ -606,26 +687,22 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
               control={form.control}
               name="cashOnDelivery"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" />
-                    Pago Contra Entrega
-                  </FormLabel>
-                  <FormDescription>
-                    ¿Se acepta pago contra entrega para este producto?
-                  </FormDescription>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="yes">Sí</SelectItem>
-                      <SelectItem value="no">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      Pago Contra Entrega
+                    </FormLabel>
+                    <FormDescription>
+                      ¿Se acepta pago contra entrega para este producto?
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value === 'yes'}
+                      onCheckedChange={(checked) => field.onChange(checked ? 'yes' : 'no')}
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />
