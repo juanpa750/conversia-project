@@ -3,6 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { ChatbotBuilder } from "@/components/chatbot/builder";
 
 export function ChatbotBuilderPage({ id }: { id?: string }) {
+  console.log('🎯 ChatbotBuilderPage received ID:', id);
+  console.log('🎯 ID type:', typeof id);
+  
   const { data: chatbot, isLoading } = useQuery({
     queryKey: ["/api/chatbots", id],
     // Only fetch if we have an ID
