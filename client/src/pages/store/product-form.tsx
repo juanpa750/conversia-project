@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -86,6 +86,23 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
   const watchedTestimonialImages = form.watch('testimonialImages');
   const watchedPriceImages = form.watch('priceImages');
   const watchedProductImage = form.watch('productImage');
+
+  // Cargar variantes existentes cuando se edita un producto
+  useEffect(() => {
+    if (product?.id) {
+      // Cargar variantes desde la API
+      fetch(`/api/products/${product.id}/variants`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && Array.isArray(data)) {
+            setVariants(data);
+          }
+        })
+        .catch(error => {
+          console.error('Error loading variants:', error);
+        });
+    }
+  }, [product?.id]);
 
   // Convert file to base64 or URL (simplified for demo)
   const handleFileUpload = (file: File, callback: (url: string) => void) => {
