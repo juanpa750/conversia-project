@@ -161,13 +161,7 @@ export default function StorePage() {
     },
   });
 
-  // Filter products
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
-    return matchesSearch && matchesCategory;
-  });
+
 
   // Get unique categories
   const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
@@ -220,9 +214,6 @@ export default function StorePage() {
     const numericPrice = parseFloat(price || '0');
     return `${symbol}${numericPrice.toLocaleString()}`;
   };
-
-  // Get unique categories
-  const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
 
   // Filter products based on search and category
   const filteredProducts = products.filter(product => {
