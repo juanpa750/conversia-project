@@ -232,8 +232,7 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
             <TableHeader>
               <TableRow>
                 <TableHead>Imagen</TableHead>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Características</TableHead>
+                <TableHead>Nombre/Variante</TableHead>
                 <TableHead>Precio</TableHead>
                 <TableHead>Moneda</TableHead>
                 <TableHead>Stock</TableHead>
@@ -285,14 +284,6 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
                       value={variant.variant}
                       onChange={(e) => updateVariant(index, 'variant', e.target.value)}
                       placeholder="Ej: Talla M, Color Azul"
-                      className="min-w-32"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      value={variant.characteristics || ''}
-                      onChange={(e) => updateVariant(index, 'characteristics', e.target.value)}
-                      placeholder="Características detalladas"
                       className="min-w-40"
                     />
                   </TableCell>

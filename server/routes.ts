@@ -1457,42 +1457,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (let i = 0; i < variants.length; i++) {
           const variant = variants[i];
           
-          console.log(`Frontend variant ${i} data received:`, JSON.stringify(variant, null, 2));
-          
-          // Map frontend fields to backend fields correctly
-          // Clean up placeholder values
-          const cleanVariantName = variant.variant && variant.variant !== 'Variante' && variant.variant.trim() 
-            ? variant.variant.trim() 
-            : `Variante ${i + 1}`;
-          
-          const cleanCharacteristics = variant.characteristics && variant.characteristics.trim()
-            ? variant.characteristics.trim()
-            : (variant.variant && variant.variant !== 'Variante' && variant.variant.trim()
-              ? `Características de ${variant.variant.trim()}`
-              : `Características de la variante ${i + 1}`);
-          
-          const cleanImage = variant.image && variant.image.trim() && !variant.image.includes('placeholder')
-            ? variant.image.trim()
-            : null;
+          console.log(`Frontend variant ${i}:`, variant.variant, variant.image ? 'HAS_IMAGE' : 'NO_IMAGE');
           
           const variantData = {
             productId: id,
-            variantName: cleanVariantName,
-            characteristics: cleanCharacteristics,
-            price: String(variant.price || '0'),
+            variantName: variant.variant || `Variante ${i + 1}`,
+            characteristics: variant.characteristics || null,
+            price: variant.price || '0',
             currency: variant.currency || 'USD',
-            variantImage: cleanImage,
+            variantImage: variant.image || null,
             stock: Number(variant.stock) || 0,
-            available: Boolean(variant.available !== undefined ? variant.available : true),
-            category: variant.category && variant.category.trim() ? variant.category.trim() : null,
-            sku: variant.sku && variant.sku.trim() ? variant.sku.trim() : null,
+            available: variant.available !== false,
+            category: variant.category || null,
+            sku: variant.sku || null,
             isDefault: i === 0,
             sortOrder: i
           };
           
-          console.log(`Creating variant ${i} with mapped data:`, JSON.stringify(variantData, null, 2));
+          console.log(`Creating variant ${i}:`, variantData.variantName, variantData.variantImage ? 'WITH_IMAGE' : 'NO_IMAGE');
           const result = await storage.createProductVariant(variantData);
-          console.log(`Variant ${i} created with result:`, JSON.stringify(result, null, 2));
+          console.log(`Created variant:`, result.variantName, result.variantImage ? 'SAVED_WITH_IMAGE' : 'SAVED_NO_IMAGE');
         }
       }
       
