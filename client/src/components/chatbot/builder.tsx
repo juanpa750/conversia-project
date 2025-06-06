@@ -298,13 +298,21 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
 
   const addKeyword = () => {
     if (newKeyword.trim() && !triggerKeywords.includes(newKeyword.trim())) {
-      setTriggerKeywords([...triggerKeywords, newKeyword.trim()]);
+      const updatedKeywords = [...triggerKeywords, newKeyword.trim()];
+      setTriggerKeywords(updatedKeywords);
       setNewKeyword('');
+      if (chatbotId) {
+        handleSaveField('triggerKeywords', updatedKeywords);
+      }
     }
   };
 
   const removeKeyword = (keyword: string) => {
-    setTriggerKeywords(triggerKeywords.filter(k => k !== keyword));
+    const updatedKeywords = triggerKeywords.filter(k => k !== keyword);
+    setTriggerKeywords(updatedKeywords);
+    if (chatbotId) {
+      handleSaveField('triggerKeywords', updatedKeywords);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -456,6 +464,24 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                           className="min-h-[150px]"
                         />
                       </div>
+                      <div className="flex justify-end pt-4">
+                        <Button
+                          onClick={() => {
+                            if (chatbotId) {
+                              handleSaveField('aiInstructions', aiInstructions);
+                              toast({
+                                title: "Guardado",
+                                description: "Instrucciones guardadas correctamente",
+                              });
+                            }
+                          }}
+                          disabled={saveChatbotMutation.isPending}
+                          variant="outline"
+                          size="sm"
+                        >
+                          {saveChatbotMutation.isPending ? "Guardando..." : "Guardar Instrucciones"}
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
@@ -483,7 +509,10 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                           id="conversation-objective"
                           placeholder="Ej: Generar ventas de productos, programar citas, brindar soporte técnico, capturar leads..."
                           value={conversationObjective}
-                          onChange={(e) => setConversationObjective(e.target.value)}
+                          onChange={(e) => {
+                            setConversationObjective(e.target.value);
+                            debouncedSaveObjective(e.target.value);
+                          }}
                           className="min-h-[100px]"
                         />
                       </div>
@@ -518,6 +547,25 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                             </SelectContent>
                           </Select>
                         </div>
+                      </div>
+                      
+                      <div className="flex justify-end pt-4">
+                        <Button
+                          onClick={() => {
+                            if (chatbotId) {
+                              handleSaveField('conversationObjective', conversationObjective);
+                              toast({
+                                title: "Guardado",
+                                description: "Objetivo guardado correctamente",
+                              });
+                            }
+                          }}
+                          disabled={saveChatbotMutation.isPending}
+                          variant="outline"
+                          size="sm"
+                        >
+                          {saveChatbotMutation.isPending ? "Guardando..." : "Guardar Objetivo"}
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -574,7 +622,12 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                           <Input 
                             id="chatbot-name"
                             value={chatbotName}
-                            onChange={(e) => setChatbotName(e.target.value)}
+                            onChange={(e) => {
+                              setChatbotName(e.target.value);
+                              if (chatbotId) {
+                                handleSaveField('name', e.target.value);
+                              }
+                            }}
                             placeholder="Ej: Asistente de Ventas"
                           />
                         </div>
@@ -636,6 +689,25 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                           ))}
                         </div>
                       )}
+                      
+                      <div className="flex justify-end pt-4">
+                        <Button
+                          onClick={() => {
+                            if (chatbotId) {
+                              handleSaveField('triggerKeywords', triggerKeywords);
+                              toast({
+                                title: "Guardado",
+                                description: "Palabras clave guardadas correctamente",
+                              });
+                            }
+                          }}
+                          disabled={saveChatbotMutation.isPending}
+                          variant="outline"
+                          size="sm"
+                        >
+                          {saveChatbotMutation.isPending ? "Guardando..." : "Guardar Configuración"}
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
 
