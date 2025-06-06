@@ -216,6 +216,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteChatbot(id: number): Promise<void> {
+    // First, remove chatbot references from products
+    await db.update(products)
+      .set({ chatbotId: null })
+      .where(eq(products.chatbotId, id));
+    
+    // Delete related product triggers
+    await db.delete(productTriggers).where(eq(productTriggers.chatbotId, id));
+    
+    // Delete related product AI configs
+    await db.delete(productAiConfig).where(eq(productAiConfig.chatbotId, id));
+    
+    // Finally delete the chatbot
     await db.delete(chatbots).where(eq(chatbots.id, id));
   }
 
