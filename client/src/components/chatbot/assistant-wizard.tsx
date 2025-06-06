@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Card, 
   CardContent, 
@@ -252,6 +254,7 @@ interface AssistantWizardProps {
 
 export function AssistantWizard({ onComplete }: AssistantWizardProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedObjective, setSelectedObjective] = useState<ChatbotObjective | null>(null);
@@ -284,24 +287,58 @@ export function AssistantWizard({ onComplete }: AssistantWizardProps) {
     }
   };
 
-  const handleComplete = () => {
-    if (!selectedObjective) return;
+  // Mutation to create chatbot
+  const createChatbotMutation = useMutation({
+    mutationFn: async (chatbotData: any) => {
+      return await apiRequest("POST", "/api/chatbots", chatbotData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chatbots"] });
+      toast({
+        title: "Chatbot creado exitosamente",
+        description: "Tu chatbot inteligente está listo para usar con todas las configuraciones recomendadas.",
+      });
+      setIsOpen(false);
+      onComplete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al crear chatbot",
+        description: error.message || "No se pudo crear el chatbot. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    },
+  });
 
-    const finalConfig = {
-      ...chatbotConfig,
-      objective: selectedObjective,
-      aiInstructions: generateAIInstructions(),
-      recommendedTemplates: selectedObjective.templates,
-      suggestedFeatures: selectedObjective.features
+  const handleComplete = () => {
+    if (!selectedObjective || !chatbotConfig.name) return;
+
+    // Generate complete chatbot configuration based on objective
+    const conversationFlow = generateConversationFlow(selectedObjective);
+    const personalityConfig = generatePersonalityConfig(selectedObjective);
+    
+    const chatbotData = {
+      name: chatbotConfig.name,
+      description: chatbotConfig.description || `Chatbot inteligente para ${selectedObjective.name.toLowerCase()}`,
+      type: selectedObjective.id,
+      status: 'active',
+      settings: {
+        objective: selectedObjective.name,
+        industry: chatbotConfig.industry,
+        targetAudience: chatbotConfig.targetAudience,
+        tone: selectedObjective.recommendations.tone,
+        personality: personalityConfig,
+        conversationFlow: conversationFlow,
+        features: selectedObjective.features,
+        templates: selectedObjective.templates,
+        keyMessages: selectedObjective.recommendations.keyMessages,
+        followUpActions: selectedObjective.recommendations.followUpActions,
+        customInstructions: chatbotConfig.customInstructions,
+        aiInstructions: generateAIInstructions()
+      }
     };
 
-    onComplete(finalConfig);
-    setIsOpen(false);
-    
-    toast({
-      title: "Chatbot configurado",
-      description: `Tu asistente para ${selectedObjective.name.toLowerCase()} está listo.`,
-    });
+    createChatbotMutation.mutate(chatbotData);
   };
 
   const generateAIInstructions = () => {
