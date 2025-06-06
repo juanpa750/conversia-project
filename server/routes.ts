@@ -1379,9 +1379,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             productId: product.id,
             variantName: variant.variant || variant.variantName || `Variante ${i + 1}`,
             characteristics: variant.variant || variant.characteristics || variant.variantName || `Variante ${i + 1}`,
-            price: variant.price,
+            price: variant.price || '0',
             currency: variant.currency || 'USD',
-            variantImage: variant.image || variant.variantImage,
+            variantImage: variant.image || variant.variantImage || null,
             stock: variant.stock || 0,
             sortOrder: i
           });
@@ -1432,15 +1432,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create new variants
         for (let i = 0; i < variants.length; i++) {
           const variant = variants[i];
-          console.log('Processing variant:', JSON.stringify(variant, null, 2));
           
           const variantData = {
             productId: id,
             variantName: variant.variant || variant.variantName || `Variante ${i + 1}`,
             characteristics: variant.variant || variant.characteristics || variant.variantName || `Variante ${i + 1}`,
-            price: variant.price,
+            price: variant.price || '0',
             currency: variant.currency || 'USD',
-            variantImage: variant.image || variant.variantImage,
+            variantImage: variant.image || variant.variantImage || null,
             stock: variant.stock || 0,
             sortOrder: i
           };

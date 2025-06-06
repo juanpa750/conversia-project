@@ -40,7 +40,7 @@ const productSchema = z.object({
   cashOnDelivery: z.enum(['yes', 'no']).default('no'),
 });
 
-type ProductFormData = z.infer<typeof productSchema>;
+type ProductFormData = z.infer<typeof productSchema> & { variants?: any[] };
 
 interface ProductFormProps {
   product?: Product;
@@ -224,6 +224,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
       ...data,
       variants: variants
     };
+    console.log('Submitting product with variants:', JSON.stringify(productDataWithVariants, null, 2));
     onSubmit(productDataWithVariants);
   };
 
