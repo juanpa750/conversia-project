@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar, jsonb, foreignKey, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar, jsonb, foreignKey, pgEnum, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -202,6 +202,55 @@ export const multimediaFiles = pgTable("multimedia_files", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Productos de la tienda
+export const products = pgTable("products", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  price: varchar("price"),
+  currency: varchar("currency").default("USD"),
+  category: varchar("category"),
+  images: text("images").array(),
+  features: text("features").array(),
+  specifications: jsonb("specifications"),
+  availability: boolean("availability").default(true),
+  stock: integer("stock").default(0),
+  sku: varchar("sku"),
+  tags: text("tags").array(),
+  chatbotId: integer("chatbot_id").references(() => chatbots.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Disparadores de IA para productos
+export const productTriggers = pgTable("product_triggers", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").references(() => products.id).notNull(),
+  chatbotId: integer("chatbot_id").references(() => chatbots.id).notNull(),
+  keywords: text("keywords").array(),
+  phrases: text("phrases").array(),
+  priority: integer("priority").default(1),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Configuración de IA para productos específicos
+export const productAiConfig = pgTable("product_ai_config", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").references(() => products.id).notNull(),
+  chatbotId: integer("chatbot_id").references(() => chatbots.id).notNull(),
+  salesPitch: text("sales_pitch"),
+  objectionHandling: jsonb("objection_handling"),
+  competitorAnalysis: text("competitor_analysis"),
+  targetAudience: text("target_audience"),
+  useCases: text("use_cases").array(),
+  benefits: text("benefits").array(),
+  aiInstructions: text("ai_instructions"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schema types
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -241,6 +290,23 @@ export const insertWhatsappIntegrationSchema = createInsertSchema(whatsappIntegr
   updatedAt: true,
   status: true,
   connectedAt: true,
+});
+
+export const insertProductSchema = createInsertSchema(products).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertProductTriggerSchema = createInsertSchema(productTriggers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertProductAiConfigSchema = createInsertSchema(productAiConfig).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 export const upsertUserSchema = z.object({
@@ -283,3 +349,12 @@ export type UserPreference = typeof userPreferences.$inferSelect;
 
 export type MultimediaFile = typeof multimediaFiles.$inferSelect;
 export type InsertMultimediaFile = typeof multimediaFiles.$inferInsert;
+
+export type Product = typeof products.$inferSelect;
+export type InsertProduct = typeof products.$inferInsert;
+
+export type ProductTrigger = typeof productTriggers.$inferSelect;
+export type InsertProductTrigger = typeof productTriggers.$inferInsert;
+
+export type ProductAiConfig = typeof productAiConfig.$inferSelect;
+export type InsertProductAiConfig = typeof productAiConfig.$inferInsert;
