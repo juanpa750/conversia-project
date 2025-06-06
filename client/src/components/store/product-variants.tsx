@@ -10,6 +10,7 @@ interface ProductVariant {
   id?: number;
   image: string;
   variant: string;
+  characteristics?: string;
   price: string;
   currency: string;
   stock: number;
@@ -58,6 +59,7 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
       const firstVariant: ProductVariant = {
         image: "",
         variant: "Estándar",
+        characteristics: "",
         price: basicProduct.price,
         currency: basicProduct.currency,
         stock: basicProduct.stock,
@@ -71,6 +73,7 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
       const newVariant: ProductVariant = {
         image: "",
         variant: "",
+        characteristics: "",
         price: "",
         currency: basicProduct?.currency || "USD",
         stock: 0,
@@ -229,7 +232,8 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
             <TableHeader>
               <TableRow>
                 <TableHead>Imagen</TableHead>
-                <TableHead>Característica/Variante</TableHead>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Características</TableHead>
                 <TableHead>Precio</TableHead>
                 <TableHead>Moneda</TableHead>
                 <TableHead>Stock</TableHead>
@@ -280,8 +284,16 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
                     <Input
                       value={variant.variant}
                       onChange={(e) => updateVariant(index, 'variant', e.target.value)}
-                      placeholder="Variante"
+                      placeholder="Ej: Talla M, Color Azul"
                       className="min-w-32"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={variant.characteristics || ''}
+                      onChange={(e) => updateVariant(index, 'characteristics', e.target.value)}
+                      placeholder="Características detalladas"
+                      className="min-w-40"
                     />
                   </TableCell>
                   <TableCell>
