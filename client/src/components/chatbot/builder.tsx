@@ -173,6 +173,10 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
     },
     onSuccess: () => {
       console.log('💾 Save successful');
+      toast({
+        title: "Guardado exitoso",
+        description: "Todos los cambios se han guardado correctamente",
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/chatbots'] });
       queryClient.invalidateQueries({ queryKey: [`/api/chatbots/${chatbotId}`] });
     },
@@ -259,16 +263,24 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   );
 
   const handleSave = () => {
-    console.log('💾 Saving chatbot with product data:', {
+    console.log('💾 Saving complete chatbot data:', {
+      name: chatbotName,
       selectedProductId,
       triggerKeywords,
-      aiInstructions
+      aiInstructions,
+      aiPersonality,
+      conversationObjective,
+      flow: { nodes, edges }
     });
     
     saveChatbotMutation.mutate({
+      name: chatbotName,
       productId: selectedProductId && selectedProductId !== 'none' ? parseInt(selectedProductId) : null,
       triggerKeywords,
-      aiInstructions
+      aiInstructions,
+      aiPersonality,
+      conversationObjective,
+      flow: JSON.stringify({ nodes, edges })
     });
   };
 
@@ -464,24 +476,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                           className="min-h-[150px]"
                         />
                       </div>
-                      <div className="flex justify-end pt-4">
-                        <Button
-                          onClick={() => {
-                            if (chatbotId) {
-                              handleSaveField('aiInstructions', aiInstructions);
-                              toast({
-                                title: "Guardado",
-                                description: "Instrucciones guardadas correctamente",
-                              });
-                            }
-                          }}
-                          disabled={saveChatbotMutation.isPending}
-                          variant="outline"
-                          size="sm"
-                        >
-                          {saveChatbotMutation.isPending ? "Guardando..." : "Guardar Instrucciones"}
-                        </Button>
-                      </div>
+
                     </CardContent>
                   </Card>
                 </div>
@@ -549,24 +544,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                         </div>
                       </div>
                       
-                      <div className="flex justify-end pt-4">
-                        <Button
-                          onClick={() => {
-                            if (chatbotId) {
-                              handleSaveField('conversationObjective', conversationObjective);
-                              toast({
-                                title: "Guardado",
-                                description: "Objetivo guardado correctamente",
-                              });
-                            }
-                          }}
-                          disabled={saveChatbotMutation.isPending}
-                          variant="outline"
-                          size="sm"
-                        >
-                          {saveChatbotMutation.isPending ? "Guardando..." : "Guardar Objetivo"}
-                        </Button>
-                      </div>
+
                     </CardContent>
                   </Card>
 
@@ -690,24 +668,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                         </div>
                       )}
                       
-                      <div className="flex justify-end pt-4">
-                        <Button
-                          onClick={() => {
-                            if (chatbotId) {
-                              handleSaveField('triggerKeywords', triggerKeywords);
-                              toast({
-                                title: "Guardado",
-                                description: "Palabras clave guardadas correctamente",
-                              });
-                            }
-                          }}
-                          disabled={saveChatbotMutation.isPending}
-                          variant="outline"
-                          size="sm"
-                        >
-                          {saveChatbotMutation.isPending ? "Guardando..." : "Guardar Configuración"}
-                        </Button>
-                      </div>
+
                     </CardContent>
                   </Card>
 
