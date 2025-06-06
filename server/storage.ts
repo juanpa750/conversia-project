@@ -643,14 +643,127 @@ export class DatabaseStorage implements IStorage {
     const targetAudience = this.identifyTargetAudience(product, extractedFeatures);
     const competitiveAdvantages = this.extractCompetitiveAdvantages(productDescription);
 
+    // Get product variants for intelligent pricing information
+    const variants = await this.getProductVariants(productId);
+
+    // Generate intelligent flow with visual nodes and edges
+    let nodes = [
+      {
+        id: 'start',
+        type: 'message',
+        position: { x: 100, y: 100 },
+        data: {
+          type: 'message',
+          text: `¡Hola! Soy tu especialista en ${product.name}. ${extractedFeatures.length > 0 ? `Reconocido por ${extractedFeatures[0]}.` : ''} ¿Qué te gustaría saber?`,
+          isStart: true
+        }
+      },
+      {
+        id: 'info-menu',
+        type: 'menu',
+        position: { x: 100, y: 250 },
+        data: {
+          type: 'menu',
+          text: '¿Qué información necesitas?',
+          options: [
+            { id: 'features', text: 'Características y funciones' },
+            { id: 'benefits', text: 'Beneficios y ventajas' },
+            { id: 'specs', text: 'Especificaciones técnicas' },
+            { id: 'price', text: 'Precio y disponibilidad' }
+          ]
+        }
+      },
+      {
+        id: 'features-response',
+        type: 'message',
+        position: { x: 400, y: 150 },
+        data: {
+          type: 'message',
+          text: `${product.name} incluye: ${extractedFeatures.slice(0, 3).join(', ')}. ${extractedFeatures.length > 3 ? 'Y muchas características más.' : ''}`
+        }
+      },
+      {
+        id: 'benefits-response',
+        type: 'message',
+        position: { x: 400, y: 250 },
+        data: {
+          type: 'message',
+          text: `Los clientes destacan: ${extractedBenefits.slice(0, 2).join(' y ')}. Imagina cómo puede transformar tu experiencia.`
+        }
+      },
+      {
+        id: 'specs-response',
+        type: 'message',
+        position: { x: 400, y: 350 },
+        data: {
+          type: 'message',
+          text: `Especificaciones de ${product.name}: ${technicalSpecs.slice(0, 3).join(', ')}. ${technicalSpecs.length > 3 ? 'Contáctanos para detalles completos.' : ''}`
+        }
+      },
+      {
+        id: 'price-response',
+        type: 'message',
+        position: { x: 400, y: 450 },
+        data: {
+          type: 'message',
+          text: `${product.name} está disponible${product.price ? ` por ${product.price} ${product.currency || ''}` : ''}. ${product.freeShipping ? 'Con envío gratuito. ' : ''}${product.cashOnDelivery === 'yes' ? 'Pago contra entrega disponible.' : ''}`
+        }
+      },
+      {
+        id: 'purchase-question',
+        type: 'question',
+        position: { x: 700, y: 300 },
+        data: {
+          type: 'question',
+          text: '¿Te interesa realizar el pedido?',
+          responses: ['Sí, quiero comprarlo', 'Necesito más información', 'No por ahora']
+        }
+      },
+      {
+        id: 'purchase-confirm',
+        type: 'message',
+        position: { x: 1000, y: 200 },
+        data: {
+          type: 'message',
+          text: '¡Excelente! Te conectaré con un asesor para completar tu pedido. Proporciona tu número de teléfono y te contactaremos.'
+        }
+      },
+      {
+        id: 'more-info',
+        type: 'message',
+        position: { x: 1000, y: 350 },
+        data: {
+          type: 'message',
+          text: '¿Qué información adicional necesitas? Estoy aquí para resolver todas tus dudas.'
+        }
+      }
+    ];
+
+    let edges = [
+      { id: 'e1', source: 'start', target: 'info-menu' },
+      { id: 'e2', source: 'info-menu', target: 'features-response', sourceHandle: 'features' },
+      { id: 'e3', source: 'info-menu', target: 'benefits-response', sourceHandle: 'benefits' },
+      { id: 'e4', source: 'info-menu', target: 'specs-response', sourceHandle: 'specs' },
+      { id: 'e5', source: 'info-menu', target: 'price-response', sourceHandle: 'price' },
+      { id: 'e6', source: 'features-response', target: 'purchase-question' },
+      { id: 'e7', source: 'benefits-response', target: 'purchase-question' },
+      { id: 'e8', source: 'specs-response', target: 'purchase-question' },
+      { id: 'e9', source: 'price-response', target: 'purchase-question' },
+      { id: 'e10', source: 'purchase-question', target: 'purchase-confirm', sourceHandle: 'Sí, quiero comprarlo' },
+      { id: 'e11', source: 'purchase-question', target: 'more-info', sourceHandle: 'Necesito más información' },
+      { id: 'e12', source: 'more-info', target: 'info-menu' }
+    ];
+
     // Generate intelligent chatbot configuration
     const chatbotData: InsertChatbot = {
       userId,
-      name: `Especialista en ${product.name}`,
+      name: `Especialista en ${product.name} - ${product.category || 'Producto'}`,
       description: `Asistente virtual especializado en ${product.name} con conocimiento profundo del producto y metodología AIDA para ventas consultivas.`,
       type: 'sales' as any,
       status: 'active' as any,
       flow: JSON.stringify({
+        nodes,
+        edges,
         productContext: {
           id: product.id,
           name: product.name,
@@ -663,45 +776,69 @@ export class DatabaseStorage implements IStorage {
           price: product.price,
           currency: product.currency,
           category: product.category,
-          availability: product.availability,
-          freeShipping: product.freeShipping,
-          cashOnDelivery: product.cashOnDelivery
-        },
-        aidaFlow: {
-          attention: {
-            triggers: ['precio', 'información', 'detalles', 'disponible'],
-            message: `¡Excelente elección! ${product.name} es destacado ${extractedFeatures.length > 0 ? `por ${extractedFeatures[0]}` : 'en su categoría'}. ¿Sabías que tiene características únicas?`
-          },
-          interest: {
-            triggers: ['características', 'funciones', 'especificaciones'],
-            message: `${product.name} incluye: ${extractedFeatures.slice(0, 3).join(', ')}. ¿Te gustaría conocer cómo te benefician?`
-          },
-          desire: {
-            triggers: ['beneficios', 'ventajas', 'resultados'],
-            message: `Los clientes destacan: ${extractedBenefits.slice(0, 2).join(' y ')}. Imagina cómo puede transformar tu experiencia.`
-          },
-          action: {
-            triggers: ['comprar', 'precio', 'pedido'],
-            message: `${product.name} está disponible${product.price ? ` por ${product.price} ${product.currency || ''}` : ''}. ${product.freeShipping ? 'Con envío gratuito. ' : ''}¿Proceder con el pedido?`
-          }
-        },
-        responses: {
-          welcome: `¡Hola! Soy tu especialista en ${product.name}. ${extractedFeatures.length > 0 ? `Reconocido por ${extractedFeatures[0]}.` : ''} ¿Qué te gustaría saber?`,
-          technical: `Especificaciones de ${product.name}: ${technicalSpecs.slice(0, 3).join(', ')}. ¿Necesitas más detalles técnicos?`,
-          comparison: `${product.name} se distingue ${competitiveAdvantages.length > 0 ? `por ser ${competitiveAdvantages.slice(0, 2).join(' y ')}` : 'por su calidad superior'}. ¿Comparamos con otras opciones?`,
-          purchase: `Para ${product.name}: ${product.price ? `Precio ${product.price} ${product.currency || ''}` : 'Precio especial disponible'}. ${product.freeShipping ? 'Envío gratuito. ' : ''}${product.cashOnDelivery === 'yes' ? 'Pago contra entrega disponible.' : ''}`
+          variants: variants || []
         }
       })
     };
 
-    // Get product variants for intelligent pricing information
-    const variants = await this.getProductVariants(productId);
+    // If variants exist, add variant-specific nodes
+    if (variants && variants.length > 0) {
+      const variantMenuNode = {
+        id: 'variant-menu',
+        type: 'menu',
+        position: { x: 700, y: 150 },
+        data: {
+          type: 'menu',
+          text: `${product.name} tiene diferentes opciones disponibles:`,
+          options: variants.map(v => ({
+            id: `variant-${v.id}`,
+            text: `${v.variantName || v.characteristics || 'Opción'} - ${v.price ? `${v.price} ${product.currency || ''}` : 'Consultar precio'}`
+          }))
+        }
+      };
+
+      nodes.push(variantMenuNode);
+
+      // Add variant-specific response nodes
+      variants.forEach((variant, index) => {
+        const variantResponseNode = {
+          id: `variant-response-${variant.id}`,
+          type: 'message',
+          position: { x: 1000, y: 100 + (index * 100) },
+          data: {
+            type: 'message',
+            text: `${variant.variant}: ${variant.characteristics || 'Excelente opción'}. ${variant.price ? `Precio: ${variant.price} ${product.currency || ''}` : 'Precio especial disponible'}.`
+          }
+        };
+        nodes.push(variantResponseNode);
+
+        // Connect variant menu to response
+        edges.push({
+          id: `e-variant-${variant.id}`,
+          source: 'variant-menu',
+          target: `variant-response-${variant.id}`,
+          sourceHandle: `variant-${variant.id}`
+        });
+
+        // Connect variant response to purchase question
+        edges.push({
+          id: `e-variant-purchase-${variant.id}`,
+          source: `variant-response-${variant.id}`,
+          target: 'purchase-question'
+        });
+      });
+
+      // Connect price response to variant menu instead of purchase question
+      edges = edges.filter(e => e.id !== 'e9'); // Remove direct connection
+      edges.push({
+        id: 'e9-variant',
+        source: 'price-response',
+        target: 'variant-menu'
+      });
+    }
 
     const chatbot = await this.createChatbot(chatbotData);
     await this.updateProduct(productId, { chatbotId: chatbot.id });
-
-    // Generate complete AIDA conversation flows
-    await this.generateAidaFlows(chatbot.id, product, extractedFeatures, extractedBenefits, technicalSpecs, variants);
 
     // Create intelligent keyword triggers
     const intelligentKeywords = [
