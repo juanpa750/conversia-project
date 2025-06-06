@@ -186,21 +186,53 @@ export default function StorePage() {
     createChatbotMutation.mutate(productId);
   };
 
+  const handleBatchCreateChatbots = async () => {
+    const productsWithoutChatbots = products.filter(p => !p.chatbotId);
+    
+    for (const product of productsWithoutChatbots) {
+      try {
+        await apiRequest('POST', `/api/products/${product.id}/create-chatbot`);
+      } catch (error) {
+        console.error(`Error creating chatbot for ${product.name}:`, error);
+      }
+    }
+    
+    // Refresh the products list
+    queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+    
+    toast({
+      title: "Chatbots generados exitosamente",
+      description: `Se han creado ${productsWithoutChatbots.length} chatbots inteligentes con análisis profundo de productos.`,
+    });
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Tienda de Productos</h1>
-          <p className="text-gray-600 mt-1">Gestiona tu catálogo de productos y crea chatbots automáticamente</p>
+          <p className="text-gray-600 mt-1">Gestiona tu catálogo de productos y crea chatbots automáticamente con IA</p>
         </div>
-        <Button 
-          onClick={() => setIsCreateDialogOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Producto
-        </Button>
+        <div className="flex gap-3">
+          {products.filter(p => !p.chatbotId).length > 1 && (
+            <Button 
+              onClick={handleBatchCreateChatbots}
+              disabled={createChatbotMutation.isPending}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              {createChatbotMutation.isPending ? 'Generando...' : `Generar ${products.filter(p => !p.chatbotId).length} Chatbots IA`}
+            </Button>
+          )}
+          <Button 
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Producto
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -348,9 +380,10 @@ export default function StorePage() {
                         <DropdownMenuItem
                           onClick={() => handleCreateChatbot(product.id)}
                           disabled={createChatbotMutation.isPending}
+                          className="text-blue-600 font-medium"
                         >
                           <Zap className="h-4 w-4 mr-2" />
-                          Crear Chatbot
+                          {createChatbotMutation.isPending ? 'Generando...' : 'Generar Chatbot IA'}
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuSeparator />
