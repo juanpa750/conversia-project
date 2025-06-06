@@ -639,6 +639,40 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                     </CardContent>
                   </Card>
 
+                  {/* Vinculación de Producto */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Producto Vinculado</CardTitle>
+                      <p className="text-sm text-gray-600">Selecciona un producto para configuraciones automáticas</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="product-select">Producto</Label>
+                        <Select 
+                          value={selectedProductId} 
+                          onValueChange={(value) => {
+                            setSelectedProductId(value);
+                            if (chatbotId) {
+                              handleSaveField('productId', value === 'none' ? null : parseInt(value));
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar producto" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sin producto vinculado</SelectItem>
+                            {Array.isArray(products) && products.map((product: any) => (
+                              <SelectItem key={product.id} value={product.id.toString()}>
+                                {product.name} - {product.currency} {product.price}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   {/* Palabras Clave Activadoras */}
                   <Card>
                     <CardHeader>
@@ -693,31 +727,26 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="tone">Tono de Comunicación</Label>
-                          <Select defaultValue="profesional">
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar tono" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="profesional">Profesional</SelectItem>
-                              <SelectItem value="amigable">Amigable</SelectItem>
-                              <SelectItem value="casual">Casual</SelectItem>
-                              <SelectItem value="formal">Formal</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Label htmlFor="timeout">Tiempo de Respuesta (segundos)</Label>
+                          <Input 
+                            id="timeout"
+                            type="number"
+                            defaultValue="30"
+                            min="5"
+                            max="300"
+                            placeholder="30"
+                          />
                         </div>
                         <div>
-                          <Label htmlFor="response-style">Estilo de Respuesta</Label>
-                          <Select defaultValue="conciso">
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar estilo" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="conciso">Conciso</SelectItem>
-                              <SelectItem value="detallado">Detallado</SelectItem>
-                              <SelectItem value="conversacional">Conversacional</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Label htmlFor="max-messages">Máximo de Mensajes por Conversación</Label>
+                          <Input 
+                            id="max-messages"
+                            type="number"
+                            defaultValue="50"
+                            min="10"
+                            max="1000"
+                            placeholder="50"
+                          />
                         </div>
                       </div>
                     </CardContent>
