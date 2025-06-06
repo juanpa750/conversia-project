@@ -751,110 +751,113 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                             <SelectItem value="conversacional">Conversacional</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
 
                 {/* Configuración de Multimedia */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm text-gray-600">Elementos Multimedia</h4>
-                  <div className="space-y-3">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Configuración de Multimedia</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <input type="checkbox" id="enableImages" className="rounded" defaultChecked />
-                      <label htmlFor="enableImages" className="text-sm">Habilitar envío de imágenes</label>
+                      <Label htmlFor="enableImages">Habilitar envío de imágenes</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <input type="checkbox" id="enableVideos" className="rounded" defaultChecked />
-                      <label htmlFor="enableVideos" className="text-sm">Habilitar envío de videos</label>
+                      <Label htmlFor="enableVideos">Habilitar envío de videos</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <input type="checkbox" id="enableAudios" className="rounded" defaultChecked />
-                      <label htmlFor="enableAudios" className="text-sm">Habilitar mensajes de audio</label>
+                      <Label htmlFor="enableAudios">Habilitar mensajes de audio</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <input type="checkbox" id="enableDocuments" className="rounded" />
-                      <label htmlFor="enableDocuments" className="text-sm">Habilitar envío de documentos</label>
+                      <Label htmlFor="enableDocuments">Habilitar envío de documentos</Label>
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
 
                 {/* Configuración Avanzada */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm text-gray-600">Configuración Avanzada</h4>
-                  <div className="space-y-3">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Configuración Avanzada</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Tiempo de espera antes de escalamiento (minutos)</label>
-                      <Input type="number" defaultValue="5" className="w-32" />
+                      <Label htmlFor="timeout">Tiempo de espera antes de escalamiento (minutos)</Label>
+                      <Input id="timeout" type="number" defaultValue="5" className="w-32" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Máximo de intentos por conversación</label>
-                      <Input type="number" defaultValue="3" className="w-32" />
+                      <Label htmlFor="max-attempts">Máximo de intentos por conversación</Label>
+                      <Input id="max-attempts" type="number" defaultValue="3" className="w-32" />
                     </div>
                     <div className="flex items-center space-x-2">
                       <input type="checkbox" id="enableFallback" className="rounded" defaultChecked />
-                      <label htmlFor="enableFallback" className="text-sm">Habilitar respuesta de respaldo cuando no entienda</label>
+                      <Label htmlFor="enableFallback">Habilitar respuesta de respaldo cuando no entienda</Label>
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
 
                 {/* Horarios de Funcionamiento */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm text-gray-600">Horarios de Funcionamiento</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Hora de inicio</label>
-                      <Input type="time" defaultValue="08:00" />
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Horarios de Funcionamiento</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="start-time">Hora de inicio</Label>
+                        <Input id="start-time" type="time" defaultValue="08:00" />
+                      </div>
+                      <div>
+                        <Label htmlFor="end-time">Hora de fin</Label>
+                        <Input id="end-time" type="time" defaultValue="18:00" />
+                      </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Hora de fin</label>
-                      <Input type="time" defaultValue="18:00" />
+                      <Label>Días activos</Label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
+                          <label key={day} className="flex items-center space-x-1">
+                            <input type="checkbox" className="rounded" defaultChecked={day !== 'Sáb' && day !== 'Dom'} />
+                            <span className="text-sm">{day}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Días activos</label>
-                    <div className="flex flex-wrap gap-2">
-                      {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
-                        <label key={day} className="flex items-center space-x-1">
-                          <input type="checkbox" className="rounded" defaultChecked={day !== 'Sáb' && day !== 'Dom'} />
-                          <span className="text-sm">{day}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
 
                 {/* Mensajes Automáticos */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm text-gray-600">Mensajes Automáticos</h4>
-                  <div className="space-y-3">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Mensajes Automáticos</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Mensaje de bienvenida</label>
+                      <Label htmlFor="welcome-message">Mensaje de bienvenida</Label>
                       <textarea 
+                        id="welcome-message"
                         className="w-full p-2 border rounded-md h-20" 
                         placeholder="Ej: ¡Hola! Bienvenido a nuestro servicio..."
                         defaultValue="¡Hola! 👋 Bienvenido, soy tu asistente virtual. ¿En qué puedo ayudarte hoy?"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Mensaje fuera de horario</label>
+                      <Label htmlFor="offline-message">Mensaje fuera de horario</Label>
                       <textarea 
+                        id="offline-message"
                         className="w-full p-2 border rounded-md h-20" 
                         placeholder="Mensaje cuando esté fuera del horario de atención..."
                         defaultValue="Gracias por contactarnos. Nuestro horario de atención es de 8:00 AM a 6:00 PM. Te responderemos tan pronto como sea posible."
                       />
                     </div>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t">
-                  <Button onClick={() => {
-                    toast({
-                      title: "Configuración guardada",
-                      description: "Los cambios se han aplicado correctamente",
-                    });
-                  }} className="w-full">
-                    Guardar Configuración
-                  </Button>
+                  </CardContent>
+                </Card>
                 </div>
               </div>
             </TabsContent>
