@@ -71,6 +71,27 @@ export default function StorePage() {
     select: (data: Product[]) => data
   });
 
+  // Fetch variants for products that need them
+  const productsWithoutPrice = products.filter(p => !p.price || isNaN(parseFloat(p.price)));
+  const { data: variantsData = {} } = useQuery({
+    queryKey: ['/api/products/variants', productsWithoutPrice.map(p => p.id)],
+    queryFn: async () => {
+      const variants: Record<number, any[]> = {};
+      for (const product of productsWithoutPrice) {
+        try {
+          const response = await fetch(`/api/products/${product.id}/variants`);
+          if (response.ok) {
+            variants[product.id] = await response.json();
+          }
+        } catch (error) {
+          console.error(`Error fetching variants for product ${product.id}:`, error);
+        }
+      }
+      return variants;
+    },
+    enabled: productsWithoutPrice.length > 0
+  });
+
   // Create product mutation
   const createProductMutation = useMutation({
     mutationFn: async (productData: any) => {
@@ -212,7 +233,28 @@ export default function StorePage() {
   const formatPrice = (price: string | null, currency?: string) => {
     const symbol = currency || '$';
     const numericPrice = parseFloat(price || '0');
+    if (isNaN(numericPrice)) return `${symbol}0`;
     return `${symbol}${numericPrice.toLocaleString()}`;
+  };
+
+  // Function to get display price for a product (including variants)
+  const getDisplayPrice = (product: Product) => {
+    // If product has a direct price, use it
+    if (product.price && !isNaN(parseFloat(product.price))) {
+      return formatPrice(product.price, product.currency);
+    }
+    
+    // Try to get price from first variant
+    const productVariants = variantsData[product.id];
+    if (productVariants && productVariants.length > 0) {
+      const firstVariant = productVariants[0];
+      if (firstVariant.price && !isNaN(parseFloat(firstVariant.price))) {
+        return formatPrice(firstVariant.price, product.currency);
+      }
+    }
+    
+    // If no price available, show "Consultar precio"
+    return "Consultar precio";
   };
 
   // Filter products based on search and category
@@ -500,7 +542,7 @@ export default function StorePage() {
                     <div className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4 text-green-600" />
                       <span className="font-semibold text-green-600">
-                        {formatPrice(product.price, product.currency || '$')}
+                        {getDisplayPrice(product)}
                       </span>
                     </div>
                     {product.category && (
@@ -575,7 +617,7 @@ export default function StorePage() {
                     <div className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4 text-green-600" />
                       <span className="font-medium text-green-600">
-                        {formatPrice(product.price, product.currency || '$')}
+                        {getDisplayPrice(product)}
                       </span>
                     </div>
                   </TableCell>
