@@ -842,17 +842,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/chatbots/:id', isAuthenticated, async (req, res) => {
     try {
-      const chatbot = await storage.getChatbot(Number(req.params.id));
+      const requestedId = Number(req.params.id);
+      console.log('🎯 API: Requested chatbot ID:', requestedId);
+      console.log('🎯 API: User ID:', req.userId);
+      
+      const chatbot = await storage.getChatbot(requestedId);
+      console.log('🎯 API: Retrieved chatbot:', chatbot ? { id: chatbot.id, name: chatbot.name, userId: chatbot.userId } : 'null');
       
       if (!chatbot) {
+        console.log('🎯 API: Chatbot not found');
         return res.status(404).json({ message: 'Chatbot not found' });
       }
       
       // Check ownership
       if (chatbot.userId !== req.userId) {
+        console.log('🎯 API: Unauthorized - chatbot belongs to:', chatbot.userId);
         return res.status(403).json({ message: 'Unauthorized' });
       }
       
+      console.log('🎯 API: Returning chatbot successfully');
       res.json(chatbot);
     } catch (error: any) {
       console.error('Get chatbot error:', error);

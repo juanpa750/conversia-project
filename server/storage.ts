@@ -194,7 +194,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChatbot(id: number): Promise<Chatbot | undefined> {
+    console.log('🎯 STORAGE: Looking for chatbot with ID:', id);
     const [chatbot] = await db.select().from(chatbots).where(eq(chatbots.id, id));
+    console.log('🎯 STORAGE: Found chatbot:', chatbot ? { id: chatbot.id, name: chatbot.name, userId: chatbot.userId } : 'null');
     return chatbot;
   }
 
