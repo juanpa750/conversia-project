@@ -26,6 +26,9 @@ const DEMO_USER = {
   updatedAt: new Date().toISOString()
 };
 
+// Demo mode flag - can be controlled via environment variable
+const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true' || false;
+
 export function useAuth() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
