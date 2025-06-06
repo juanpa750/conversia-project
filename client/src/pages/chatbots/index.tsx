@@ -369,7 +369,15 @@ export function Chatbots() {
             </CardContent>
             <CardFooter className="flex justify-between border-t border-gray-100 bg-gray-50">
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/chatbots/builder/${chatbot.id}`}>Editar</Link>
+                <Link 
+                  href={`/chatbots/builder/${chatbot.id}`}
+                  onClick={() => {
+                    console.log('🔗 Edit link clicked for chatbot:', chatbot.id, chatbot.name);
+                    console.log('🔗 Generated URL:', `/chatbots/builder/${chatbot.id}`);
+                  }}
+                >
+                  Editar
+                </Link>
               </Button>
               <div className="flex space-x-2">
                 <Button 
