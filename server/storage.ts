@@ -651,37 +651,58 @@ export class DatabaseStorage implements IStorage {
       product.name.toLowerCase(),
       ...extractedFeatures.slice(0, 3).map(f => f.toLowerCase()),
       product.category?.toLowerCase() || '',
-      ...(product.tags || []).map(tag => tag.toLowerCase())
+      ...(product.tags || []).map((tag: any) => tag.toLowerCase())
     ].filter(Boolean);
 
     // Generate AI instructions specific to this product
-    const aiInstructions = this.generateProductAiInstructions(product, extractedFeatures, extractedBenefits, technicalSpecs);
+    const aiInstructions = `Eres un especialista en ventas de ${product.name}. Tu objetivo es ayudar a los clientes con información detallada y guiarlos hacia la compra.
 
-    // Generate intelligent flow with visual nodes and edges
+PRODUCTO: ${product.name}
+CATEGORÍA: ${product.category || 'General'}
+PRECIO: ${product.price || 'Consultar'} ${product.currency || ''}
+
+CARACTERÍSTICAS PRINCIPALES:
+${extractedFeatures.map(f => `- ${f}`).join('\n')}
+
+BENEFICIOS CLAVE:
+${extractedBenefits.map(b => `- ${b}`).join('\n')}
+
+ESPECIFICACIONES:
+${technicalSpecs.map(s => `- ${s}`).join('\n')}
+
+INSTRUCCIONES DE COMPORTAMIENTO:
+1. Responde SIEMPRE como asistente especializado en este producto específico
+2. Usa metodología AIDA: capta Atención, genera Interés, crea Deseo, motiva Acción
+3. Mantén respuestas amigables pero profesionales
+4. Enfócate en beneficios, no solo características
+5. Guía hacia la compra de manera consultiva
+6. Si preguntan por otros productos, redirige suavemente a este producto
+7. Ofrece información de contacto para finalizar compra
+
+PALABRAS CLAVE DE ACTIVACIÓN: ${triggerKeywords.join(', ')}`;
+
+    // Generate intelligent flow with AI-driven responses (no user input required)
     let nodes = [
       {
-        id: 'start',
-        type: 'message',
+        id: 'welcome',
+        type: 'ai_message',
         position: { x: 100, y: 100 },
         data: {
-          type: 'message',
-          text: `¡Hola! Soy tu especialista en ${product.name}. ${extractedFeatures.length > 0 ? `Reconocido por ${extractedFeatures[0]}.` : ''} ¿Qué te gustaría saber?`,
-          isStart: true
+          type: 'ai_message',
+          text: `¡Hola! Soy tu especialista en ${product.name}. ${extractedFeatures.length > 0 ? `Destacado por ${extractedFeatures[0]}.` : ''} Te ayudaré con toda la información que necesites.`,
+          isStart: true,
+          aiResponse: true
         }
       },
       {
-        id: 'info-menu',
-        type: 'menu',
+        id: 'product_intro',
+        type: 'ai_message',
         position: { x: 100, y: 250 },
         data: {
-          type: 'menu',
-          text: '¿Qué información necesitas?',
-          options: [
-            { id: 'features', text: 'Características y funciones' },
-            { id: 'benefits', text: 'Beneficios y ventajas' },
-            { id: 'specs', text: 'Especificaciones técnicas' },
-            { id: 'price', text: 'Precio y disponibilidad' }
-          ]
+          type: 'ai_message',
+          text: `${product.name} es perfecto para quienes buscan ${extractedBenefits.slice(0, 2).join(' y ')}.`,
+          aiResponse: true,
+          delay: 2000
         }
       },
       {
@@ -772,6 +793,10 @@ export class DatabaseStorage implements IStorage {
       description: `Asistente virtual especializado en ${product.name} con conocimiento profundo del producto y metodología AIDA para ventas consultivas.`,
       type: 'sales' as any,
       status: 'active' as any,
+      // Configuración de producto específico (omitido temporalmente para compatibilidad)
+      // productId: product.id,
+      // triggerKeywords,
+      // aiInstructions,
       flow: JSON.stringify({
         nodes,
         edges,
@@ -787,7 +812,12 @@ export class DatabaseStorage implements IStorage {
           price: product.price,
           currency: product.currency,
           category: product.category,
-          variants: productVariants || []
+          variants: productVariants || [],
+          // Configuración específica del producto
+          linkedProductId: product.id,
+          triggerKeywords: triggerKeywords,
+          aiInstructions: aiInstructions,
+          isProductSpecific: true
         }
       })
     };
