@@ -50,27 +50,74 @@ function extractTitle(html: string, url: string): string {
 }
 
 function extractDescription(html: string): string {
+  let descriptions: string[] = [];
+  
+  // Try Open Graph description
   let match = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i);
-  if (match) return cleanText(match[1]);
+  if (match) descriptions.push(cleanText(match[1]));
   
+  // Try meta description
   match = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
-  if (match) return cleanText(match[1]);
+  if (match) descriptions.push(cleanText(match[1]));
   
+  // Extract detailed product descriptions from common containers
   const descriptionPatterns = [
-    /<div[^>]*class="[^"]*product[_-]?description[^"]*"[^>]*>([^<]+)/i,
-    /<div[^>]*class="[^"]*description[^"]*"[^>]*>([^<]+)/i,
-    /<p[^>]*class="[^"]*description[^"]*"[^>]*>([^<]+)/i
+    // Product description sections
+    /<div[^>]*class="[^"]*product[_-]?description[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<section[^>]*class="[^"]*description[^"]*"[^>]*>([\s\S]*?)<\/section>/gi,
+    /<div[^>]*class="[^"]*description[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    
+    // Features and specifications
+    /<div[^>]*class="[^"]*features[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<div[^>]*class="[^"]*specifications[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<div[^>]*class="[^"]*specs[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<div[^>]*class="[^"]*details[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    
+    // Benefits and characteristics
+    /<div[^>]*class="[^"]*benefits[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<div[^>]*class="[^"]*characteristics[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<div[^>]*class="[^"]*overview[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    
+    // Lists and bullet points
+    /<ul[^>]*class="[^"]*features[^"]*"[^>]*>([\s\S]*?)<\/ul>/gi,
+    /<ul[^>]*class="[^"]*benefits[^"]*"[^>]*>([\s\S]*?)<\/ul>/gi,
   ];
   
   for (const pattern of descriptionPatterns) {
-    match = html.match(pattern);
-    if (match) return cleanText(match[1]);
+    let match;
+    while ((match = pattern.exec(html)) !== null) {
+      const content = extractTextFromHtml(match[1]);
+      if (content.length > 50 && content.length < 2000) {
+        descriptions.push(content);
+      }
+    }
   }
   
-  return '';
+  // Extract key features from structured data
+  const structuredFeatures = extractStructuredFeatures(html);
+  if (structuredFeatures) {
+    descriptions.push(structuredFeatures);
+  }
+  
+  // Extract technical specifications
+  const techSpecs = extractTechnicalSpecs(html);
+  if (techSpecs) {
+    descriptions.push(techSpecs);
+  }
+  
+  // Combine all descriptions with proper formatting
+  const finalDescription = descriptions
+    .filter(desc => desc && desc.length > 20)
+    .slice(0, 3) // Limit to top 3 descriptions
+    .join('\n\n');
+  
+  return finalDescription || '';
 }
 
 function extractPrice(html: string): string {
+  let prices: string[] = [];
+  
+  // Extract from JSON-LD structured data first (most reliable)
   const jsonLdMatch = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([^<]+)<\/script>/gi);
   if (jsonLdMatch) {
     for (const script of jsonLdMatch) {
@@ -78,11 +125,30 @@ function extractPrice(html: string): string {
         const jsonMatch = script.match(/>([^<]+)</);
         if (jsonMatch) {
           const data = JSON.parse(jsonMatch[1]);
+          
+          // Handle single offer
           if (data.offers && data.offers.price) {
-            return data.offers.price.toString();
+            const price = data.offers.price.toString();
+            const currency = data.offers.priceCurrency || '';
+            prices.push(currency ? `${price} ${currency}` : price);
           }
-          if (data['@type'] === 'Product' && data.offers && data.offers[0] && data.offers[0].price) {
-            return data.offers[0].price.toString();
+          
+          // Handle multiple offers
+          if (data['@type'] === 'Product' && data.offers && Array.isArray(data.offers)) {
+            data.offers.forEach((offer: any) => {
+              if (offer.price) {
+                const price = offer.price.toString();
+                const currency = offer.priceCurrency || '';
+                prices.push(currency ? `${price} ${currency}` : price);
+              }
+            });
+          }
+          
+          // Handle single offer object
+          if (data['@type'] === 'Product' && data.offers && data.offers.price) {
+            const price = data.offers.price.toString();
+            const currency = data.offers.priceCurrency || '';
+            prices.push(currency ? `${price} ${currency}` : price);
           }
         }
       } catch (e) {
@@ -91,25 +157,54 @@ function extractPrice(html: string): string {
     }
   }
   
-  const pricePatterns = [
-    /\$[\d,]+\.?\d*/g,
-    /€[\d,]+\.?\d*/g,
-    /£[\d,]+\.?\d*/g,
-    /[\d,]+\.?\d*\s*USD/g,
-    /[\d,]+\.?\d*\s*EUR/g,
-    /[\d,]+\.?\d*\s*COP/g,
-    /<span[^>]*class="[^"]*price[^"]*"[^>]*>([\d,$.€£]+)/gi,
-    /<div[^>]*class="[^"]*price[^"]*"[^>]*>([\d,$.€£]+)/gi
-  ];
-  
-  for (const pattern of pricePatterns) {
-    const matches = html.match(pattern);
-    if (matches && matches.length > 0) {
-      return matches[0].replace(/[^\d.,]/g, '');
+  // If no structured data, look for price patterns in HTML
+  if (prices.length === 0) {
+    // More comprehensive price patterns with context
+    const advancedPricePatterns = [
+      // Current price patterns
+      /<[^>]*class="[^"]*current[_-]?price[^"]*"[^>]*>([^<]*[\d,]+[.,]?\d*[^<]*)<\/[^>]*>/gi,
+      /<[^>]*class="[^"]*price[_-]?current[^"]*"[^>]*>([^<]*[\d,]+[.,]?\d*[^<]*)<\/[^>]*>/gi,
+      /<[^>]*class="[^"]*sale[_-]?price[^"]*"[^>]*>([^<]*[\d,]+[.,]?\d*[^<]*)<\/[^>]*>/gi,
+      
+      // General price patterns
+      /<[^>]*class="[^"]*price[^"]*"[^>]*>([^<]*[\d,]+[.,]?\d*[^<]*)<\/[^>]*>/gi,
+      /<[^>]*class="[^"]*cost[^"]*"[^>]*>([^<]*[\d,]+[.,]?\d*[^<]*)<\/[^>]*>/gi,
+      /<[^>]*class="[^"]*amount[^"]*"[^>]*>([^<]*[\d,]+[.,]?\d*[^<]*)<\/[^>]*>/gi,
+      
+      // Data attributes
+      /<[^>]*data-price="([^"]*)"[^>]*>/gi,
+      /<[^>]*data-cost="([^"]*)"[^>]*>/gi,
+      
+      // Currency symbols with numbers
+      /\$\s*[\d,]+(?:[.,]\d{1,2})?/g,
+      /€\s*[\d,]+(?:[.,]\d{1,2})?/g,
+      /£\s*[\d,]+(?:[.,]\d{1,2})?/g,
+      /[\d,]+(?:[.,]\d{1,2})?\s*(?:USD|EUR|COP|MXN|ARS|PEN|CLP|UYU|BOB|PYG)\b/gi,
+      
+      // Colombian peso patterns
+      /\$\s*[\d,.]+\s*(?:COP|pesos?)\b/gi,
+      /[\d,.]+\s*(?:COP|pesos?)\b/gi,
+    ];
+    
+    for (const pattern of advancedPricePatterns) {
+      let match;
+      while ((match = pattern.exec(html)) !== null && prices.length < 3) {
+        const priceText = match[1] || match[0];
+        const cleanPrice = priceText
+          .replace(/<[^>]*>/g, '') // Remove HTML tags
+          .replace(/&[^;]+;/g, ' ') // Remove entities
+          .trim();
+        
+        // Validate that it looks like a price
+        if (cleanPrice.match(/[\d,]+[.,]?\d*/)) {
+          prices.push(cleanPrice);
+        }
+      }
     }
   }
   
-  return '';
+  // Return the first valid price found
+  return prices.length > 0 ? prices[0] : '';
 }
 
 function extractCategory(html: string): string {
@@ -160,29 +255,147 @@ function extractMainImage(html: string, url: string): string {
 
 function extractTags(html: string): string[] {
   const tags: string[] = [];
+  const seenTags = new Set<string>();
   
+  // Extract from meta keywords
   const keywordsMatch = html.match(/<meta[^>]*name=["']keywords["'][^>]*content=["']([^"']+)["']/i);
   if (keywordsMatch) {
     const keywords = keywordsMatch[1].split(',').map(k => cleanText(k));
-    tags.push(...keywords.slice(0, 5));
+    keywords.forEach(keyword => {
+      const normalized = keyword.toLowerCase();
+      if (keyword.length > 2 && keyword.length < 25 && !seenTags.has(normalized)) {
+        tags.push(keyword);
+        seenTags.add(normalized);
+      }
+    });
   }
   
-  const tagPatterns = [
-    /<span[^>]*class="[^"]*tag[^"]*"[^>]*>([^<]+)</gi,
-    /<a[^>]*class="[^"]*category[^"]*"[^>]*>([^<]+)</gi
-  ];
-  
-  for (const pattern of tagPatterns) {
-    let match;
-    while ((match = pattern.exec(html)) !== null && tags.length < 8) {
-      const tag = cleanText(match[1]);
-      if (tag.length > 2 && tag.length < 20 && !tags.includes(tag)) {
-        tags.push(tag);
+  // Extract from structured data
+  const jsonLdMatches = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  if (jsonLdMatches) {
+    for (const script of jsonLdMatches) {
+      try {
+        const jsonMatch = script.match(/>([^<]+)</);
+        if (jsonMatch) {
+          const data = JSON.parse(jsonMatch[1]);
+          
+          // Extract category from structured data
+          if (data.category && typeof data.category === 'string') {
+            const category = cleanText(data.category);
+            const normalized = category.toLowerCase();
+            if (category.length > 2 && !seenTags.has(normalized)) {
+              tags.push(category);
+              seenTags.add(normalized);
+            }
+          }
+          
+          // Extract brand
+          if (data.brand && data.brand.name) {
+            const brand = cleanText(data.brand.name);
+            const normalized = brand.toLowerCase();
+            if (brand.length > 1 && !seenTags.has(normalized)) {
+              tags.push(brand);
+              seenTags.add(normalized);
+            }
+          }
+          
+          // Extract from keywords array
+          if (data.keywords && Array.isArray(data.keywords)) {
+            data.keywords.forEach((keyword: string) => {
+              const clean = cleanText(keyword);
+              const normalized = clean.toLowerCase();
+              if (clean.length > 2 && clean.length < 25 && !seenTags.has(normalized)) {
+                tags.push(clean);
+                seenTags.add(normalized);
+              }
+            });
+          }
+        }
+      } catch (e) {
+        continue;
       }
     }
   }
   
-  return tags.slice(0, 6);
+  // Extract from various HTML elements
+  const tagPatterns = [
+    // Product tags and categories
+    /<[^>]*class="[^"]*tag[^"]*"[^>]*>([^<]+)<\/[^>]*>/gi,
+    /<[^>]*class="[^"]*category[^"]*"[^>]*>([^<]+)<\/[^>]*>/gi,
+    /<[^>]*class="[^"]*label[^"]*"[^>]*>([^<]+)<\/[^>]*>/gi,
+    /<[^>]*class="[^"]*badge[^"]*"[^>]*>([^<]+)<\/[^>]*>/gi,
+    
+    // Navigation breadcrumbs
+    /<nav[^>]*class="[^"]*breadcrumb[^"]*"[^>]*>([\s\S]*?)<\/nav>/gi,
+    
+    // Product attributes
+    /<[^>]*class="[^"]*attribute[^"]*"[^>]*>([^<]+)<\/[^>]*>/gi,
+    /<[^>]*class="[^"]*feature[^"]*"[^>]*>([^<]+)<\/[^>]*>/gi,
+    
+    // Data attributes
+    /<[^>]*data-category="([^"]*)"[^>]*>/gi,
+    /<[^>]*data-tag="([^"]*)"[^>]*>/gi,
+    /<[^>]*data-brand="([^"]*)"[^>]*>/gi,
+  ];
+  
+  for (const pattern of tagPatterns) {
+    let match;
+    while ((match = pattern.exec(html)) !== null && tags.length < 12) {
+      let content = match[1];
+      
+      // For breadcrumbs, extract individual links
+      if (pattern.source.includes('breadcrumb')) {
+        const links = content.match(/<a[^>]*>([^<]+)<\/a>/gi);
+        if (links) {
+          links.forEach(link => {
+            const linkMatch = link.match(/>([^<]+)</);
+            if (linkMatch) {
+              const tag = cleanText(linkMatch[1]);
+              const normalized = tag.toLowerCase();
+              if (tag.length > 2 && tag.length < 25 && !seenTags.has(normalized) && 
+                  !tag.match(/^(inicio|home|tienda|shop|productos|products)$/i)) {
+                tags.push(tag);
+                seenTags.add(normalized);
+              }
+            }
+          });
+        }
+      } else {
+        const tag = cleanText(content);
+        const normalized = tag.toLowerCase();
+        if (tag.length > 2 && tag.length < 25 && !seenTags.has(normalized) && 
+            !tag.match(/^(más|more|ver|view|comprar|buy|agregar|add)$/i)) {
+          tags.push(tag);
+          seenTags.add(normalized);
+        }
+      }
+    }
+  }
+  
+  // Extract color and size information
+  const colorPatterns = [
+    /<[^>]*class="[^"]*color[^"]*"[^>]*>([^<]+)<\/[^>]*>/gi,
+    /<[^>]*data-color="([^"]*)"[^>]*>/gi,
+  ];
+  
+  const sizePatterns = [
+    /<[^>]*class="[^"]*size[^"]*"[^>]*>([^<]+)<\/[^>]*>/gi,
+    /<[^>]*data-size="([^"]*)"[^>]*>/gi,
+  ];
+  
+  [...colorPatterns, ...sizePatterns].forEach(pattern => {
+    let match;
+    while ((match = pattern.exec(html)) !== null && tags.length < 15) {
+      const tag = cleanText(match[1]);
+      const normalized = tag.toLowerCase();
+      if (tag.length > 1 && tag.length < 15 && !seenTags.has(normalized)) {
+        tags.push(tag);
+        seenTags.add(normalized);
+      }
+    }
+  });
+  
+  return tags.slice(0, 8); // Limit to 8 most relevant tags
 }
 
 function cleanText(text: string): string {
@@ -205,6 +418,120 @@ function makeAbsoluteUrl(url: string, baseUrl: string): string {
   } catch {
     return url;
   }
+}
+
+// Extract clean text from HTML content
+function extractTextFromHtml(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '') // Remove scripts
+    .replace(/<style[\s\S]*?<\/style>/gi, '') // Remove styles
+    .replace(/<[^>]*>/g, ' ') // Remove HTML tags
+    .replace(/&[^;]+;/g, ' ') // Remove HTML entities
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+}
+
+// Extract structured features from JSON-LD and microdata
+function extractStructuredFeatures(html: string): string {
+  const features: string[] = [];
+  
+  // Extract from JSON-LD structured data
+  const jsonLdMatches = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  if (jsonLdMatches) {
+    for (const script of jsonLdMatches) {
+      try {
+        const jsonMatch = script.match(/>([^<]+)</);
+        if (jsonMatch) {
+          const data = JSON.parse(jsonMatch[1]);
+          
+          // Extract product features
+          if (data.description) {
+            features.push('Descripción: ' + cleanText(data.description));
+          }
+          
+          if (data.brand && data.brand.name) {
+            features.push('Marca: ' + data.brand.name);
+          }
+          
+          if (data.model) {
+            features.push('Modelo: ' + data.model);
+          }
+          
+          if (data.additionalProperty && Array.isArray(data.additionalProperty)) {
+            data.additionalProperty.forEach((prop: any) => {
+              if (prop.name && prop.value) {
+                features.push(`${prop.name}: ${prop.value}`);
+              }
+            });
+          }
+          
+          if (data.aggregateRating && data.aggregateRating.ratingValue) {
+            features.push(`Calificación: ${data.aggregateRating.ratingValue}/5 (${data.aggregateRating.reviewCount || 0} reseñas)`);
+          }
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+  }
+  
+  return features.length > 0 ? features.join('\n') : '';
+}
+
+// Extract technical specifications from tables and lists
+function extractTechnicalSpecs(html: string): string {
+  const specs: string[] = [];
+  
+  // Extract from specification tables
+  const tablePatterns = [
+    /<table[^>]*class="[^"]*spec[^"]*"[^>]*>([\s\S]*?)<\/table>/gi,
+    /<table[^>]*class="[^"]*tech[^"]*"[^>]*>([\s\S]*?)<\/table>/gi,
+    /<table[^>]*class="[^"]*detail[^"]*"[^>]*>([\s\S]*?)<\/table>/gi,
+    /<table[^>]*class="[^"]*feature[^"]*"[^>]*>([\s\S]*?)<\/table>/gi
+  ];
+  
+  for (const pattern of tablePatterns) {
+    let match;
+    while ((match = pattern.exec(html)) !== null) {
+      const tableContent = match[1];
+      
+      // Extract rows from table
+      const rowMatches = tableContent.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi);
+      if (rowMatches) {
+        for (const row of rowMatches.slice(0, 10)) { // Limit to 10 specs
+          const cellMatches = row.match(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi);
+          if (cellMatches && cellMatches.length >= 2) {
+            const key = extractTextFromHtml(cellMatches[0]);
+            const value = extractTextFromHtml(cellMatches[1]);
+            if (key.length > 0 && value.length > 0 && key.length < 50 && value.length < 100) {
+              specs.push(`${key}: ${value}`);
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Extract from definition lists
+  const dlMatches = html.match(/<dl[^>]*class="[^"]*spec[^"]*"[^>]*>([\s\S]*?)<\/dl>/gi);
+  if (dlMatches) {
+    for (const dl of dlMatches) {
+      const dtMatches = dl.match(/<dt[^>]*>([\s\S]*?)<\/dt>/gi);
+      const ddMatches = dl.match(/<dd[^>]*>([\s\S]*?)<\/dd>/gi);
+      
+      if (dtMatches && ddMatches && dtMatches.length === ddMatches.length) {
+        for (let i = 0; i < Math.min(dtMatches.length, 8); i++) {
+          const key = extractTextFromHtml(dtMatches[i]);
+          const value = extractTextFromHtml(ddMatches[i]);
+          if (key.length > 0 && value.length > 0) {
+            specs.push(`${key}: ${value}`);
+          }
+        }
+      }
+    }
+  }
+  
+  return specs.length > 0 ? 'Especificaciones técnicas:\n' + specs.join('\n') : '';
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
