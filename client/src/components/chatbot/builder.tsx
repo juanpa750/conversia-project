@@ -379,9 +379,9 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
               </div>
             </TabsContent>
             
-            <TabsContent value="product" className="m-0 flex-1 outline-none">
-              <div className="h-full overflow-y-auto p-4">
-                <div className="space-y-6">
+            <TabsContent value="product" className="m-0 flex-1 outline-none overflow-hidden">
+              <div className="h-full overflow-y-scroll p-4">
+                <div className="space-y-6 pb-8">
                   <div className="flex items-center gap-2">
                     <RiSettings3Line className="h-5 w-5" />
                     <h3 className="text-lg font-medium">Configuración de Producto</h3>
