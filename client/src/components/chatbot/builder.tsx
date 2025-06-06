@@ -59,6 +59,40 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
 
   const { toast } = useToast();
 
+  // Simple debounce utility
+  const debounce = (func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(null, args), wait);
+    };
+  };
+
+  // Auto-save functions for different fields
+  const handleSaveField = (field: string, value: any) => {
+    if (!chatbotId) return; // Only save if editing existing chatbot
+    
+    const data = { [field]: value };
+    console.log(`💾 Auto-saving ${field}:`, value);
+    saveChatbotMutation.mutate(data);
+  };
+
+  // Debounced save functions
+  const debouncedSaveInstructions = useCallback(
+    debounce((value: string) => handleSaveField('aiInstructions', value), 1000),
+    [chatbotId, handleSaveField]
+  );
+
+  const debouncedSavePersonality = useCallback(
+    debounce((value: string) => handleSaveField('aiPersonality', value), 1000),
+    [chatbotId, handleSaveField]
+  );
+
+  const debouncedSaveObjective = useCallback(
+    debounce((value: string) => handleSaveField('conversationObjective', value), 1000),
+    [chatbotId, handleSaveField]
+  );
+
   // Obtener datos del chatbot si existe
   const { data: chatbot, isLoading: isChatbotLoading } = useQuery({
     queryKey: [`/api/chatbots/${chatbotId}`],
@@ -109,17 +143,27 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   }, [chatbot, chatbotId, isInitialized]);
 
   const saveChatbotMutation = useMutation({
-    mutationFn: async (data: { productId?: number | null; triggerKeywords?: string[]; aiInstructions?: string }) => {
+    mutationFn: async (data: { 
+      name?: string;
+      productId?: number | null; 
+      triggerKeywords?: string[]; 
+      aiInstructions?: string;
+      aiPersonality?: string;
+      conversationObjective?: string;
+      flow?: string;
+    }) => {
       const chatbotData = {
-        name: chatbotName,
+        name: data.name || chatbotName,
         type: 'sales' as const,
-        flow: JSON.stringify({ nodes, edges }),
-        productId: data.productId,
+        flow: data.flow || JSON.stringify({ nodes, edges }),
+        productId: data.productId !== undefined ? data.productId : (selectedProductId && selectedProductId !== 'none' ? parseInt(selectedProductId) : null),
         triggerKeywords: data.triggerKeywords || triggerKeywords,
         aiInstructions: data.aiInstructions || aiInstructions,
-        aiPersonality,
-        conversationObjective,
+        aiPersonality: data.aiPersonality || aiPersonality,
+        conversationObjective: data.conversationObjective || conversationObjective,
       };
+
+      console.log('💾 Saving chatbot data:', chatbotData);
 
       if (chatbotId) {
         return apiRequest('PATCH', `/api/chatbots/${chatbotId}`, chatbotData);
@@ -128,15 +172,14 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
       }
     },
     onSuccess: () => {
-      toast({
-        title: "Chatbot guardado",
-        description: "Los cambios se han guardado correctamente",
-      });
+      console.log('💾 Save successful');
       queryClient.invalidateQueries({ queryKey: ['/api/chatbots'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/chatbots/${chatbotId}`] });
     },
     onError: (error: any) => {
+      console.error('💾 Save error:', error);
       toast({
-        title: "Error",
+        title: "Error al guardar",
         description: error.message || "No se pudo guardar el chatbot",
         variant: "destructive",
       });
@@ -149,7 +192,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
         name: chatbotName,
         type: 'sales' as const,
         status: 'active' as const,
-        configuration: JSON.stringify({ nodes, edges }),
+        flow: JSON.stringify({ nodes, edges }),
         productId: selectedProductId && selectedProductId !== 'none' ? parseInt(selectedProductId) : null,
         triggerKeywords,
         aiInstructions,
@@ -406,7 +449,10 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                           id="ai-instructions"
                           placeholder="Ej: Cuando un cliente pregunte por precios, siempre menciona las promociones actuales. Si preguntan por disponibilidad..."
                           value={aiInstructions}
-                          onChange={(e) => setAiInstructions(e.target.value)}
+                          onChange={(e) => {
+                            setAiInstructions(e.target.value);
+                            debouncedSaveInstructions(e.target.value);
+                          }}
                           className="min-h-[150px]"
                         />
                       </div>
