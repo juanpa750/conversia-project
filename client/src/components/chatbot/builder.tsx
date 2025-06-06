@@ -49,10 +49,13 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   // Fetch chatbot data if editing existing chatbot
   const { data: chatbot, isLoading } = useQuery({
     queryKey: ["/api/chatbots", chatbotId],
-    queryFn: () => {
+    queryFn: async () => {
       console.log('🔍 Making API request for chatbot ID:', chatbotId);
       console.log('🔍 Request URL:', `/api/chatbots/${chatbotId}`);
-      return apiRequest('GET', `/api/chatbots/${chatbotId}`);
+      const response = await apiRequest('GET', `/api/chatbots/${chatbotId}`);
+      const data = await response.json();
+      console.log('🔍 Raw response data:', data);
+      return data;
     },
     enabled: !!chatbotId,
     staleTime: 0, // Force fresh data
