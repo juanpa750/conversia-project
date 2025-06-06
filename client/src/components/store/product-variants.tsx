@@ -19,25 +19,52 @@ interface ProductVariant {
   sku: string;
 }
 
+interface BasicProduct {
+  price: string;
+  currency: string;
+  stock: number;
+  category: string;
+  sku: string;
+}
+
 interface ProductVariantsProps {
   variants: ProductVariant[];
   onChange: (variants: ProductVariant[]) => void;
+  basicProduct?: BasicProduct;
+  onBasicProductChange?: (field: string, value: any) => void;
 }
 
-export function ProductVariants({ variants, onChange }: ProductVariantsProps) {
+export function ProductVariants({ variants, onChange, basicProduct, onBasicProductChange }: ProductVariantsProps) {
   const addVariant = () => {
-    const newVariant: ProductVariant = {
-      image: "",
-      specification: "",
-      variant: "",
-      price: "",
-      currency: "USD",
-      stock: 0,
-      available: true,
-      category: "",
-      sku: "",
-    };
-    onChange([...variants, newVariant]);
+    // Si es la primera variante y hay información básica, crear la primera variante con esos datos
+    if (variants.length === 0 && basicProduct) {
+      const firstVariant: ProductVariant = {
+        image: "",
+        specification: "Producto estándar",
+        variant: "Estándar",
+        price: basicProduct.price,
+        currency: basicProduct.currency,
+        stock: basicProduct.stock,
+        available: true,
+        category: basicProduct.category,
+        sku: basicProduct.sku,
+      };
+      onChange([firstVariant]);
+    } else {
+      // Agregar nueva variante vacía
+      const newVariant: ProductVariant = {
+        image: "",
+        specification: "",
+        variant: "",
+        price: "",
+        currency: basicProduct?.currency || "USD",
+        stock: 0,
+        available: true,
+        category: basicProduct?.category || "",
+        sku: "",
+      };
+      onChange([...variants, newVariant]);
+    }
   };
 
   const updateVariant = (index: number, field: keyof ProductVariant, value: any) => {
@@ -51,32 +78,106 @@ export function ProductVariants({ variants, onChange }: ProductVariantsProps) {
     onChange(updatedVariants);
   };
 
+  const updateBasicProduct = (field: string, value: any) => {
+    if (onBasicProductChange) {
+      onBasicProductChange(field, value);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-primary" />
-            Precios
+            Precio y Variantes
           </h3>
           <p className="text-sm text-muted-foreground">
-            Gestiona las variantes de precio de tu producto
+            {variants.length === 0 
+              ? "Configura el precio básico del producto"
+              : "Gestiona las diferentes opciones de precio"
+            }
           </p>
         </div>
         <Button type="button" onClick={addVariant} size="sm">
           <Plus className="h-4 w-4 mr-2" />
-          Nueva variante de precio +
+          {variants.length === 0 ? "Agregar variante de precio" : "Nueva variante de precio +"}
         </Button>
       </div>
 
-      {variants.length === 0 ? (
+      {variants.length === 0 && basicProduct ? (
+        // Mostrar formulario básico de precio cuando no hay variantes
+        <div className="border rounded-lg p-6 space-y-4">
+          <h4 className="font-medium">Información de Precio</h4>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Precio</label>
+              <Input
+                value={basicProduct.price}
+                onChange={(e) => updateBasicProduct('price', e.target.value)}
+                placeholder="0.00"
+                type="number"
+                step="0.01"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Moneda</label>
+              <Select
+                value={basicProduct.currency}
+                onValueChange={(value) => updateBasicProduct('currency', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                  <SelectItem value="MXN">MXN</SelectItem>
+                  <SelectItem value="COP">COP</SelectItem>
+                  <SelectItem value="ARS">ARS</SelectItem>
+                  <SelectItem value="CLP">CLP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Stock</label>
+              <Input
+                value={basicProduct.stock}
+                onChange={(e) => updateBasicProduct('stock', parseInt(e.target.value) || 0)}
+                placeholder="0"
+                type="number"
+                min="0"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Categoría</label>
+              <Input
+                value={basicProduct.category}
+                onChange={(e) => updateBasicProduct('category', e.target.value)}
+                placeholder="Categoría"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">SKU</label>
+              <Input
+                value={basicProduct.sku}
+                onChange={(e) => updateBasicProduct('sku', e.target.value)}
+                placeholder="SKU"
+              />
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Si tu producto tiene diferentes precios o características, haz clic en "Agregar variante de precio" para crear opciones múltiples.
+          </p>
+        </div>
+      ) : variants.length === 0 ? (
         <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
           <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h4 className="text-lg font-medium text-gray-900 mb-2">
-            Sin variantes de precio
+            Configurar Precio
           </h4>
           <p className="text-sm text-gray-500 mb-4">
-            Agrega diferentes opciones de precio para tu producto
+            Configura el precio y detalles de tu producto
           </p>
         </div>
       ) : (

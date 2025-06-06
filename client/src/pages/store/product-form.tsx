@@ -295,65 +295,21 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
               </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Precio</FormLabel>
-                    <FormControl>
-                      <Input placeholder="999.99" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Moneda</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="USD">USD ($)</SelectItem>
-                        <SelectItem value="EUR">EUR (€)</SelectItem>
-                        <SelectItem value="COP">COP ($)</SelectItem>
-                        <SelectItem value="MXN">MXN ($)</SelectItem>
-                        <SelectItem value="ARS">ARS ($)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="stock"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Stock</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="0" 
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* Precio integrado con variantes */}
+            <ProductVariants
+              variants={variants}
+              onChange={setVariants}
+              basicProduct={{
+                price: form.watch('price') || '',
+                currency: form.watch('currency') || 'USD',
+                stock: form.watch('stock') || 0,
+                category: form.watch('category') || '',
+                sku: form.watch('sku') || ''
+              }}
+              onBasicProductChange={(field, value) => {
+                form.setValue(field as any, value);
+              }}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
@@ -408,24 +364,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
           </CardContent>
         </Card>
 
-        {/* Product Variants */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Variantes de Producto
-            </CardTitle>
-            <CardDescription>
-              Configura diferentes opciones de precio con características específicas
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ProductVariants
-              variants={variants}
-              onChange={setVariants}
-            />
-          </CardContent>
-        </Card>
+
 
         {/* Product Image */}
         <Card>
@@ -581,92 +520,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
           </CardContent>
         </Card>
 
-        {/* Price Images */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Imágenes de Precios</CardTitle>
-            <CardDescription>
-              Imágenes con información de precios, ofertas o promociones (máximo 4)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-4">
-              {/* File Upload */}
-              <div>
-                <input
-                  type="file"
-                  ref={priceImageRef}
-                  onChange={handlePriceImageUpload}
-                  accept="image/*"
-                  className="hidden"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => priceImageRef.current?.click()}
-                  disabled={watchedPriceImages.length >= 4}
-                  className="w-full"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Subir Imagen de Precio ({watchedPriceImages.length}/4)
-                </Button>
-              </div>
 
-              {/* URL Input */}
-              <div className="flex gap-2">
-                <Input
-                  placeholder="O ingresa URL de imagen de precio"
-                  value={newPriceImage}
-                  onChange={(e) => setNewPriceImage(e.target.value)}
-                  disabled={watchedPriceImages.length >= 4}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addPriceImage();
-                    }
-                  }}
-                />
-                <Button 
-                  type="button" 
-                  onClick={addPriceImage} 
-                  variant="outline"
-                  disabled={watchedPriceImages.length >= 4}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Images Grid */}
-              {watchedPriceImages.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {watchedPriceImages.map((image, index) => (
-                    <div key={index} className="relative group">
-                      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                        <img
-                          src={image}
-                          alt={`Precio ${index + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiAxNkM5LjggMTYgOCAxNC4yIDggMTJDOCA5LjggOS44IDggMTIgOEMxNC4yIDggMTYgOS44IDE2IDEyQzE2IDE0LjIgMTQuMiAxNiAxMiAxNloiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
-                          }}
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removePriceImage(index)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Shipping & Payment Options */}
         <Card>
