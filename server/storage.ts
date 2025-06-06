@@ -644,7 +644,7 @@ export class DatabaseStorage implements IStorage {
     const competitiveAdvantages = this.extractCompetitiveAdvantages(productDescription);
 
     // Get product variants for intelligent pricing information
-    const variants = await this.getProductVariants(productId);
+    const productVariants = await this.getProductVariants(productId);
 
     // Generate intelligent flow with visual nodes and edges
     let nodes = [
@@ -776,13 +776,13 @@ export class DatabaseStorage implements IStorage {
           price: product.price,
           currency: product.currency,
           category: product.category,
-          variants: variants || []
+          variants: productVariants || []
         }
       })
     };
 
     // If variants exist, add variant-specific nodes
-    if (variants && variants.length > 0) {
+    if (productVariants && productVariants.length > 0) {
       const variantMenuNode = {
         id: 'variant-menu',
         type: 'menu',
@@ -790,7 +790,7 @@ export class DatabaseStorage implements IStorage {
         data: {
           type: 'menu',
           text: `${product.name} tiene diferentes opciones disponibles:`,
-          options: variants.map(v => ({
+          options: productVariants.map(v => ({
             id: `variant-${v.id}`,
             text: `${v.variantName || v.characteristics || 'Opción'} - ${v.price ? `${v.price} ${product.currency || ''}` : 'Consultar precio'}`
           }))
@@ -800,14 +800,14 @@ export class DatabaseStorage implements IStorage {
       nodes.push(variantMenuNode);
 
       // Add variant-specific response nodes
-      variants.forEach((variant, index) => {
+      productVariants.forEach((variant, index) => {
         const variantResponseNode = {
           id: `variant-response-${variant.id}`,
           type: 'message',
           position: { x: 1000, y: 100 + (index * 100) },
           data: {
             type: 'message',
-            text: `${variant.variant}: ${variant.characteristics || 'Excelente opción'}. ${variant.price ? `Precio: ${variant.price} ${product.currency || ''}` : 'Precio especial disponible'}.`
+            text: `${variant.variantName}: ${variant.characteristics || 'Excelente opción'}. ${variant.price ? `Precio: ${variant.price} ${product.currency || ''}` : 'Precio especial disponible'}.`
           }
         };
         nodes.push(variantResponseNode);
