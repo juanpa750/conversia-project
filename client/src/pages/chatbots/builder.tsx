@@ -2,9 +2,13 @@ import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ChatbotBuilder } from "@/components/chatbot/builder";
 
-export function ChatbotBuilderPage({ id }: { id?: string }) {
-  console.log('🎯 ChatbotBuilderPage received ID:', id);
-  console.log('🎯 ID type:', typeof id);
+export function ChatbotBuilderPage({ id: propId }: { id?: string }) {
+  const params = useParams();
+  const id = propId || params.id;
+  
+  console.log('🎯 ChatbotBuilderPage params:', params);
+  console.log('🎯 ChatbotBuilderPage prop ID:', propId);
+  console.log('🎯 ChatbotBuilderPage final ID:', id);
   
   const { data: chatbot, isLoading } = useQuery({
     queryKey: ["/api/chatbots", id],
