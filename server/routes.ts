@@ -1377,16 +1377,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (variants && variants.length > 0) {
         for (let i = 0; i < variants.length; i++) {
           const variant = variants[i];
-          await storage.createProductVariant({
+          
+          // Map frontend fields to backend fields correctly
+          const variantData = {
             productId: product.id,
             variantName: variant.variant || variant.variantName || `Variante ${i + 1}`,
-            characteristics: variant.variant || variant.characteristics || variant.variantName || `Variante ${i + 1}`,
+            characteristics: variant.variant || variant.characteristics || `Características de ${variant.variant || 'variante'}`,
             price: String(variant.price || '0'),
             currency: variant.currency || 'USD',
             variantImage: variant.image || variant.variantImage || null,
             stock: Number(variant.stock) || 0,
+            isDefault: i === 0,
             sortOrder: i
-          });
+          };
+          
+          console.log('Creating variant with data:', JSON.stringify(variantData, null, 2));
+          await storage.createProductVariant(variantData);
         }
       }
       
@@ -1433,14 +1439,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (let i = 0; i < variants.length; i++) {
           const variant = variants[i];
           
+          // Map frontend fields to backend fields correctly
           const variantData = {
             productId: id,
             variantName: variant.variant || variant.variantName || `Variante ${i + 1}`,
-            characteristics: variant.variant || variant.characteristics || variant.variantName || `Variante ${i + 1}`,
+            characteristics: variant.variant || variant.characteristics || `Características de ${variant.variant || 'variante'}`,
             price: String(variant.price || '0'),
             currency: variant.currency || 'USD',
             variantImage: variant.image || variant.variantImage || null,
             stock: Number(variant.stock) || 0,
+            isDefault: i === 0,
             sortOrder: i
           };
           
