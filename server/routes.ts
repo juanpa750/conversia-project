@@ -1368,6 +1368,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.userId;
       const { variants, ...productData } = req.body;
+      console.log('Received variants:', JSON.stringify(variants, null, 2));
+      console.log('Variants length:', variants?.length || 0);
       const productDataWithUserId = { ...productData, userId };
       const product = await storage.createProduct(productDataWithUserId);
       
@@ -1379,10 +1381,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             productId: product.id,
             variantName: variant.variant || variant.variantName || `Variante ${i + 1}`,
             characteristics: variant.variant || variant.characteristics || variant.variantName || `Variante ${i + 1}`,
-            price: variant.price || '0',
+            price: String(variant.price || '0'),
             currency: variant.currency || 'USD',
             variantImage: variant.image || variant.variantImage || null,
-            stock: variant.stock || 0,
+            stock: Number(variant.stock) || 0,
             sortOrder: i
           });
         }
@@ -1437,10 +1439,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             productId: id,
             variantName: variant.variant || variant.variantName || `Variante ${i + 1}`,
             characteristics: variant.variant || variant.characteristics || variant.variantName || `Variante ${i + 1}`,
-            price: variant.price || '0',
+            price: String(variant.price || '0'),
             currency: variant.currency || 'USD',
             variantImage: variant.image || variant.variantImage || null,
-            stock: variant.stock || 0,
+            stock: Number(variant.stock) || 0,
             sortOrder: i
           };
           
