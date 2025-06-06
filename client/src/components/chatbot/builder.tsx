@@ -120,21 +120,37 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
     queryKey: ['/api/products'],
   });
 
+  // Reset initialization when chatbot ID changes
   useEffect(() => {
-    if (chatbot && !isInitialized) {
-      console.log('🎯 Initializing chatbot with data:', chatbot);
-      setChatbotName((chatbot as any).name || 'Chatbot');
-      setSelectedProductId((chatbot as any).productId?.toString() || 'none');
-      setTriggerKeywords((chatbot as any).triggerKeywords || []);
-      setAiInstructions((chatbot as any).aiInstructions || '');
-      setAiPersonality((chatbot as any).aiPersonality || '');
-      setConversationObjective((chatbot as any).conversationObjective || '');
+    setIsInitialized(false);
+  }, [chatbotId]);
+
+  useEffect(() => {
+    if (chatbot) {
+      console.log('🎯 Loading chatbot data:', chatbot);
+      const chatbotData = chatbot as any;
       
-      if ((chatbot as any).flow) {
+      console.log('🎯 Field values from DB:', {
+        name: chatbotData.name,
+        productId: chatbotData.productId,
+        triggerKeywords: chatbotData.triggerKeywords,
+        aiInstructions: chatbotData.aiInstructions,
+        aiPersonality: chatbotData.aiPersonality,
+        conversationObjective: chatbotData.conversationObjective
+      });
+      
+      setChatbotName(chatbotData.name || 'Chatbot');
+      setSelectedProductId(chatbotData.productId ? chatbotData.productId.toString() : 'none');
+      setTriggerKeywords(Array.isArray(chatbotData.triggerKeywords) ? chatbotData.triggerKeywords : []);
+      setAiInstructions(chatbotData.aiInstructions || '');
+      setAiPersonality(chatbotData.aiPersonality || '');
+      setConversationObjective(chatbotData.conversationObjective || '');
+      
+      if (chatbotData.flow) {
         try {
-          const config = typeof (chatbot as any).flow === 'string' 
-            ? JSON.parse((chatbot as any).flow) 
-            : (chatbot as any).flow;
+          const config = typeof chatbotData.flow === 'string' 
+            ? JSON.parse(chatbotData.flow) 
+            : chatbotData.flow;
           console.log('🎯 Parsed flow config:', config);
           setNodes(config.nodes || initialNodes);
           setEdges(config.edges || []);
@@ -148,12 +164,12 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
         setEdges([]);
       }
       setIsInitialized(true);
-    } else if (!chatbotId && !isInitialized) {
+    } else if (!chatbotId) {
       setNodes(initialNodes);
       setEdges([]);
       setIsInitialized(true);
     }
-  }, [chatbot, chatbotId, isInitialized]);
+  }, [chatbot, chatbotId]);
 
   const saveChatbotMutation = useMutation({
     mutationFn: async (data: { 
