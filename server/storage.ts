@@ -712,9 +712,8 @@ export class DatabaseStorage implements IStorage {
       productId: product.id,
       chatbotId: chatbot.id,
       keywords: intelligentKeywords,
-      triggerPhrases: advancedPhrases,
-      isActive: true,
-      responseTemplate: this.generateAdvancedTemplate(product, extractedFeatures, extractedBenefits, variants),
+      phrases: advancedPhrases,
+      isActive: true
     });
 
     // Create comprehensive AI configuration
@@ -771,7 +770,7 @@ export class DatabaseStorage implements IStorage {
       }
     });
     
-    return [...new Set(benefits)].slice(0, 8);
+    return Array.from(new Set(benefits)).slice(0, 8);
   }
 
   private extractTechnicalSpecs(description: string): string[] {
@@ -793,7 +792,7 @@ export class DatabaseStorage implements IStorage {
       }
     });
     
-    return [...new Set(specs)].slice(0, 12);
+    return Array.from(new Set(specs)).slice(0, 12);
   }
 
   private extractCompetitiveAdvantages(description: string): string[] {
@@ -809,7 +808,7 @@ export class DatabaseStorage implements IStorage {
       if (matches) advantages.push(...matches.slice(0, 3));
     });
     
-    return [...new Set(advantages)];
+    return Array.from(new Set(advantages));
   }
 
   private identifyTargetAudience(product: any, features: string[]): string[] {
@@ -827,7 +826,7 @@ export class DatabaseStorage implements IStorage {
       if (lower.includes('avanzado')) audiences.push('usuarios experimentados');
     });
     
-    return [...new Set(audiences)].slice(0, 5);
+    return Array.from(new Set(audiences)).slice(0, 5);
   }
 
   private generateAdvancedTemplate(product: any, features: string[], benefits: string[], variants?: any[]): string {
