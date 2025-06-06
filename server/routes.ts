@@ -1379,17 +1379,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const variant = variants[i];
           
           // Map frontend fields to backend fields correctly
+          // Clean up placeholder values
+          const cleanVariantName = variant.variant && variant.variant !== 'Variante' && variant.variant.trim() 
+            ? variant.variant.trim() 
+            : `Variante ${i + 1}`;
+          
+          const cleanCharacteristics = variant.characteristics && variant.characteristics.trim()
+            ? variant.characteristics.trim()
+            : (variant.variant && variant.variant !== 'Variante' && variant.variant.trim()
+              ? `Características de ${variant.variant.trim()}`
+              : `Características de la variante ${i + 1}`);
+          
+          const cleanImage = variant.image && variant.image.trim() && !variant.image.includes('placeholder')
+            ? variant.image.trim()
+            : null;
+          
           const variantData = {
             productId: product.id,
-            variantName: variant.variant || variant.variantName || `Variante ${i + 1}`,
-            characteristics: variant.characteristics || variant.variant || `Características de ${variant.variant || 'variante'}`,
+            variantName: cleanVariantName,
+            characteristics: cleanCharacteristics,
             price: String(variant.price || '0'),
             currency: variant.currency || 'USD',
-            variantImage: variant.image || variant.variantImage || null,
+            variantImage: cleanImage,
             stock: Number(variant.stock) || 0,
             available: Boolean(variant.available !== undefined ? variant.available : true),
-            category: variant.category || null,
-            sku: variant.sku || null,
+            category: variant.category && variant.category.trim() ? variant.category.trim() : null,
+            sku: variant.sku && variant.sku.trim() ? variant.sku.trim() : null,
             isDefault: i === 0,
             sortOrder: i
           };
@@ -1445,17 +1460,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Frontend variant ${i} data received:`, JSON.stringify(variant, null, 2));
           
           // Map frontend fields to backend fields correctly
+          // Clean up placeholder values
+          const cleanVariantName = variant.variant && variant.variant !== 'Variante' && variant.variant.trim() 
+            ? variant.variant.trim() 
+            : `Variante ${i + 1}`;
+          
+          const cleanCharacteristics = variant.characteristics && variant.characteristics.trim()
+            ? variant.characteristics.trim()
+            : (variant.variant && variant.variant !== 'Variante' && variant.variant.trim()
+              ? `Características de ${variant.variant.trim()}`
+              : `Características de la variante ${i + 1}`);
+          
+          const cleanImage = variant.image && variant.image.trim() && !variant.image.includes('placeholder')
+            ? variant.image.trim()
+            : null;
+          
           const variantData = {
             productId: id,
-            variantName: variant.variant || variant.variantName || `Variante ${i + 1}`,
-            characteristics: variant.characteristics || variant.variant || `Características de ${variant.variant || 'variante'}`,
+            variantName: cleanVariantName,
+            characteristics: cleanCharacteristics,
             price: String(variant.price || '0'),
             currency: variant.currency || 'USD',
-            variantImage: variant.image || variant.variantImage || null,
+            variantImage: cleanImage,
             stock: Number(variant.stock) || 0,
             available: Boolean(variant.available !== undefined ? variant.available : true),
-            category: variant.category || null,
-            sku: variant.sku || null,
+            category: variant.category && variant.category.trim() ? variant.category.trim() : null,
+            sku: variant.sku && variant.sku.trim() ? variant.sku.trim() : null,
             isDefault: i === 0,
             sortOrder: i
           };
