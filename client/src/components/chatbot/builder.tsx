@@ -151,6 +151,9 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
       if (chatbotData?.name) {
         setChatbotName(chatbotData.name);
         console.log('✅ Set chatbot name to:', chatbotData.name);
+      } else {
+        console.log('❌ No name found in chatbot data');
+        console.log('❌ Available keys:', Object.keys(chatbotData || {}));
       }
       
       // Handle different possible data structures
