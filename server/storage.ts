@@ -15,6 +15,7 @@ import {
   userPreferences,
   multimediaFiles,
   products,
+  productVariants,
   productTriggers,
   productAiConfig,
   type User,
@@ -40,6 +41,8 @@ import {
   type InsertMultimediaFile,
   type Product,
   type InsertProduct,
+  type ProductVariant,
+  type InsertProductVariant,
   type ProductTrigger,
   type InsertProductTrigger,
   type ProductAiConfig,
@@ -129,6 +132,12 @@ export interface IStorage {
 
   // Auto-chatbot generation
   createChatbotFromProduct(productId: number, userId: string): Promise<Chatbot>;
+
+  // Product variants operations
+  getProductVariants(productId: number): Promise<ProductVariant[]>;
+  createProductVariant(variant: InsertProductVariant): Promise<ProductVariant>;
+  updateProductVariant(id: number, data: Partial<ProductVariant>): Promise<ProductVariant>;
+  deleteProductVariant(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {

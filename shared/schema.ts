@@ -225,6 +225,23 @@ export const products = pgTable("products", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Variantes de productos con múltiples opciones de precio
+export const productVariants = pgTable("product_variants", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull().references(() => products.id, { onDelete: 'cascade' }),
+  variantName: varchar("variant_name").notNull(), // e.g., "Presentación Grande", "Color Azul", "Tamaño XL"
+  characteristics: text("characteristics").notNull(), // Descripción de las características de esta variante
+  price: varchar("price").notNull(),
+  currency: varchar("currency").default("USD"),
+  variantImage: varchar("variant_image"), // Imagen específica para esta variante
+  priceImages: text("price_images").array(), // Imágenes de precios específicas para esta variante
+  stock: integer("stock").default(0),
+  isDefault: boolean("is_default").default(false), // Marcar una variante como predeterminada
+  sortOrder: integer("sort_order").default(0), // Para ordenar las variantes
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Disparadores de IA para productos
 export const productTriggers = pgTable("product_triggers", {
   id: serial("id").primaryKey(),
@@ -311,6 +328,12 @@ export const insertProductAiConfigSchema = createInsertSchema(productAiConfig).o
   updatedAt: true,
 });
 
+export const insertProductVariantSchema = createInsertSchema(productVariants).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const upsertUserSchema = z.object({
   id: z.string(),
   email: z.string().email().optional(),
@@ -360,3 +383,6 @@ export type InsertProductTrigger = typeof productTriggers.$inferInsert;
 
 export type ProductAiConfig = typeof productAiConfig.$inferSelect;
 export type InsertProductAiConfig = typeof productAiConfig.$inferInsert;
+
+export type ProductVariant = typeof productVariants.$inferSelect;
+export type InsertProductVariant = typeof productVariants.$inferInsert;
