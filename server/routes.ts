@@ -6,6 +6,207 @@ import { setupStripe } from "./stripe";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
+// Function to extract product information from URL
+async function extractProductInfoFromUrl(url: string) {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const html = await response.text();
+    
+    return {
+      name: extractTitle(html, url),
+      description: extractDescription(html),
+      price: extractPrice(html),
+      category: extractCategory(html),
+      productImage: extractMainImage(html, url),
+      tags: extractTags(html)
+    };
+  } catch (error) {
+    console.error('Error extracting product info:', error);
+    throw new Error('Failed to extract product information from URL');
+  }
+}
+
+function extractTitle(html: string, url: string): string {
+  let match = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i);
+  if (match) return cleanText(match[1]);
+  
+  match = html.match(/<meta[^>]*name=["']twitter:title["'][^>]*content=["']([^"']+)["']/i);
+  if (match) return cleanText(match[1]);
+  
+  match = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+  if (match) return cleanText(match[1]);
+  
+  const urlObj = new URL(url);
+  return urlObj.pathname.split('/').pop()?.replace(/[-_]/g, ' ') || 'Producto';
+}
+
+function extractDescription(html: string): string {
+  let match = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i);
+  if (match) return cleanText(match[1]);
+  
+  match = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+  if (match) return cleanText(match[1]);
+  
+  const descriptionPatterns = [
+    /<div[^>]*class="[^"]*product[_-]?description[^"]*"[^>]*>([^<]+)/i,
+    /<div[^>]*class="[^"]*description[^"]*"[^>]*>([^<]+)/i,
+    /<p[^>]*class="[^"]*description[^"]*"[^>]*>([^<]+)/i
+  ];
+  
+  for (const pattern of descriptionPatterns) {
+    match = html.match(pattern);
+    if (match) return cleanText(match[1]);
+  }
+  
+  return '';
+}
+
+function extractPrice(html: string): string {
+  const jsonLdMatch = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([^<]+)<\/script>/gi);
+  if (jsonLdMatch) {
+    for (const script of jsonLdMatch) {
+      try {
+        const jsonMatch = script.match(/>([^<]+)</);
+        if (jsonMatch) {
+          const data = JSON.parse(jsonMatch[1]);
+          if (data.offers && data.offers.price) {
+            return data.offers.price.toString();
+          }
+          if (data['@type'] === 'Product' && data.offers && data.offers[0] && data.offers[0].price) {
+            return data.offers[0].price.toString();
+          }
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+  }
+  
+  const pricePatterns = [
+    /\$[\d,]+\.?\d*/g,
+    /€[\d,]+\.?\d*/g,
+    /£[\d,]+\.?\d*/g,
+    /[\d,]+\.?\d*\s*USD/g,
+    /[\d,]+\.?\d*\s*EUR/g,
+    /[\d,]+\.?\d*\s*COP/g,
+    /<span[^>]*class="[^"]*price[^"]*"[^>]*>([\d,$.€£]+)/gi,
+    /<div[^>]*class="[^"]*price[^"]*"[^>]*>([\d,$.€£]+)/gi
+  ];
+  
+  for (const pattern of pricePatterns) {
+    const matches = html.match(pattern);
+    if (matches && matches.length > 0) {
+      return matches[0].replace(/[^\d.,]/g, '');
+    }
+  }
+  
+  return '';
+}
+
+function extractCategory(html: string): string {
+  const breadcrumbPatterns = [
+    /<nav[^>]*class="[^"]*breadcrumb[^"]*"[^>]*>([^<]+)/i,
+    /<div[^>]*class="[^"]*breadcrumb[^"]*"[^>]*>([^<]+)/i
+  ];
+  
+  for (const pattern of breadcrumbPatterns) {
+    const match = html.match(pattern);
+    if (match) {
+      const breadcrumbs = match[1].split('>').map(item => cleanText(item));
+      if (breadcrumbs.length > 1) {
+        return breadcrumbs[breadcrumbs.length - 2] || '';
+      }
+    }
+  }
+  
+  const keywordsMatch = html.match(/<meta[^>]*name=["']keywords["'][^>]*content=["']([^"']+)["']/i);
+  if (keywordsMatch) {
+    const keywords = keywordsMatch[1].split(',');
+    return keywords[0]?.trim() || '';
+  }
+  
+  return '';
+}
+
+function extractMainImage(html: string, url: string): string {
+  let match = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+  if (match) return makeAbsoluteUrl(match[1], url);
+  
+  match = html.match(/<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i);
+  if (match) return makeAbsoluteUrl(match[1], url);
+  
+  const imagePatterns = [
+    /<img[^>]*class="[^"]*product[_-]?image[^"]*"[^>]*src=["']([^"']+)["']/i,
+    /<img[^>]*class="[^"]*main[_-]?image[^"]*"[^>]*src=["']([^"']+)["']/i,
+    /<img[^>]*src=["']([^"']+)["'][^>]*class="[^"]*product[^"]*"/i
+  ];
+  
+  for (const pattern of imagePatterns) {
+    match = html.match(pattern);
+    if (match) return makeAbsoluteUrl(match[1], url);
+  }
+  
+  return '';
+}
+
+function extractTags(html: string): string[] {
+  const tags: string[] = [];
+  
+  const keywordsMatch = html.match(/<meta[^>]*name=["']keywords["'][^>]*content=["']([^"']+)["']/i);
+  if (keywordsMatch) {
+    const keywords = keywordsMatch[1].split(',').map(k => cleanText(k));
+    tags.push(...keywords.slice(0, 5));
+  }
+  
+  const tagPatterns = [
+    /<span[^>]*class="[^"]*tag[^"]*"[^>]*>([^<]+)</gi,
+    /<a[^>]*class="[^"]*category[^"]*"[^>]*>([^<]+)</gi
+  ];
+  
+  for (const pattern of tagPatterns) {
+    let match;
+    while ((match = pattern.exec(html)) !== null && tags.length < 8) {
+      const tag = cleanText(match[1]);
+      if (tag.length > 2 && tag.length < 20 && !tags.includes(tag)) {
+        tags.push(tag);
+      }
+    }
+  }
+  
+  return tags.slice(0, 6);
+}
+
+function cleanText(text: string): string {
+  return text
+    .replace(/&[^;]+;/g, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function makeAbsoluteUrl(url: string, baseUrl: string): string {
+  try {
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('//')) return 'https:' + url;
+    if (url.startsWith('/')) {
+      const base = new URL(baseUrl);
+      return base.origin + url;
+    }
+    return new URL(url, baseUrl).href;
+  } catch {
+    return url;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware
   app.use(cookieParser());
