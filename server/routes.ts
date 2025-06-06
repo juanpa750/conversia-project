@@ -1442,6 +1442,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (let i = 0; i < variants.length; i++) {
           const variant = variants[i];
           
+          console.log(`Frontend variant ${i} data received:`, JSON.stringify(variant, null, 2));
+          
           // Map frontend fields to backend fields correctly
           const variantData = {
             productId: id,
@@ -1458,8 +1460,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             sortOrder: i
           };
           
-          console.log('Creating variant with data:', JSON.stringify(variantData, null, 2));
-          await storage.createProductVariant(variantData);
+          console.log(`Creating variant ${i} with mapped data:`, JSON.stringify(variantData, null, 2));
+          const result = await storage.createProductVariant(variantData);
+          console.log(`Variant ${i} created with result:`, JSON.stringify(result, null, 2));
         }
       }
       
