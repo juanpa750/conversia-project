@@ -117,14 +117,24 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   // Load chatbot flow when data is available
   useEffect(() => {
     if (chatbot && !isInitialized) {
-      console.log('Loading chatbot:', chatbot);
+      console.log('Raw chatbot data:', chatbot);
       console.log('Chatbot type:', typeof chatbot);
-      console.log('Chatbot keys:', Object.keys(chatbot));
+      console.log('Is array:', Array.isArray(chatbot));
       
-      setChatbotName((chatbot as any).name || 'Chatbot');
+      // Handle case where API returns array instead of single object
+      let chatbotData = chatbot;
+      if (Array.isArray(chatbot) && chatbot.length > 0) {
+        chatbotData = chatbot[0];
+        console.log('Extracted chatbot from array:', chatbotData);
+      }
+      
+      console.log('Final chatbot data:', chatbotData);
+      console.log('Chatbot name:', (chatbotData as any)?.name);
+      
+      setChatbotName((chatbotData as any)?.name || 'Chatbot');
       
       // Handle different possible data structures
-      let flow = (chatbot as any).flow;
+      let flow = (chatbotData as any)?.flow;
       
       // If flow is a string, try to parse it as JSON
       if (typeof flow === 'string') {
