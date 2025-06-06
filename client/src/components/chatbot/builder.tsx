@@ -49,11 +49,6 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   // Fetch chatbot data if editing existing chatbot
   const { data: chatbot, isLoading } = useQuery({
     queryKey: ["/api/chatbots", chatbotId],
-    queryFn: () => {
-      console.log('🔍 Fetching chatbot with ID:', chatbotId);
-      console.log('🔍 Query URL:', `/api/chatbots/${chatbotId}`);
-      return chatbotId ? apiRequest('GET', `/api/chatbots/${chatbotId}`) : null;
-    },
     enabled: !!chatbotId,
   });
 
@@ -122,24 +117,20 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   // Load chatbot flow when data is available
   useEffect(() => {
     if (chatbot && !isInitialized) {
-      console.log('Raw chatbot data:', chatbot);
-      console.log('Chatbot type:', typeof chatbot);
-      console.log('Is array:', Array.isArray(chatbot));
+      console.log('🔄 Loading chatbot data:', chatbot);
       
-      // Handle case where API returns array instead of single object
-      let chatbotData = chatbot;
-      if (Array.isArray(chatbot) && chatbot.length > 0) {
-        chatbotData = chatbot[0];
-        console.log('Extracted chatbot from array:', chatbotData);
+      // Cast chatbot to any to handle typing issues
+      const chatbotData = chatbot as any;
+      console.log('🔄 Chatbot name from data:', chatbotData?.name);
+      
+      // Set the chatbot name directly from the API response
+      if (chatbotData?.name) {
+        setChatbotName(chatbotData.name);
+        console.log('✅ Set chatbot name to:', chatbotData.name);
       }
       
-      console.log('Final chatbot data:', chatbotData);
-      console.log('Chatbot name:', (chatbotData as any)?.name);
-      
-      setChatbotName((chatbotData as any)?.name || 'Chatbot');
-      
       // Handle different possible data structures
-      let flow = (chatbotData as any)?.flow;
+      let flow = chatbotData?.flow;
       
       // If flow is a string, try to parse it as JSON
       if (typeof flow === 'string') {
