@@ -14,6 +14,9 @@ import {
   whatsappIntegrations,
   userPreferences,
   multimediaFiles,
+  products,
+  productTriggers,
+  productAiConfig,
   type User,
   type UpsertUser,
   type InsertUser,
@@ -35,6 +38,12 @@ import {
   type UserPreference,
   type MultimediaFile,
   type InsertMultimediaFile,
+  type Product,
+  type InsertProduct,
+  type ProductTrigger,
+  type InsertProductTrigger,
+  type ProductAiConfig,
+  type InsertProductAiConfig,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -99,6 +108,27 @@ export interface IStorage {
   // AI Conversation Control operations
   updateConversationAI(conversationId: number, data: { aiEnabled?: boolean; aiStatus?: string }): Promise<void>;
   addManualMessage(conversationId: number, messageData: any): Promise<any>;
+
+  // Product operations
+  getProducts(userId: string): Promise<Product[]>;
+  getProduct(id: number): Promise<Product | undefined>;
+  createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: number, data: Partial<Product>): Promise<Product>;
+  deleteProduct(id: number): Promise<void>;
+
+  // Product triggers operations
+  getProductTriggers(chatbotId: number): Promise<ProductTrigger[]>;
+  createProductTrigger(trigger: InsertProductTrigger): Promise<ProductTrigger>;
+  updateProductTrigger(id: number, data: Partial<ProductTrigger>): Promise<ProductTrigger>;
+  deleteProductTrigger(id: number): Promise<void>;
+
+  // Product AI config operations
+  getProductAiConfig(productId: number, chatbotId: number): Promise<ProductAiConfig | undefined>;
+  createProductAiConfig(config: InsertProductAiConfig): Promise<ProductAiConfig>;
+  updateProductAiConfig(id: number, data: Partial<ProductAiConfig>): Promise<ProductAiConfig>;
+
+  // Auto-chatbot generation
+  createChatbotFromProduct(productId: number, userId: string): Promise<Chatbot>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -476,6 +506,181 @@ export class DatabaseStorage implements IStorage {
       .where(eq(conversations.id, conversationId));
 
     return message;
+  }
+
+  // Product operations
+  async getProducts(userId: string): Promise<Product[]> {
+    return await db
+      .select()
+      .from(products)
+      .where(eq(products.userId, userId))
+      .orderBy(desc(products.createdAt));
+  }
+
+  async getProduct(id: number): Promise<Product | undefined> {
+    const [product] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, id));
+    return product;
+  }
+
+  async createProduct(productData: InsertProduct): Promise<Product> {
+    const [product] = await db
+      .insert(products)
+      .values(productData)
+      .returning();
+    return product;
+  }
+
+  async updateProduct(id: number, data: Partial<Product>): Promise<Product> {
+    const [product] = await db
+      .update(products)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(products.id, id))
+      .returning();
+    return product;
+  }
+
+  async deleteProduct(id: number): Promise<void> {
+    await db.delete(products).where(eq(products.id, id));
+  }
+
+  // Product triggers operations
+  async getProductTriggers(chatbotId: number): Promise<ProductTrigger[]> {
+    return await db
+      .select()
+      .from(productTriggers)
+      .where(eq(productTriggers.chatbotId, chatbotId))
+      .orderBy(desc(productTriggers.priority));
+  }
+
+  async createProductTrigger(triggerData: InsertProductTrigger): Promise<ProductTrigger> {
+    const [trigger] = await db
+      .insert(productTriggers)
+      .values(triggerData)
+      .returning();
+    return trigger;
+  }
+
+  async updateProductTrigger(id: number, data: Partial<ProductTrigger>): Promise<ProductTrigger> {
+    const [trigger] = await db
+      .update(productTriggers)
+      .set(data)
+      .where(eq(productTriggers.id, id))
+      .returning();
+    return trigger;
+  }
+
+  async deleteProductTrigger(id: number): Promise<void> {
+    await db.delete(productTriggers).where(eq(productTriggers.id, id));
+  }
+
+  // Product AI config operations
+  async getProductAiConfig(productId: number, chatbotId: number): Promise<ProductAiConfig | undefined> {
+    const [config] = await db
+      .select()
+      .from(productAiConfig)
+      .where(and(
+        eq(productAiConfig.productId, productId),
+        eq(productAiConfig.chatbotId, chatbotId)
+      ));
+    return config;
+  }
+
+  async createProductAiConfig(configData: InsertProductAiConfig): Promise<ProductAiConfig> {
+    const [config] = await db
+      .insert(productAiConfig)
+      .values(configData)
+      .returning();
+    return config;
+  }
+
+  async updateProductAiConfig(id: number, data: Partial<ProductAiConfig>): Promise<ProductAiConfig> {
+    const [config] = await db
+      .update(productAiConfig)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(productAiConfig.id, id))
+      .returning();
+    return config;
+  }
+
+  // Auto-chatbot generation from product
+  async createChatbotFromProduct(productId: number, userId: string): Promise<Chatbot> {
+    const product = await this.getProduct(productId);
+    if (!product) {
+      throw new Error('Producto no encontrado');
+    }
+
+    // Create chatbot with product-specific configuration
+    const chatbotData: InsertChatbot = {
+      userId,
+      name: `Chatbot - ${product.name}`,
+      description: `Chatbot automático para ${product.name}`,
+      type: 'sales' as any,
+      status: 'draft' as any,
+      configuration: {
+        productId: product.id,
+        productName: product.name,
+        productPrice: product.price,
+        productDescription: product.description,
+        productFeatures: product.features || [],
+        autoGenerated: true,
+        aiPrompt: `Eres un asistente de ventas especializado en ${product.name}. Tu objetivo es vender este producto usando la metodología AIDA.`,
+      },
+      welcomeMessage: `¡Hola! Te puedo ayudar con información sobre ${product.name}. ¿Qué te gustaría saber?`,
+    };
+
+    const chatbot = await this.createChatbot(chatbotData);
+
+    // Update product with chatbot association
+    await this.updateProduct(productId, { chatbotId: chatbot.id });
+
+    // Create default triggers for the product
+    const defaultKeywords = [
+      product.name.toLowerCase(),
+      ...(product.tags || []).map(tag => tag.toLowerCase()),
+      product.category?.toLowerCase(),
+    ].filter(Boolean);
+
+    if (defaultKeywords.length > 0) {
+      await this.createProductTrigger({
+        productId: product.id,
+        chatbotId: chatbot.id,
+        keywords: defaultKeywords,
+        phrases: [
+          `información sobre ${product.name}`,
+          `quiero comprar ${product.name}`,
+          `precio de ${product.name}`,
+        ],
+        priority: 1,
+        isActive: true,
+      });
+    }
+
+    // Create AI configuration for the product
+    await this.createProductAiConfig({
+      productId: product.id,
+      chatbotId: chatbot.id,
+      salesPitch: `${product.name} es perfecto para ti porque ${product.description}`,
+      targetAudience: 'Clientes interesados en productos de calidad',
+      useCases: product.features || [],
+      benefits: product.features || [],
+      aiInstructions: `
+        Usa la metodología AIDA:
+        1. ATENCIÓN: Capta el interés con el nombre del producto
+        2. INTERÉS: Destaca las características principales
+        3. DESEO: Explica los beneficios únicos
+        4. ACCIÓN: Guía hacia la compra
+        
+        Producto: ${product.name}
+        Precio: ${product.price} ${product.currency}
+        Descripción: ${product.description}
+        Características: ${(product.features || []).join(', ')}
+      `,
+    });
+
+    return chatbot;
   }
 }
 

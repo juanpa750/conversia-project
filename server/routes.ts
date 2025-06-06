@@ -643,6 +643,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Product routes
+  app.get("/api/products", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const products = await storage.getProducts(userId);
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ message: "Failed to fetch products" });
+    }
+  });
+
+  app.post("/api/products", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const productData = { ...req.body, userId };
+      const product = await storage.createProduct(productData);
+      res.json(product);
+    } catch (error) {
+      console.error("Error creating product:", error);
+      res.status(500).json({ message: "Failed to create product" });
+    }
+  });
+
+  app.get("/api/products/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const product = await storage.getProduct(id);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      res.json(product);
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      res.status(500).json({ message: "Failed to fetch product" });
+    }
+  });
+
+  app.put("/api/products/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const product = await storage.updateProduct(id, req.body);
+      res.json(product);
+    } catch (error) {
+      console.error("Error updating product:", error);
+      res.status(500).json({ message: "Failed to update product" });
+    }
+  });
+
+  app.delete("/api/products/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProduct(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      res.status(500).json({ message: "Failed to delete product" });
+    }
+  });
+
+  // Auto-generate chatbot from product
+  app.post("/api/products/:id/create-chatbot", isAuthenticated, async (req: any, res) => {
+    try {
+      const productId = parseInt(req.params.id);
+      const userId = req.userId;
+      const chatbot = await storage.createChatbotFromProduct(productId, userId);
+      res.json(chatbot);
+    } catch (error) {
+      console.error("Error creating chatbot from product:", error);
+      res.status(500).json({ message: "Failed to create chatbot from product" });
+    }
+  });
+
+  // Product triggers routes
+  app.get("/api/chatbots/:id/triggers", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbotId = parseInt(req.params.id);
+      const triggers = await storage.getProductTriggers(chatbotId);
+      res.json(triggers);
+    } catch (error) {
+      console.error("Error fetching product triggers:", error);
+      res.status(500).json({ message: "Failed to fetch product triggers" });
+    }
+  });
+
+  app.post("/api/triggers", isAuthenticated, async (req: any, res) => {
+    try {
+      const trigger = await storage.createProductTrigger(req.body);
+      res.json(trigger);
+    } catch (error) {
+      console.error("Error creating product trigger:", error);
+      res.status(500).json({ message: "Failed to create product trigger" });
+    }
+  });
+
+  app.put("/api/triggers/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const trigger = await storage.updateProductTrigger(id, req.body);
+      res.json(trigger);
+    } catch (error) {
+      console.error("Error updating product trigger:", error);
+      res.status(500).json({ message: "Failed to update product trigger" });
+    }
+  });
+
+  app.delete("/api/triggers/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProductTrigger(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting product trigger:", error);
+      res.status(500).json({ message: "Failed to delete product trigger" });
+    }
+  });
+
+  // Product AI config routes
+  app.get("/api/products/:productId/ai-config/:chatbotId", isAuthenticated, async (req: any, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const chatbotId = parseInt(req.params.chatbotId);
+      const config = await storage.getProductAiConfig(productId, chatbotId);
+      res.json(config || {});
+    } catch (error) {
+      console.error("Error fetching AI config:", error);
+      res.status(500).json({ message: "Failed to fetch AI config" });
+    }
+  });
+
+  app.post("/api/ai-config", isAuthenticated, async (req: any, res) => {
+    try {
+      const config = await storage.createProductAiConfig(req.body);
+      res.json(config);
+    } catch (error) {
+      console.error("Error creating AI config:", error);
+      res.status(500).json({ message: "Failed to create AI config" });
+    }
+  });
+
+  app.put("/api/ai-config/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const config = await storage.updateProductAiConfig(id, req.body);
+      res.json(config);
+    } catch (error) {
+      console.error("Error updating AI config:", error);
+      res.status(500).json({ message: "Failed to update AI config" });
+    }
+  });
+
   // AI Conversation Control routes
   app.get("/api/conversations/ai-control", isAuthenticated, async (req: any, res) => {
     try {
