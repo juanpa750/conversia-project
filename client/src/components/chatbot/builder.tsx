@@ -74,7 +74,20 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
     
     const data = { [field]: value };
     console.log(`💾 Auto-saving ${field}:`, value);
-    saveChatbotMutation.mutate(data);
+    
+    // Create a complete data object with current values
+    const completeData = {
+      name: chatbotName,
+      productId: selectedProductId && selectedProductId !== 'none' ? parseInt(selectedProductId) : null,
+      triggerKeywords,
+      aiInstructions,
+      aiPersonality,
+      conversationObjective,
+      flow: JSON.stringify({ nodes, edges }),
+      ...data // Override with the specific field being updated
+    };
+    
+    saveChatbotMutation.mutate(completeData);
   };
 
   // Debounced save functions

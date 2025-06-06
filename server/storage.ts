@@ -209,11 +209,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateChatbot(id: number, data: Partial<Chatbot>): Promise<Chatbot> {
+    console.log('🗃️ STORAGE: Updating chatbot', id, 'with data:', data);
+    
     const [chatbot] = await db
       .update(chatbots)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(chatbots.id, id))
       .returning();
+    
+    console.log('🗃️ STORAGE: Updated chatbot result:', chatbot);
     return chatbot;
   }
 

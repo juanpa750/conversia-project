@@ -907,6 +907,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/chatbots/:id', isAuthenticated, async (req, res) => {
+    try {
+      const chatbotId = Number(req.params.id);
+      console.log('🔧 PATCH chatbot request:', { chatbotId, body: req.body });
+      
+      const chatbot = await storage.getChatbot(chatbotId);
+      
+      if (!chatbot) {
+        return res.status(404).json({ message: 'Chatbot not found' });
+      }
+      
+      // Check ownership
+      if (chatbot.userId !== req.userId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+      
+      const updatedChatbot = await storage.updateChatbot(chatbotId, req.body);
+      console.log('🔧 Updated chatbot result:', updatedChatbot);
+      res.json(updatedChatbot);
+    } catch (error: any) {
+      console.error('Update chatbot error:', error);
+      res.status(500).json({ message: 'Failed to update chatbot', error: error.message });
+    }
+  });
+
   app.delete('/api/chatbots/:id', isAuthenticated, async (req, res) => {
     try {
       const chatbotId = Number(req.params.id);
