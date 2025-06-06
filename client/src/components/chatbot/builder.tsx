@@ -48,61 +48,78 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  
+  // Estados para la nueva estructura de pestañas
   const [selectedProductId, setSelectedProductId] = useState<string>('none');
   const [triggerKeywords, setTriggerKeywords] = useState<string[]>([]);
-  const [aiInstructions, setAiInstructions] = useState<string>('');
-  const [newKeyword, setNewKeyword] = useState<string>('');
-  const [conversationObjective, setConversationObjective] = useState<string>('sales');
-  const [aiPersonality, setAiPersonality] = useState<string>('');
-  const [location] = useLocation();
+  const [newKeyword, setNewKeyword] = useState('');
+  const [aiInstructions, setAiInstructions] = useState('');
+  const [aiPersonality, setAiPersonality] = useState('');
+  const [conversationObjective, setConversationObjective] = useState('');
+
   const { toast } = useToast();
 
-  // Fetch chatbot data if editing existing chatbot
-  const { data: chatbot, isLoading } = useQuery({
-    queryKey: ["/api/chatbots", chatbotId],
-    queryFn: async () => {
-      console.log('🔍 Making API request for chatbot ID:', chatbotId);
-      console.log('🔍 Request URL:', `/api/chatbots/${chatbotId}`);
-      const response = await apiRequest('GET', `/api/chatbots/${chatbotId}`);
-      const data = await response.json();
-      console.log('🔍 Raw response data:', data);
-      return data;
-    },
+  // Obtener datos del chatbot si existe
+  const { data: chatbot, isLoading: isChatbotLoading } = useQuery({
+    queryKey: ['/api/chatbots', chatbotId],
     enabled: !!chatbotId,
-    staleTime: 0, // Force fresh data
-    gcTime: 0, // Don't cache (React Query v5)
   });
 
-  // Fetch products for selection
-  const { data: products, isLoading: isProductsLoading, error: productsError } = useQuery({
-    queryKey: ["/api/products"],
+  // Obtener productos disponibles
+  const { data: products } = useQuery({
+    queryKey: ['/api/products'],
   });
 
-  // Debug products
-  console.log('Products data:', products);
-  console.log('Products loading:', isProductsLoading);
-  console.log('Products error:', productsError);
-
-  // Save chatbot mutation
-  const saveChatbotMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const flowData = {
-        name: chatbotName,
-        flow: { nodes, edges },
-        productId: selectedProductId && selectedProductId !== 'none' ? parseInt(selectedProductId) : null,
-        triggerKeywords,
-        aiInstructions,
-        updatedAt: new Date().toISOString()
-      };
+  useEffect(() => {
+    if (chatbot && !isInitialized) {
+      setChatbotName(chatbot.name || 'Chatbot');
+      setSelectedProductId(chatbot.productId?.toString() || 'none');
+      setTriggerKeywords(chatbot.triggerKeywords || []);
+      setAiInstructions(chatbot.aiInstructions || '');
+      setAiPersonality(chatbot.aiPersonality || '');
+      setConversationObjective(chatbot.conversationObjective || '');
       
-      if (chatbotId) {
-        return apiRequest('PATCH', `/api/chatbots/${chatbotId}`, flowData);
+      if (chatbot.configuration) {
+        try {
+          const config = typeof chatbot.configuration === 'string' 
+            ? JSON.parse(chatbot.configuration) 
+            : chatbot.configuration;
+          setNodes(config.nodes || initialNodes);
+          setEdges(config.edges || []);
+        } catch (error) {
+          console.error('Error parsing chatbot configuration:', error);
+          setNodes(initialNodes);
+          setEdges([]);
+        }
       } else {
-        return apiRequest('POST', '/api/chatbots', {
-          ...flowData,
-          type: 'support',
-          status: 'draft'
-        });
+        setNodes(initialNodes);
+        setEdges([]);
+      }
+      setIsInitialized(true);
+    } else if (!chatbotId && !isInitialized) {
+      setNodes(initialNodes);
+      setEdges([]);
+      setIsInitialized(true);
+    }
+  }, [chatbot, chatbotId, isInitialized]);
+
+  const saveChatbotMutation = useMutation({
+    mutationFn: async (data: { productId?: number | null; triggerKeywords?: string[]; aiInstructions?: string }) => {
+      const chatbotData = {
+        name: chatbotName,
+        type: 'sales' as const,
+        configuration: JSON.stringify({ nodes, edges }),
+        productId: data.productId,
+        triggerKeywords: data.triggerKeywords || triggerKeywords,
+        aiInstructions: data.aiInstructions || aiInstructions,
+        aiPersonality,
+        conversationObjective,
+      };
+
+      if (chatbotId) {
+        return apiRequest('PATCH', `/api/chatbots/${chatbotId}`, chatbotData);
+      } else {
+        return apiRequest('POST', '/api/chatbots', chatbotData);
       }
     },
     onSuccess: () => {
@@ -110,193 +127,82 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
         title: "Chatbot guardado",
         description: "Los cambios se han guardado correctamente",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/chatbots"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/chatbots'] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "No se pudieron guardar los cambios",
+        description: error.message || "No se pudo guardar el chatbot",
         variant: "destructive",
       });
-    }
+    },
   });
 
-  // Publish chatbot mutation
   const publishChatbotMutation = useMutation({
     mutationFn: async () => {
-      if (!chatbotId) {
-        throw new Error('Debe guardar el chatbot antes de publicarlo');
+      const chatbotData = {
+        name: chatbotName,
+        type: 'sales' as const,
+        status: 'active' as const,
+        configuration: JSON.stringify({ nodes, edges }),
+        productId: selectedProductId && selectedProductId !== 'none' ? parseInt(selectedProductId) : null,
+        triggerKeywords,
+        aiInstructions,
+        aiPersonality,
+        conversationObjective,
+      };
+
+      if (chatbotId) {
+        return apiRequest('PATCH', `/api/chatbots/${chatbotId}`, chatbotData);
+      } else {
+        return apiRequest('POST', '/api/chatbots', chatbotData);
       }
-      return apiRequest('PATCH', `/api/chatbots/${chatbotId}`, {
-        status: 'active',
-        flow: { nodes, edges }
-      });
     },
     onSuccess: () => {
       toast({
         title: "Chatbot publicado",
         description: "El chatbot está ahora activo y funcionando",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/chatbots"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/chatbots'] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "No se pudo publicar el chatbot",
+        description: error.message || "No se pudo publicar el chatbot",
         variant: "destructive",
       });
-    }
+    },
   });
-
-  // Reset state when chatbotId changes
-  useEffect(() => {
-    if (chatbotId) {
-      setChatbotName(''); // Clear name while loading
-      setIsInitialized(false);
-    } else {
-      setChatbotName('Nuevo Chatbot');
-      setIsInitialized(false);
-    }
-  }, [chatbotId]);
-
-  // Load chatbot flow when data is available
-  useEffect(() => {
-    if (chatbot && !isInitialized) {
-      console.log('🔄 Loading chatbot data:', chatbot);
-      console.log('🔄 Type of chatbot:', typeof chatbot);
-      console.log('🔄 Is array?:', Array.isArray(chatbot));
-      
-      // Handle case where API returns array instead of single object
-      let chatbotData = chatbot as any;
-      if (Array.isArray(chatbot) && chatbot.length > 0) {
-        chatbotData = chatbot[0];
-        console.log('🔄 Extracted chatbot from array:', chatbotData);
-      }
-      
-      console.log('🔄 Final chatbot data:', chatbotData);
-      console.log('🔄 Chatbot name from data:', chatbotData?.name);
-      console.log('🔄 Chatbot object stringified:', JSON.stringify(chatbotData, null, 2));
-      
-      // Force set the name regardless to test if it's a React state issue
-      const nameToSet = chatbotData?.name || `Test Name ${Date.now()}`;
-      setChatbotName(nameToSet);
-      console.log('✅ FORCED set chatbot name to:', nameToSet);
-      
-      if (!chatbotData?.name) {
-        console.log('❌ No name found in chatbot data');
-        console.log('❌ Available keys:', Object.keys(chatbotData || {}));
-      }
-      
-      // Handle different possible data structures
-      let flow = chatbotData?.flow;
-      
-      // If flow is a string, try to parse it as JSON
-      if (typeof flow === 'string') {
-        try {
-          flow = JSON.parse(flow);
-          console.log('Parsed flow from string:', flow);
-        } catch (e) {
-          console.error('Failed to parse flow JSON:', e);
-          flow = null;
-        }
-      }
-      
-      console.log('Final flow object:', flow);
-      console.log('Flow type:', typeof flow);
-      console.log('Flow nodes:', flow?.nodes);
-      console.log('Nodes is array:', Array.isArray(flow?.nodes));
-      console.log('Nodes length:', flow?.nodes?.length);
-      
-      if (flow && flow.nodes && Array.isArray(flow.nodes) && flow.nodes.length > 0) {
-        console.log('✅ Loading AI-generated flow with', flow.nodes.length, 'nodes');
-        setNodes(flow.nodes);
-        if (flow.edges && Array.isArray(flow.edges)) {
-          setEdges(flow.edges);
-          console.log('✅ Loading', flow.edges.length, 'edges');
-        }
-        setIsInitialized(true);
-      } else {
-        console.log('❌ No valid flow found, using default nodes');
-        setNodes(initialNodes);
-        setIsInitialized(true);
-      }
-    } else if (!chatbotId && !isInitialized) {
-      // New chatbot - use default nodes
-      setNodes(initialNodes);
-      setIsInitialized(true);
-    }
-  }, [chatbot, chatbotId, isInitialized, setNodes, setEdges]);
-
-  // Load product configuration data when chatbot is loaded
-  useEffect(() => {
-    if (chatbot) {
-      // Handle case where API returns array instead of single object
-      let chatbotData = chatbot as any;
-      if (Array.isArray(chatbot) && chatbot.length > 0) {
-        chatbotData = chatbot[0];
-      }
-      
-      setSelectedProductId(chatbotData.productId ? chatbotData.productId.toString() : '');
-      setTriggerKeywords(chatbotData.triggerKeywords || []);
-      setAiInstructions(chatbotData.aiInstructions || '');
-      
-      console.log('✅ Auto-configured product settings:', {
-        productId: chatbotData.productId,
-        triggerKeywords: chatbotData.triggerKeywords,
-        aiInstructions: chatbotData.aiInstructions
-      });
-    }
-  }, [chatbot]);
-
-  // Auto-configure product when chatbot is created from a product (detected via URL search params)
-  useEffect(() => {
-    if (!chatbotId && location) {
-      const urlParams = new URLSearchParams(location.split('?')[1] || '');
-      const fromProductId = urlParams.get('fromProduct');
-      
-      if (fromProductId && fromProductId !== selectedProductId) {
-        console.log('🎯 Auto-configuring chatbot with product ID:', fromProductId);
-        setSelectedProductId(fromProductId);
-        toast({
-          title: "Producto configurado automáticamente",
-          description: "El chatbot se ha configurado con el producto seleccionado",
-        });
-      }
-    }
-  }, [location, chatbotId, selectedProductId]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges],
   );
 
-  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+  const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
   const onDrop = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
+    (event: React.DragEvent) => {
       event.preventDefault();
 
-      const type = event.dataTransfer.getData('application/reactflow/type');
-      
-      // Check if the dropped element is valid
-      if (!type) {
+      const type = event.dataTransfer.getData('application/reactflow');
+      if (typeof type === 'undefined' || !type) {
         return;
       }
 
-      // Get the position where the element is dropped
-      const position = reactFlowInstance.screenToFlowPosition({
+      const position = reactFlowInstance?.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
       });
 
-      const newNode = {
-        id: Date.now().toString(),
+      const newNode: Node = {
+        id: `${Date.now()}`,
         type,
         position,
-        data: { label: `${type.charAt(0).toUpperCase() + type.slice(1)} node` },
+        data: { label: `${type} node` },
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -355,27 +261,30 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      e.preventDefault();
       addKeyword();
     }
   };
 
+  if (isChatbotLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-[calc(100vh-7rem)] flex-col">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Input
-            value={chatbotName}
-            onChange={(e) => setChatbotName(e.target.value)}
-            className="max-w-sm border-gray-300 text-lg font-semibold"
-          />
+    <div className="flex h-screen flex-col">
+      <div className="flex items-center justify-between border-b bg-white px-4 py-3">
+        <div className="flex items-center space-x-4">
+          <h1 className="text-xl font-semibold">{chatbotName}</h1>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleTest}>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" onClick={handleTest} disabled={nodes.length === 0}>
             <RiTestTubeLine className="mr-2" />
-            Probar
+            {nodes.length === 0 ? 'Agregar nodos' : 'Probar'}
           </Button>
-          <Button variant="outline" size="sm" onClick={handlePublish} disabled={publishChatbotMutation.isPending}>
+          <Button size="sm" onClick={handlePublish} disabled={publishChatbotMutation.isPending || nodes.length === 0}>
             <RiWhatsappLine className="mr-2" />
             {publishChatbotMutation.isPending ? 'Publicando...' : 'Publicar'}
           </Button>
@@ -427,208 +336,169 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                 <div className="space-y-6 pb-8">
                   <div className="flex items-center gap-2">
                     <RiBrainLine className="h-5 w-5" />
-                    <h3 className="text-lg font-medium">Instrucciones de IA</h3>
+                    <h3 className="text-lg font-medium">Instrucciones del Chatbot</h3>
                   </div>
                 
-                {/* Selección de Producto */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Producto Asociado</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="product-select">Seleccionar Producto</Label>
-                      <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccione un producto" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Sin producto</SelectItem>
-                          {products && Array.isArray(products) ? products.map((product: any) => (
-                            <SelectItem key={product.id} value={product.id.toString()}>
-                              {product.name}
-                            </SelectItem>
-                          )) : null}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
+                  {/* Personalidad del AI */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Personalidad del Asistente Virtual</CardTitle>
+                      <p className="text-sm text-gray-600">Define cómo se comportará y comunicará tu chatbot</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="ai-personality">Personalidad y tono de comunicación</Label>
+                        <Textarea
+                          id="ai-personality"
+                          placeholder="Ej: Soy un asistente amigable y profesional. Hablo de manera clara y directa, siempre dispuesto a ayudar..."
+                          value={aiPersonality}
+                          onChange={(e) => setAiPersonality(e.target.value)}
+                          className="min-h-[100px]"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="tone">Estilo de comunicación</Label>
+                          <Select defaultValue="profesional">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar estilo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="profesional">Profesional</SelectItem>
+                              <SelectItem value="amigable">Amigable</SelectItem>
+                              <SelectItem value="casual">Casual</SelectItem>
+                              <SelectItem value="formal">Formal</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="response-length">Longitud de respuestas</Label>
+                          <Select defaultValue="moderado">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar longitud" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="conciso">Conciso</SelectItem>
+                              <SelectItem value="moderado">Moderado</SelectItem>
+                              <SelectItem value="detallado">Detallado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                {/* Personalidad de IA */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Personalidad de la IA</CardTitle>
-                    <p className="text-sm text-gray-600">Define cómo debe comportarse y comunicarse tu asistente IA</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label>Personalidad y tono de comunicación</Label>
-                      <Textarea
-                        placeholder="Ej: Eres un asistente amigable y profesional. Siempre saludas cordialmente y mantienes un tono cálido pero informativo. Te enfocas en ayudar al cliente de manera eficiente..."
-                        value={aiPersonality}
-                        onChange={(e) => setAiPersonality(e.target.value)}
-                        rows={4}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Instrucciones Específicas */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Instrucciones para la IA</CardTitle>
-                    <p className="text-sm text-gray-600">Define las reglas específicas y el comportamiento esperado</p>
-                  </CardHeader>
-                  <CardContent>
-                    <div>
-                      <Label htmlFor="ai-instructions">Instrucciones específicas</Label>
-                      <Textarea
-                        id="ai-instructions"
-                        placeholder="Ej: Cuando el cliente pregunte sobre precios, siempre menciona ofertas especiales. Si no tienes información específica, pide al cliente que espere mientras consultas con un especialista..."
-                        value={aiInstructions}
-                        onChange={(e) => setAiInstructions(e.target.value)}
-                        rows={6}
-                        className="mt-2"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                  {/* Instrucciones Específicas */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Instrucciones Específicas</CardTitle>
+                      <p className="text-sm text-gray-600">Instrucciones detalladas sobre cómo debe actuar el chatbot</p>
+                    </CardHeader>
+                    <CardContent>
+                      <div>
+                        <Label htmlFor="ai-instructions">Instrucciones para el AI</Label>
+                        <Textarea
+                          id="ai-instructions"
+                          placeholder="Ej: Cuando un cliente pregunte por precios, siempre menciona las promociones actuales. Si preguntan por disponibilidad..."
+                          value={aiInstructions}
+                          onChange={(e) => setAiInstructions(e.target.value)}
+                          className="min-h-[150px]"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </TabsContent>
-
+            
             <TabsContent value="objective" className="m-0 flex-1 outline-none overflow-hidden">
               <div className="h-full overflow-y-auto p-4">
                 <div className="space-y-6 pb-8">
                   <div className="flex items-center gap-2">
                     <RiFlagLine className="h-5 w-5" />
-                    <h3 className="text-lg font-medium">Objetivo de Conversación</h3>
+                    <h3 className="text-lg font-medium">Objetivo de la Conversación</h3>
                   </div>
                 
-                {/* Selección de Objetivo */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>¿Cuál es el objetivo principal de este chatbot?</CardTitle>
-                    <p className="text-sm text-gray-600">El objetivo determina cómo se desarrollará la conversación y qué estrategias usará la IA</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="sales"
-                            name="objective"
-                            value="sales"
-                            checked={conversationObjective === 'sales'}
-                            onChange={(e) => setConversationObjective(e.target.value)}
-                            className="text-blue-600"
-                          />
-                          <label htmlFor="sales" className="font-medium">Ventas</label>
-                        </div>
-                        <p className="text-sm text-gray-600 ml-6">Enfocado en convertir leads en clientes y cerrar ventas</p>
-                        
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="appointments"
-                            name="objective"
-                            value="appointments"
-                            checked={conversationObjective === 'appointments'}
-                            onChange={(e) => setConversationObjective(e.target.value)}
-                            className="text-blue-600"
-                          />
-                          <label htmlFor="appointments" className="font-medium">Agendar Citas</label>
-                        </div>
-                        <p className="text-sm text-gray-600 ml-6">Agendar reuniones, consultas o citas con especialistas</p>
-                        
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="support"
-                            name="objective"
-                            value="support"
-                            checked={conversationObjective === 'support'}
-                            onChange={(e) => setConversationObjective(e.target.value)}
-                            className="text-blue-600"
-                          />
-                          <label htmlFor="support" className="font-medium">Soporte al Cliente</label>
-                        </div>
-                        <p className="text-sm text-gray-600 ml-6">Resolver dudas, problemas y brindar asistencia técnica</p>
-                        
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="information"
-                            name="objective"
-                            value="information"
-                            checked={conversationObjective === 'information'}
-                            onChange={(e) => setConversationObjective(e.target.value)}
-                            className="text-blue-600"
-                          />
-                          <label htmlFor="information" className="font-medium">Información General</label>
-                        </div>
-                        <p className="text-sm text-gray-600 ml-6">Proporcionar información sobre productos, servicios o empresa</p>
-                        
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="lead_generation"
-                            name="objective"
-                            value="lead_generation"
-                            checked={conversationObjective === 'lead_generation'}
-                            onChange={(e) => setConversationObjective(e.target.value)}
-                            className="text-blue-600"
-                          />
-                          <label htmlFor="lead_generation" className="font-medium">Generación de Leads</label>
-                        </div>
-                        <p className="text-sm text-gray-600 ml-6">Capturar información de contacto y clasificar prospectos</p>
+                  {/* Objetivo Principal */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Objetivo Principal del Chatbot</CardTitle>
+                      <p className="text-sm text-gray-600">Define el propósito principal de las conversaciones</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="conversation-objective">¿Cuál es el objetivo principal?</Label>
+                        <Textarea
+                          id="conversation-objective"
+                          placeholder="Ej: Generar ventas de productos, programar citas, brindar soporte técnico, capturar leads..."
+                          value={conversationObjective}
+                          onChange={(e) => setConversationObjective(e.target.value)}
+                          className="min-h-[100px]"
+                        />
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="objective-type">Tipo de objetivo</Label>
+                          <Select defaultValue="ventas">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ventas">Generar Ventas</SelectItem>
+                              <SelectItem value="citas">Programar Citas</SelectItem>
+                              <SelectItem value="soporte">Brindar Soporte</SelectItem>
+                              <SelectItem value="leads">Capturar Leads</SelectItem>
+                              <SelectItem value="informacion">Dar Información</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="success-metric">Métrica de éxito</Label>
+                          <Select defaultValue="conversion">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar métrica" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="conversion">Tasa de Conversión</SelectItem>
+                              <SelectItem value="satisfaction">Satisfacción del Cliente</SelectItem>
+                              <SelectItem value="resolution">Resolución de Problemas</SelectItem>
+                              <SelectItem value="engagement">Tiempo de Interacción</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                {/* Descripción del comportamiento según objetivo */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Comportamiento según el Objetivo</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="p-4 bg-blue-50 rounded-lg">
-                      {conversationObjective === 'sales' && (
-                        <div>
-                          <h4 className="font-medium text-blue-900 mb-2">Estrategia de Ventas</h4>
-                          <p className="text-sm text-blue-800">La IA se enfocará en identificar necesidades, presentar beneficios del producto, manejar objeciones y guiar hacia la compra. Usará técnicas persuasivas y creará urgencia cuando sea apropiado.</p>
+                  {/* Estrategia de Conversación */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Estrategia de Conversación</CardTitle>
+                      <p className="text-sm text-gray-600">Cómo debe abordar las conversaciones para lograr el objetivo</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-3">
+                          <Label>Enfoque de la conversación</Label>
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <input type="radio" id="consultative" name="approach" value="consultative" defaultChecked />
+                              <Label htmlFor="consultative">Consultivo - Hacer preguntas para entender necesidades</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <input type="radio" id="direct" name="approach" value="direct" />
+                              <Label htmlFor="direct">Directo - Ir al punto rápidamente</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <input type="radio" id="educational" name="approach" value="educational" />
+                              <Label htmlFor="educational">Educativo - Informar antes de vender</Label>
+                            </div>
+                          </div>
                         </div>
-                      )}
-                      {conversationObjective === 'appointments' && (
-                        <div>
-                          <h4 className="font-medium text-blue-900 mb-2">Estrategia de Agendamiento</h4>
-                          <p className="text-sm text-blue-800">La IA se enfocará en calificar al prospecto, explicar el valor de la cita, superar resistencias al agendamiento y facilitar la programación de fechas y horarios.</p>
-                        </div>
-                      )}
-                      {conversationObjective === 'support' && (
-                        <div>
-                          <h4 className="font-medium text-blue-900 mb-2">Estrategia de Soporte</h4>
-                          <p className="text-sm text-blue-800">La IA priorizará la resolución rápida de problemas, brindará instrucciones claras, escalará casos complejos cuando sea necesario y asegurará la satisfacción del cliente.</p>
-                        </div>
-                      )}
-                      {conversationObjective === 'information' && (
-                        <div>
-                          <h4 className="font-medium text-blue-900 mb-2">Estrategia Informativa</h4>
-                          <p className="text-sm text-blue-800">La IA proporcionará información precisa y completa, responderá preguntas frecuentes, ofrecerá recursos adicionales y mantendrá un tono educativo y servicial.</p>
-                        </div>
-                      )}
-                      {conversationObjective === 'lead_generation' && (
-                        <div>
-                          <h4 className="font-medium text-blue-900 mb-2">Estrategia de Generación de Leads</h4>
-                          <p className="text-sm text-blue-800">La IA se enfocará en capturar datos de contacto, calificar el interés del prospecto, ofrecer contenido valioso a cambio de información y nutrir la relación para futuras oportunidades.</p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </TabsContent>
@@ -641,410 +511,202 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                     <h3 className="text-lg font-medium">Configuración del Chatbot</h3>
                   </div>
                 
-                {/* Configuración Básica */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Información Básica</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="chatbot-name">Nombre del Chatbot</Label>
-                        <Input 
-                          id="chatbot-name"
-                          value={chatbotName}
-                          onChange={(e) => setChatbotName(e.target.value)}
-                          placeholder="Ej: Asistente de Ventas"
-                        />
+                  {/* Configuración Básica */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Información Básica</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="chatbot-name">Nombre del Chatbot</Label>
+                          <Input 
+                            id="chatbot-name"
+                            value={chatbotName}
+                            onChange={(e) => setChatbotName(e.target.value)}
+                            placeholder="Ej: Asistente de Ventas"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="language">Idioma Principal</Label>
+                          <Select defaultValue="es">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar idioma" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="es">Español</SelectItem>
+                              <SelectItem value="en">Inglés</SelectItem>
+                              <SelectItem value="pt">Portugués</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="language">Idioma Principal</Label>
-                        <Select defaultValue="es">
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar idioma" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="es">Español</SelectItem>
-                            <SelectItem value="en">Inglés</SelectItem>
-                            <SelectItem value="pt">Portugués</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
 
-                {/* Palabras Clave Activadoras */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Palabras Clave Activadoras</CardTitle>
-                    <p className="text-sm text-gray-600">Define qué palabras o frases activan este chatbot específico</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label>Palabras que activan este chatbot</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Agregar palabra clave..."
-                          value={newKeyword}
-                          onChange={(e) => setNewKeyword(e.target.value)}
-                          onKeyPress={handleKeyPress}
-                        />
-                        <Button onClick={addKeyword} variant="outline">
-                          Agregar
-                        </Button>
+                  {/* Palabras Clave Activadoras */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Palabras Clave Activadoras</CardTitle>
+                      <p className="text-sm text-gray-600">Define qué palabras o frases activan este chatbot específico</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label>Palabras que activan este chatbot</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Agregar palabra clave..."
+                            value={newKeyword}
+                            onChange={(e) => setNewKeyword(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                          />
+                          <Button onClick={addKeyword} variant="outline">
+                            Agregar
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                    
-                    {triggerKeywords.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {triggerKeywords.map((keyword) => (
-                          <Badge 
-                            key={keyword} 
-                            variant="secondary" 
-                            className="flex items-center gap-1"
-                          >
-                            {keyword}
-                            <button
-                              onClick={() => removeKeyword(keyword)}
-                              className="ml-1 text-red-500 hover:text-red-700"
+                      
+                      {triggerKeywords.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {triggerKeywords.map((keyword) => (
+                            <Badge 
+                              key={keyword} 
+                              variant="secondary" 
+                              className="flex items-center gap-1"
                             >
-                              ×
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                              {keyword}
+                              <button
+                                onClick={() => removeKeyword(keyword)}
+                                className="ml-1 text-red-500 hover:text-red-700"
+                              >
+                                ×
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
-                {/* Configuración Avanzada */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Configuración Avanzada</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="tone">Tono de Comunicación</Label>
-                        <Select defaultValue="profesional">
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar tono" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="profesional">Profesional</SelectItem>
-                            <SelectItem value="amigable">Amigable</SelectItem>
-                            <SelectItem value="casual">Casual</SelectItem>
-                            <SelectItem value="formal">Formal</SelectItem>
-                          </SelectContent>
-                        </Select>
+                  {/* Configuración Avanzada */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Configuración Avanzada</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="tone">Tono de Comunicación</Label>
+                          <Select defaultValue="profesional">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar tono" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="profesional">Profesional</SelectItem>
+                              <SelectItem value="amigable">Amigable</SelectItem>
+                              <SelectItem value="casual">Casual</SelectItem>
+                              <SelectItem value="formal">Formal</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="response-style">Estilo de Respuesta</Label>
+                          <Select defaultValue="conciso">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar estilo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="conciso">Conciso</SelectItem>
+                              <SelectItem value="detallado">Detallado</SelectItem>
+                              <SelectItem value="conversacional">Conversacional</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="response-style">Estilo de Respuesta</Label>
-                        <Select defaultValue="conciso">
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar estilo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="conciso">Conciso</SelectItem>
-                            <SelectItem value="detallado">Detallado</SelectItem>
-                            <SelectItem value="conversacional">Conversacional</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Configuración de Multimedia */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Configuración de Multimedia</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="enableImages" className="rounded" defaultChecked />
-                      <Label htmlFor="enableImages">Habilitar envío de imágenes</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="enableVideos" className="rounded" defaultChecked />
-                      <Label htmlFor="enableVideos">Habilitar envío de videos</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="enableAudios" className="rounded" defaultChecked />
-                      <Label htmlFor="enableAudios">Habilitar mensajes de audio</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="enableDocuments" className="rounded" />
-                      <Label htmlFor="enableDocuments">Habilitar envío de documentos</Label>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Configuración Avanzada */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Configuración Avanzada</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <Label htmlFor="timeout">Tiempo de espera antes de escalamiento (minutos)</Label>
-                      <Input id="timeout" type="number" defaultValue="5" className="w-32" />
-                    </div>
-                    <div>
-                      <Label htmlFor="max-attempts">Máximo de intentos por conversación</Label>
-                      <Input id="max-attempts" type="number" defaultValue="3" className="w-32" />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="enableFallback" className="rounded" defaultChecked />
-                      <Label htmlFor="enableFallback">Habilitar respuesta de respaldo cuando no entienda</Label>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Horarios de Funcionamiento */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Horarios de Funcionamiento</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="start-time">Hora de inicio</Label>
-                        <Input id="start-time" type="time" defaultValue="08:00" />
-                      </div>
-                      <div>
-                        <Label htmlFor="end-time">Hora de fin</Label>
-                        <Input id="end-time" type="time" defaultValue="18:00" />
-                      </div>
-                    </div>
-                    <div>
-                      <Label>Días activos</Label>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
-                          <label key={day} className="flex items-center space-x-1">
-                            <input type="checkbox" className="rounded" defaultChecked={day !== 'Sáb' && day !== 'Dom'} />
-                            <span className="text-sm">{day}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Mensajes Automáticos */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Mensajes Automáticos</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <Label htmlFor="welcome-message">Mensaje de bienvenida</Label>
-                      <textarea 
-                        id="welcome-message"
-                        className="w-full p-2 border rounded-md h-20" 
-                        placeholder="Ej: ¡Hola! Bienvenido a nuestro servicio..."
-                        defaultValue="¡Hola! 👋 Bienvenido, soy tu asistente virtual. ¿En qué puedo ayudarte hoy?"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="offline-message">Mensaje fuera de horario</Label>
-                      <textarea 
-                        id="offline-message"
-                        className="w-full p-2 border rounded-md h-20" 
-                        placeholder="Mensaje cuando esté fuera del horario de atención..."
-                        defaultValue="Gracias por contactarnos. Nuestro horario de atención es de 8:00 AM a 6:00 PM. Te responderemos tan pronto como sea posible."
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </TabsContent>
             
-            <TabsContent value="integrations">
-              <div className="p-4 space-y-6 max-h-[600px] overflow-y-auto">
-                <h3 className="mb-4 text-lg font-medium">Integraciones</h3>
+            <TabsContent value="integrations" className="m-0 flex-1 outline-none overflow-hidden">
+              <div className="h-full overflow-y-auto p-4">
+                <div className="space-y-6 pb-8">
+                  <div className="flex items-center gap-2">
+                    <RiWhatsappLine className="h-5 w-5" />
+                    <h3 className="text-lg font-medium">Integraciones</h3>
+                  </div>
                 
-                {/* WhatsApp Integration */}
-                <div className="border rounded-lg p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold">W</span>
+                  {/* WhatsApp Integration */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>WhatsApp Business</CardTitle>
+                      <p className="text-sm text-gray-600">Conecta con la API oficial de WhatsApp</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                            <span className="text-white font-bold">W</span>
+                          </div>
+                          <div>
+                            <h4 className="font-medium">WhatsApp Business API</h4>
+                            <p className="text-sm text-gray-600">Estado de conexión</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-green-600">● Conectado</span>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-medium">WhatsApp Business</h4>
-                        <p className="text-sm text-gray-600">Conecta con la API oficial de WhatsApp</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-green-600">● Conectado</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Número de teléfono</label>
-                      <Input placeholder="+1234567890" defaultValue="+573001234567" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Token de verificación</label>
-                      <Input type="password" placeholder="Ingresa tu token de WhatsApp" />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="enableWebhooks" className="rounded" defaultChecked />
-                      <label htmlFor="enableWebhooks" className="text-sm">Habilitar webhooks para mensajes entrantes</label>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CRM Integration */}
-                <div className="border rounded-lg p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold">C</span>
-                      </div>
-                      <div>
-                        <h4 className="font-medium">CRM Interno</h4>
-                        <p className="text-sm text-gray-600">Sincroniza contactos y conversaciones</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-green-600">● Activo</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="autoCreateContacts" className="rounded" defaultChecked />
-                      <label htmlFor="autoCreateContacts" className="text-sm">Crear contactos automáticamente</label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="syncConversations" className="rounded" defaultChecked />
-                      <label htmlFor="syncConversations" className="text-sm">Sincronizar historial de conversaciones</label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="enableTags" className="rounded" />
-                      <label htmlFor="enableTags" className="text-sm">Etiquetar contactos automáticamente</label>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Analytics Integration */}
-                <div className="border rounded-lg p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold">A</span>
-                      </div>
-                      <div>
-                        <h4 className="font-medium">Analytics Avanzado</h4>
-                        <p className="text-sm text-gray-600">Seguimiento detallado de métricas</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-green-600">● Activo</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="trackConversions" className="rounded" defaultChecked />
-                      <label htmlFor="trackConversions" className="text-sm">Rastrear conversiones</label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="trackEngagement" className="rounded" defaultChecked />
-                      <label htmlFor="trackEngagement" className="text-sm">Métricas de engagement</label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="exportData" className="rounded" />
-                      <label htmlFor="exportData" className="text-sm">Exportación automática de datos</label>
-                    </div>
-                  </div>
-                </div>
-
-                {/* External Integrations */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm text-gray-600">Integraciones Externas</h4>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Zapier */}
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-orange-500 rounded flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">Z</span>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <Label htmlFor="phone-number">Número de teléfono</Label>
+                          <Input id="phone-number" placeholder="+1234567890" defaultValue="+573001234567" />
                         </div>
                         <div>
-                          <p className="font-medium text-sm">Zapier</p>
-                          <p className="text-xs text-gray-600">Automatizaciones</p>
+                          <Label htmlFor="business-name">Nombre del negocio</Label>
+                          <Input id="business-name" placeholder="Mi Empresa" />
                         </div>
                       </div>
-                      <Button variant="outline" size="sm" className="w-full">
-                        Conectar
-                      </Button>
-                    </div>
+                    </CardContent>
+                  </Card>
 
-                    {/* Slack */}
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">S</span>
+                  {/* Otras Integraciones */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Otras Integraciones</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
+                              <span className="text-white text-sm font-bold">CRM</span>
+                            </div>
+                            <div>
+                              <p className="font-medium">Sistema CRM</p>
+                              <p className="text-sm text-gray-600">Integración con CRM externo</p>
+                            </div>
+                          </div>
+                          <Button variant="outline" size="sm">Configurar</Button>
                         </div>
-                        <div>
-                          <p className="font-medium text-sm">Slack</p>
-                          <p className="text-xs text-gray-600">Notificaciones</p>
+                        
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-purple-500 rounded flex items-center justify-center">
+                              <span className="text-white text-sm font-bold">AI</span>
+                            </div>
+                            <div>
+                              <p className="font-medium">IA Personalizada</p>
+                              <p className="text-sm text-gray-600">Configuración avanzada de IA</p>
+                            </div>
+                          </div>
+                          <Button variant="outline" size="sm">Configurar</Button>
                         </div>
                       </div>
-                      <Button variant="outline" size="sm" className="w-full">
-                        Conectar
-                      </Button>
-                    </div>
-
-                    {/* Google Sheets */}
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">G</span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">Google Sheets</p>
-                          <p className="text-xs text-gray-600">Exportar datos</p>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm" className="w-full">
-                        Conectar
-                      </Button>
-                    </div>
-
-                    {/* Email */}
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">@</span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">Email</p>
-                          <p className="text-xs text-gray-600">Notificaciones</p>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm" className="w-full">
-                        Configurar
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t">
-                  <Button onClick={() => {
-                    toast({
-                      title: "Integraciones actualizadas",
-                      description: "Las configuraciones de integración se han guardado",
-                    });
-                  }} className="w-full">
-                    Guardar Integraciones
-                  </Button>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </TabsContent>
