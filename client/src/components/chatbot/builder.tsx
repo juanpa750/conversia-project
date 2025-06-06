@@ -430,7 +430,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
             
             <TabsContent value="instruction" className="m-0 flex-1 outline-none overflow-hidden">
               <div className="h-full overflow-y-auto p-4">
-                <div className="space-y-6 pb-8">
+                <div className="space-y-6 pb-20">
                   <div className="flex items-center gap-2">
                     <RiBrainLine className="h-5 w-5" />
                     <h3 className="text-lg font-medium">Instrucciones del Chatbot</h3>
@@ -514,7 +514,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
             
             <TabsContent value="objective" className="m-0 flex-1 outline-none overflow-hidden">
               <div className="h-full overflow-y-auto p-4">
-                <div className="space-y-6 pb-8">
+                <div className="space-y-6 pb-20">
                   <div className="flex items-center gap-2">
                     <RiFlagLine className="h-5 w-5" />
                     <h3 className="text-lg font-medium">Objetivo de la Conversación</h3>
@@ -611,7 +611,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
             
             <TabsContent value="settings" className="m-0 flex-1 outline-none overflow-hidden">
               <div className="h-full overflow-y-auto p-4">
-                <div className="space-y-6 pb-8">
+                <div className="space-y-6 pb-20">
                   <div className="flex items-center gap-2">
                     <RiSettings3Line className="h-5 w-5" />
                     <h3 className="text-lg font-medium">Configuración del Chatbot</h3>
@@ -773,7 +773,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
             
             <TabsContent value="integrations" className="m-0 flex-1 outline-none overflow-hidden">
               <div className="h-full overflow-y-auto p-4">
-                <div className="space-y-6 pb-8">
+                <div className="space-y-6 pb-20">
                   <div className="flex items-center gap-2">
                     <RiWhatsappLine className="h-5 w-5" />
                     <h3 className="text-lg font-medium">Integraciones</h3>
