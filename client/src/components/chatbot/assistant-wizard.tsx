@@ -310,6 +310,26 @@ export function AssistantWizard({ onComplete }: AssistantWizardProps) {
     },
   });
 
+  const generateConversationFlow = (objective: ChatbotObjective) => {
+    return objective.recommendations.structure.map((step, index) => ({
+      id: `step-${index + 1}`,
+      name: step,
+      type: 'message',
+      content: `Paso ${index + 1}: ${step}`,
+      nextSteps: index < objective.recommendations.structure.length - 1 ? [`step-${index + 2}`] : []
+    }));
+  };
+
+  const generatePersonalityConfig = (objective: ChatbotObjective) => {
+    return {
+      tone: objective.recommendations.tone,
+      style: objective.name.includes('Ventas') ? 'persuasivo' : 
+             objective.name.includes('Soporte') ? 'servicial' : 
+             objective.name.includes('Citas') ? 'organizativo' : 'amigable',
+      traits: ['profesional', 'empático', 'eficiente']
+    };
+  };
+
   const handleComplete = () => {
     if (!selectedObjective || !chatbotConfig.name) return;
 
