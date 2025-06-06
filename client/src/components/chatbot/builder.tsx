@@ -136,6 +136,8 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   useEffect(() => {
     if (chatbot && !isInitialized) {
       console.log('🔄 Loading chatbot data:', chatbot);
+      console.log('🔄 Type of chatbot:', typeof chatbot);
+      console.log('🔄 Is array?:', Array.isArray(chatbot));
       
       // Handle case where API returns array instead of single object
       let chatbotData = chatbot as any;
@@ -146,12 +148,14 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
       
       console.log('🔄 Final chatbot data:', chatbotData);
       console.log('🔄 Chatbot name from data:', chatbotData?.name);
+      console.log('🔄 Chatbot object stringified:', JSON.stringify(chatbotData, null, 2));
       
-      // Set the chatbot name directly from the API response
-      if (chatbotData?.name) {
-        setChatbotName(chatbotData.name);
-        console.log('✅ Set chatbot name to:', chatbotData.name);
-      } else {
+      // Force set the name regardless to test if it's a React state issue
+      const nameToSet = chatbotData?.name || `Test Name ${Date.now()}`;
+      setChatbotName(nameToSet);
+      console.log('✅ FORCED set chatbot name to:', nameToSet);
+      
+      if (!chatbotData?.name) {
         console.log('❌ No name found in chatbot data');
         console.log('❌ Available keys:', Object.keys(chatbotData || {}));
       }
