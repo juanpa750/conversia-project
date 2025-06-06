@@ -3,6 +3,7 @@ import { useParams } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { TestSimulator } from './test-simulator';
 import ReactFlow, {
   addEdge,
   Background,
@@ -114,15 +115,21 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   // Load chatbot flow when data is available
   useEffect(() => {
     if (chatbot) {
+      console.log('Loading chatbot:', chatbot);
       setChatbotName((chatbot as any).name || 'Chatbot');
       const flow = (chatbot as any).flow;
+      
       if (flow && typeof flow === 'object') {
-        if (flow.nodes && Array.isArray(flow.nodes)) {
+        console.log('Loading flow:', flow);
+        if (flow.nodes && Array.isArray(flow.nodes) && flow.nodes.length > 0) {
           setNodes(flow.nodes);
         }
         if (flow.edges && Array.isArray(flow.edges)) {
           setEdges(flow.edges);
         }
+      } else {
+        // If no flow exists, keep default initial nodes
+        console.log('No flow found, using default nodes');
       }
     }
   }, [chatbot, setNodes, setEdges]);
