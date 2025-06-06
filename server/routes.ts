@@ -1516,7 +1516,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const productId = parseInt(req.params.id);
       const variants = await storage.getProductVariants(productId);
-      res.json(variants);
+      
+      // Map database fields to frontend field names
+      const mappedVariants = variants.map(variant => ({
+        id: variant.id,
+        variant: variant.variantName,          // Map variantName to variant
+        characteristics: variant.characteristics,
+        image: variant.variantImage,           // Map variantImage to image
+        price: variant.price,
+        currency: variant.currency,
+        stock: variant.stock,
+        available: variant.available,
+        category: variant.category,
+        sku: variant.sku,
+        isDefault: variant.isDefault,
+        sortOrder: variant.sortOrder,
+        createdAt: variant.createdAt,
+        updatedAt: variant.updatedAt
+      }));
+      
+      res.json(mappedVariants);
     } catch (error) {
       console.error("Error fetching product variants:", error);
       res.status(500).json({ message: "Failed to fetch product variants" });
