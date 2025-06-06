@@ -1811,6 +1811,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create HTTP server
+  // Product-specific chatbot configuration
+  app.get('/api/chatbots/:id/product-config', isAuthenticated, async (req, res) => {
+    try {
+      const chatbotId = Number(req.params.id);
+      const chatbot = await storage.getChatbot(chatbotId);
+      
+      if (!chatbot) {
+        return res.status(404).json({ message: 'Chatbot not found' });
+      }
+      
+      if (chatbot.userId !== req.userId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+      
+      // Extract product configuration from flow
+      let productConfig = null;
+      if (chatbot.flow) {
+        try {
+          const flow = JSON.parse(chatbot.flow);
+          if (flow.productContext) {
+            productConfig = {
+              productId: flow.productContext.linkedProductId,
+              triggerKeywords: flow.productContext.triggerKeywords || [],
+              aiInstructions: flow.productContext.aiInstructions || '',
+              isProductSpecific: flow.productContext.isProductSpecific || false
+            };
+          }
+        } catch (e) {
+          console.error('Error parsing chatbot flow:', e);
+        }
+      }
+      
+      res.json(productConfig);
+    } catch (error: any) {
+      console.error('Get chatbot product config error:', error);
+      res.status(500).json({ message: 'Failed to get product configuration', error: error.message });
+    }
+  });
+
+  app.post('/api/chatbots/:id/product-config', isAuthenticated, async (req, res) => {
+    try {
+      const chatbotId = Number(req.params.id);
+      const { productId, triggerKeywords, aiInstructions } = req.body;
+      
+      const chatbot = await storage.getChatbot(chatbotId);
+      
+      if (!chatbot) {
+        return res.status(404).json({ message: 'Chatbot not found' });
+      }
+      
+      if (chatbot.userId !== req.userId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+      
+      // Get product details
+      const product = await storage.getProduct(Number(productId));
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+      
+      // Update chatbot flow with product configuration
+      let flow = { nodes: [], edges: [] };
+      if (chatbot.flow) {
+        try {
+          flow = JSON.parse(chatbot.flow);
+        } catch (e) {
+          console.error('Error parsing existing flow:', e);
+        }
+      }
+      
+      // Update product context
+      flow.productContext = {
+        ...flow.productContext,
+        linkedProductId: Number(productId),
+        triggerKeywords: triggerKeywords || [],
+        aiInstructions: aiInstructions || '',
+        isProductSpecific: true,
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        currency: product.currency,
+        category: product.category
+      };
+      
+      // Update chatbot with new configuration
+      const updatedChatbot = await storage.updateChatbot(chatbotId, {
+        flow: JSON.stringify(flow),
+        description: `Especialista en ${product.name} - Chatbot configurado para producto específico`
+      });
+      
+      res.json({
+        message: 'Product configuration updated successfully',
+        chatbot: updatedChatbot,
+        productConfig: {
+          productId: Number(productId),
+          triggerKeywords: triggerKeywords || [],
+          aiInstructions: aiInstructions || '',
+          isProductSpecific: true
+        }
+      });
+    } catch (error: any) {
+      console.error('Update chatbot product config error:', error);
+      res.status(500).json({ message: 'Failed to update product configuration', error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

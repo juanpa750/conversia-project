@@ -62,13 +62,6 @@ export default function ProductConfig({ chatbotId }: ProductConfigProps) {
   const { data: existingConfig } = useQuery({
     queryKey: ["/api/chatbots", chatbotId, "product-config"],
     enabled: !!chatbotId,
-    onSuccess: (data) => {
-      if (data) {
-        setSelectedProductId(data.productId || "");
-        setTriggerKeywords(data.triggerKeywords || []);
-        setAiInstructions(data.aiInstructions || "");
-      }
-    }
   });
 
   // Save configuration mutation

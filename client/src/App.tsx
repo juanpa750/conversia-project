@@ -10,6 +10,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import Chatbots from "@/pages/chatbots";
 import ChatbotBuilderPage from "@/pages/chatbots/builder";
 import ChatbotTemplates from "@/pages/chatbots/templates";
+import ProductConfig from "@/pages/chatbots/product-config";
 import Clients from "@/pages/clients";
 import Analytics from "@/pages/analytics";
 import SubscriptionPlans from "@/pages/subscription/plans";
@@ -85,6 +86,13 @@ function Router() {
             <Layout>
               <ChatbotTemplates />
             </Layout>
+          </Route>
+          <Route path="/chatbots/:id/product-config">
+            {(params) => (
+              <Layout>
+                <ProductConfig chatbotId={params.id} />
+              </Layout>
+            )}
           </Route>
           <Route path="/crm">
             <Layout>
