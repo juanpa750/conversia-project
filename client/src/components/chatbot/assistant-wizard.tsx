@@ -404,19 +404,18 @@ export function AssistantWizard({ onComplete }: AssistantWizardProps) {
         'Post-venta - Fidelización': 'Bienvenido a nuestra familia de clientes exitosos! Te envío tu kit de bienvenida digital con tutoriales exclusivos y acceso a nuestro grupo VIP. ¿Hay algo específico en lo que te gustaría enfocarte primero? 🌟'
       },
       'support': {
-        'Identificar problema': '¿Podrías describir con detalle el problema que estás experimentando?',
-        'Recopilar información': 'Para ayudarte mejor, necesito algunos datos adicionales:',
-        'Diagnosticar causa': 'Basándome en la información, veo que el problema podría ser:',
-        'Proponer solución': 'Te propongo la siguiente solución paso a paso:',
-        'Verificar resolución': '¿El problema se ha resuelto completamente?',
-        'Documentar caso': 'Perfecto, he documentado tu caso para futuras referencias.'
+        'Recepción empática del problema': '¡Hola! Lamento que estés experimentando dificultades. Estoy aquí para ayudarte a resolver tu problema de manera rápida y efectiva. Te envío un video tutorial básico mientras me describes qué está pasando. 🎥',
+        'Diagnóstico interactivo': 'Entiendo tu situación. Te comparto una guía visual paso a paso que te ayudará a identificar la causa. Por favor, sígueme en estas verificaciones y dime qué encuentras: 📋',
+        'Solución personalizada': 'Perfecto! Basándome en tu información, he preparado una solución específica para tu caso. Te envío un video explicativo y documentos de apoyo. ¿Comenzamos con el primer paso? 📹',
+        'Verificación y seguimiento': '¡Excelente progreso! Ahora verifiquemos que todo funcione correctamente. Te envío una checklist interactiva para confirmar que el problema está resuelto. ✅',
+        'Documentación y prevención': '¡Problema resuelto exitosamente! Te envío un resumen con consejos de prevención y acceso directo a nuestro centro de ayuda para futuras consultas. 📚'
       },
       'appointments': {
-        'Entender necesidad': '¿Qué tipo de servicio necesitas y cuál es la urgencia?',
-        'Verificar disponibilidad': 'Déjame revisar la disponibilidad en nuestro calendario:',
-        'Confirmar detalles': 'Confirmemos los detalles de tu cita:',
-        'Programar cita': 'Excelente, he programado tu cita. Te envío los detalles:',
-        'Enviar recordatorio': '¿Te gustaría recibir un recordatorio antes de tu cita?'
+        'Bienvenida y consulta inicial': '¡Hola! Estoy aquí para ayudarte a programar tu cita de manera rápida y conveniente. Te envío una breve presentación de nuestros servicios disponibles. ¿Qué tipo de servicio necesitas? 📅',
+        'Evaluación de necesidades': 'Perfecto! Para ofrecerte el mejor servicio, te comparto un formulario interactivo que me ayudará a entender tus necesidades específicas y preparar todo para tu visita. 📝',
+        'Calendario inteligente': 'Excelente! Te muestro nuestro calendario en tiempo real con todas las opciones disponibles. He marcado los horarios que mejor se adaptan a tu solicitud. ¿Cuál prefieres? 🗓️',
+        'Confirmación personalizada': '¡Perfecto! Tu cita está confirmada. Te envío un resumen detallado, instrucciones de llegada y un recordatorio automático. También puedes descargar el evento para tu calendario personal. ✅',
+        'Seguimiento proactivo': '¡Todo listo! Recibirás recordatorios automáticos y podrás reprogramar fácilmente si surge algún imprevisto. ¿Hay algo más en lo que pueda ayudarte para tu próxima visita? 🔔'
       }
     };
     
