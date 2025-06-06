@@ -40,7 +40,7 @@ interface ChatbotBuilderProps {
 export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [chatbotName, setChatbotName] = useState('Nuevo Chatbot');
+  const [chatbotName, setChatbotName] = useState(chatbotId ? '' : 'Nuevo Chatbot');
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
@@ -120,6 +120,17 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
       });
     }
   });
+
+  // Reset state when chatbotId changes
+  useEffect(() => {
+    if (chatbotId) {
+      setChatbotName(''); // Clear name while loading
+      setIsInitialized(false);
+    } else {
+      setChatbotName('Nuevo Chatbot');
+      setIsInitialized(false);
+    }
+  }, [chatbotId]);
 
   // Load chatbot flow when data is available
   useEffect(() => {
