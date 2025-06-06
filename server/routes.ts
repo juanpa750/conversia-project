@@ -1414,9 +1414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/products/:id", isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log('PUT /api/products/:id - Full request body:', JSON.stringify(req.body, null, 2));
       const { variants, ...productData } = req.body;
-      console.log('Extracted variants:', JSON.stringify(variants, null, 2));
       
       // Update the product
       const product = await storage.updateProduct(id, productData);
@@ -1491,6 +1489,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching product variants:", error);
       res.status(500).json({ message: "Failed to fetch product variants" });
+    }
+  });
+
+  // Endpoint específico para chatbots: obtener producto con todas sus variantes e imágenes
+  app.get("/api/chatbot/products/:id/complete", isAuthenticated, async (req: any, res) => {
+    try {
+      const productId = parseInt(req.params.id);
+      const product = await storage.getProduct(productId);
+      
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      const variants = await storage.getProductVariants(productId);
+      
+      const completeProduct = {
+        ...product,
+        variants: variants.map(variant => ({
+          id: variant.id,
+          variantName: variant.variantName,
+          characteristics: variant.characteristics,
+          price: variant.price,
+          currency: variant.currency,
+          variantImage: variant.variantImage,
+          stock: variant.stock,
+          isDefault: variant.isDefault,
+          sortOrder: variant.sortOrder
+        }))
+      };
+
+      res.json(completeProduct);
+    } catch (error) {
+      console.error("Error fetching complete product data:", error);
+      res.status(500).json({ message: "Failed to fetch complete product data" });
     }
   });
 

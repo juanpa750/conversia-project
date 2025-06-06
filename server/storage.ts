@@ -702,13 +702,16 @@ export class DatabaseStorage implements IStorage {
       ...extractedFeatures.slice(0, 3).map(f => `${product.name} ${f.split(' ')[0]}`)
     ];
 
+    // Get product variants for intelligent pricing information
+    const variants = await this.getProductVariants(productId);
+
     await this.createProductTrigger({
       productId: product.id,
       chatbotId: chatbot.id,
       keywords: intelligentKeywords,
       triggerPhrases: advancedPhrases,
       isActive: true,
-      responseTemplate: this.generateAdvancedTemplate(product, extractedFeatures, extractedBenefits),
+      responseTemplate: this.generateAdvancedTemplate(product, extractedFeatures, extractedBenefits, variants),
     });
 
     // Create comprehensive AI configuration
@@ -838,7 +841,17 @@ export class DatabaseStorage implements IStorage {
     return [...new Set(audiences)].slice(0, 5);
   }
 
-  private generateAdvancedTemplate(product: any, features: string[], benefits: string[]): string {
+  private generateAdvancedTemplate(product: any, features: string[], benefits: string[], variants?: any[]): string {
+    const hasVariants = variants && variants.length > 0;
+    
+    let priceInfo = '';
+    if (hasVariants) {
+      const variantPrices = variants.map(v => `${v.variantName}: ${v.price} ${v.currency || 'USD'}`).join('\n• ');
+      priceInfo = `Opciones disponibles:\n• ${variantPrices}`;
+    } else {
+      priceInfo = product.price ? `Precio: ${product.price} ${product.currency || ''}` : 'Precio especial';
+    }
+
     return `
 🎯 **${product.name}** - Solución inteligente
 
@@ -848,10 +861,11 @@ ${features.slice(0, 3).map(f => `• ${f}`).join('\n')}
 🌟 **Beneficios:**
 ${benefits.slice(0, 2).map(b => `• ${b}`).join('\n')}
 
-💰 **Información:**
-${product.price ? `Precio: ${product.price} ${product.currency || ''}` : 'Precio especial'}
+💰 **Información de precios:**
+${priceInfo}
 ${product.freeShipping ? '🚚 Envío gratuito' : ''}
 ${product.cashOnDelivery === 'yes' ? '💳 Pago contra entrega' : ''}
+${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''}
 
 ¿Más detalles o proceder con pedido?
     `.trim();
