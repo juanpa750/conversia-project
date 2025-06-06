@@ -22,7 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RiSave3Line, RiTestTubeLine, RiWhatsappLine, RiSettings4Line } from '@/lib/icons';
+import { RiSave3Line, RiTestTubeLine, RiWhatsappLine, RiSettings3Line } from '@/lib/icons';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -70,12 +70,20 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
     gcTime: 0, // Don't cache (React Query v5)
   });
 
+  // Fetch products for selection
+  const { data: products } = useQuery({
+    queryKey: ["/api/products"],
+  });
+
   // Save chatbot mutation
   const saveChatbotMutation = useMutation({
     mutationFn: async (data: any) => {
       const flowData = {
         name: chatbotName,
         flow: { nodes, edges },
+        productId: selectedProductId ? parseInt(selectedProductId) : null,
+        triggerKeywords,
+        aiInstructions,
         updatedAt: new Date().toISOString()
       };
       
@@ -211,6 +219,15 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
     }
   }, [chatbot, chatbotId, isInitialized, setNodes, setEdges]);
 
+  // Load product configuration data when chatbot is loaded
+  useEffect(() => {
+    if (chatbot) {
+      setSelectedProductId(chatbot.productId ? chatbot.productId.toString() : '');
+      setTriggerKeywords(chatbot.triggerKeywords || []);
+      setAiInstructions(chatbot.aiInstructions || '');
+    }
+  }, [chatbot]);
+
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges],
@@ -278,6 +295,24 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
     publishChatbotMutation.mutate();
   };
 
+  const addKeyword = () => {
+    if (newKeyword.trim() && !triggerKeywords.includes(newKeyword.trim())) {
+      setTriggerKeywords([...triggerKeywords, newKeyword.trim()]);
+      setNewKeyword('');
+    }
+  };
+
+  const removeKeyword = (keyword: string) => {
+    setTriggerKeywords(triggerKeywords.filter(k => k !== keyword));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addKeyword();
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-7rem)] flex-col">
       <div className="mb-4 flex items-center justify-between">
@@ -312,6 +347,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
             <div className="border-b border-gray-200">
               <TabsList className="ml-4 mt-1">
                 <TabsTrigger value="flow">Flujo</TabsTrigger>
+                <TabsTrigger value="product">Producto</TabsTrigger>
                 <TabsTrigger value="settings">Configuración</TabsTrigger>
                 <TabsTrigger value="integrations">Integraciones</TabsTrigger>
               </TabsList>
@@ -335,6 +371,103 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                   <Controls />
                   <MiniMap />
                 </ReactFlow>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="product" className="m-0 flex-1 p-4 outline-none">
+              <div className="space-y-6 max-h-[600px] overflow-y-auto">
+                <div className="flex items-center gap-2">
+                  <RiSettings3Line className="h-5 w-5" />
+                  <h3 className="text-lg font-medium">Configuración de Producto</h3>
+                </div>
+                
+                {/* Selección de Producto */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Producto Asociado</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="product-select">Seleccionar Producto</Label>
+                      <Select value={selectedProductId} onValueChange={setSelectedProductId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione un producto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Sin producto</SelectItem>
+                          {products?.map((product: any) => (
+                            <SelectItem key={product.id} value={product.id.toString()}>
+                              {product.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Palabras Clave Activadoras */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Palabras Clave Activadoras</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Palabras que activan este chatbot</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Agregar palabra clave..."
+                          value={newKeyword}
+                          onChange={(e) => setNewKeyword(e.target.value)}
+                          onKeyPress={handleKeyPress}
+                        />
+                        <Button onClick={addKeyword} variant="outline">
+                          Agregar
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {triggerKeywords.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {triggerKeywords.map((keyword) => (
+                          <Badge 
+                            key={keyword} 
+                            variant="secondary" 
+                            className="flex items-center gap-1"
+                          >
+                            {keyword}
+                            <button
+                              onClick={() => removeKeyword(keyword)}
+                              className="ml-1 text-red-500 hover:text-red-700"
+                            >
+                              ×
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Instrucciones de IA */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Instrucciones para la IA</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div>
+                      <Label htmlFor="ai-instructions">Instrucciones específicas</Label>
+                      <Textarea
+                        id="ai-instructions"
+                        placeholder="Describe cómo debe comportarse la IA para este producto..."
+                        value={aiInstructions}
+                        onChange={(e) => setAiInstructions(e.target.value)}
+                        rows={4}
+                        className="mt-2"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
             
