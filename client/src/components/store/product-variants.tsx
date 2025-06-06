@@ -1,26 +1,22 @@
 import { useState } from "react";
-import { Plus, Trash2, Image, DollarSign, Package } from "lucide-react";
+import { Plus, Trash2, DollarSign, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface ProductVariant {
   id?: number;
-  variantName: string;
-  characteristics: string;
+  image: string;
+  specification: string;
+  variant: string;
   price: string;
   currency: string;
-  variantImage: string;
-  priceImages: string[];
   stock: number;
-  isDefault: boolean;
-  sortOrder: number;
+  available: boolean;
+  category: string;
+  sku: string;
 }
 
 interface ProductVariantsProps {
@@ -29,304 +25,179 @@ interface ProductVariantsProps {
 }
 
 export function ProductVariants({ variants, onChange }: ProductVariantsProps) {
-  const [expandedVariant, setExpandedVariant] = useState<number | null>(0);
-
   const addVariant = () => {
     const newVariant: ProductVariant = {
-      variantName: `Variante ${variants.length + 1}`,
-      characteristics: "",
+      image: "",
+      specification: "",
+      variant: "",
       price: "",
       currency: "USD",
-      variantImage: "",
-      priceImages: [],
       stock: 0,
-      isDefault: variants.length === 0,
-      sortOrder: variants.length
+      available: true,
+      category: "",
+      sku: "",
     };
     onChange([...variants, newVariant]);
-    setExpandedVariant(variants.length);
   };
 
   const updateVariant = (index: number, field: keyof ProductVariant, value: any) => {
-    const updatedVariants = variants.map((variant, i) => {
-      if (i === index) {
-        // If setting as default, unset others
-        if (field === 'isDefault' && value) {
-          return { ...variant, [field]: value };
-        }
-        return { ...variant, [field]: value };
-      } else if (field === 'isDefault' && value) {
-        return { ...variant, isDefault: false };
-      }
-      return variant;
-    });
+    const updatedVariants = [...variants];
+    updatedVariants[index] = { ...updatedVariants[index], [field]: value };
     onChange(updatedVariants);
   };
 
   const removeVariant = (index: number) => {
     const updatedVariants = variants.filter((_, i) => i !== index);
-    // If we removed the default variant, make the first one default
-    if (variants[index]?.isDefault && updatedVariants.length > 0) {
-      updatedVariants[0] = { ...updatedVariants[0], isDefault: true };
-    }
     onChange(updatedVariants);
-    setExpandedVariant(null);
-  };
-
-  const addPriceImage = (variantIndex: number) => {
-    const variant = variants[variantIndex];
-    const newImages = [...(variant.priceImages || []), ""];
-    updateVariant(variantIndex, 'priceImages', newImages);
-  };
-
-  const updatePriceImage = (variantIndex: number, imageIndex: number, url: string) => {
-    const variant = variants[variantIndex];
-    const newImages = [...(variant.priceImages || [])];
-    newImages[imageIndex] = url;
-    updateVariant(variantIndex, 'priceImages', newImages);
-  };
-
-  const removePriceImage = (variantIndex: number, imageIndex: number) => {
-    const variant = variants[variantIndex];
-    const newImages = (variant.priceImages || []).filter((_, i) => i !== imageIndex);
-    updateVariant(variantIndex, 'priceImages', newImages);
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Variantes de Producto</h3>
+          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-primary" />
+            Precios
+          </h3>
           <p className="text-sm text-muted-foreground">
-            Agrega diferentes opciones de precio con características específicas
+            Gestiona las variantes de precio de tu producto
           </p>
         </div>
         <Button type="button" onClick={addVariant} size="sm">
           <Plus className="h-4 w-4 mr-2" />
-          Agregar Variante
+          Nueva variante de precio +
         </Button>
       </div>
 
-      {variants.length === 0 && (
-        <Card className="border-dashed">
-          <CardContent className="pt-6">
-            <div className="text-center text-muted-foreground">
-              <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="mb-2">No hay variantes configuradas</p>
-              <p className="text-sm">
-                Agrega variantes para productos con diferentes precios, tamaños, colores, etc.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="space-y-4">
-        {variants.map((variant, index) => (
-          <Card key={index} className="relative">
-            <CardHeader
-              className="cursor-pointer"
-              onClick={() => setExpandedVariant(expandedVariant === index ? null : index)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CardTitle className="text-base">
-                    {variant.variantName || `Variante ${index + 1}`}
-                  </CardTitle>
-                  {variant.isDefault && (
-                    <Badge variant="default" className="text-xs">
-                      Predeterminada
-                    </Badge>
-                  )}
-                  {variant.price && (
-                    <Badge variant="outline" className="text-xs">
-                      {variant.currency} {variant.price}
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeVariant(index);
-                    }}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-
-            {expandedVariant === index && (
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor={`variant-name-${index}`}>Nombre de la Variante</Label>
+      {variants.length === 0 ? (
+        <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
+          <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h4 className="text-lg font-medium text-gray-900 mb-2">
+            Sin variantes de precio
+          </h4>
+          <p className="text-sm text-gray-500 mb-4">
+            Agrega diferentes opciones de precio para tu producto
+          </p>
+        </div>
+      ) : (
+        <div className="border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Imagen</TableHead>
+                <TableHead>Especificación</TableHead>
+                <TableHead>Característica/Variante</TableHead>
+                <TableHead>Precio</TableHead>
+                <TableHead>Moneda</TableHead>
+                <TableHead>Stock</TableHead>
+                <TableHead>Disponible</TableHead>
+                <TableHead>Categoría</TableHead>
+                <TableHead>SKU</TableHead>
+                <TableHead className="w-20">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {variants.map((variant, index) => (
+                <TableRow key={index}>
+                  <TableCell>
                     <Input
-                      id={`variant-name-${index}`}
-                      value={variant.variantName}
-                      onChange={(e) => updateVariant(index, 'variantName', e.target.value)}
-                      placeholder="ej: Presentación Grande, Color Azul"
+                      value={variant.image}
+                      onChange={(e) => updateVariant(index, 'image', e.target.value)}
+                      placeholder="URL de imagen"
+                      className="min-w-32"
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor={`variant-price-${index}`}>Precio</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={variant.currency}
-                        onValueChange={(value) => updateVariant(index, 'currency', value)}
-                      >
-                        <SelectTrigger className="w-24">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="COP">COP</SelectItem>
-                          <SelectItem value="MXN">MXN</SelectItem>
-                          <SelectItem value="ARS">ARS</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        id={`variant-price-${index}`}
-                        value={variant.price}
-                        onChange={(e) => updateVariant(index, 'price', e.target.value)}
-                        placeholder="0.00"
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor={`variant-characteristics-${index}`}>Características</Label>
-                  <Textarea
-                    id={`variant-characteristics-${index}`}
-                    value={variant.characteristics}
-                    onChange={(e) => updateVariant(index, 'characteristics', e.target.value)}
-                    placeholder="Describe las características específicas de esta variante..."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor={`variant-image-${index}`}>Imagen de la Variante</Label>
+                  </TableCell>
+                  <TableCell>
                     <Input
-                      id={`variant-image-${index}`}
-                      value={variant.variantImage}
-                      onChange={(e) => updateVariant(index, 'variantImage', e.target.value)}
-                      placeholder="URL de la imagen específica para esta variante"
+                      value={variant.specification}
+                      onChange={(e) => updateVariant(index, 'specification', e.target.value)}
+                      placeholder="Especificación"
+                      className="min-w-32"
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor={`variant-stock-${index}`}>Stock</Label>
+                  </TableCell>
+                  <TableCell>
                     <Input
-                      id={`variant-stock-${index}`}
+                      value={variant.variant}
+                      onChange={(e) => updateVariant(index, 'variant', e.target.value)}
+                      placeholder="Variante"
+                      className="min-w-32"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={variant.price}
+                      onChange={(e) => updateVariant(index, 'price', e.target.value)}
+                      placeholder="0.00"
                       type="number"
+                      step="0.01"
+                      className="min-w-24"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={variant.currency}
+                      onValueChange={(value) => updateVariant(index, 'currency', value)}
+                    >
+                      <SelectTrigger className="min-w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="MXN">MXN</SelectItem>
+                        <SelectItem value="COP">COP</SelectItem>
+                        <SelectItem value="ARS">ARS</SelectItem>
+                        <SelectItem value="CLP">CLP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Input
                       value={variant.stock}
                       onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
                       placeholder="0"
+                      type="number"
                       min="0"
+                      className="min-w-20"
                     />
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label className="text-base">Imágenes de Precios</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Imágenes específicas para mostrar el precio de esta variante
-                      </p>
-                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Checkbox
+                      checked={variant.available}
+                      onCheckedChange={(checked) => updateVariant(index, 'available', checked)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={variant.category}
+                      onChange={(e) => updateVariant(index, 'category', e.target.value)}
+                      placeholder="Categoría"
+                      className="min-w-28"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={variant.sku}
+                      onChange={(e) => updateVariant(index, 'sku', e.target.value)}
+                      placeholder="SKU"
+                      className="min-w-24"
+                    />
+                  </TableCell>
+                  <TableCell>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => addPriceImage(index)}
-                      disabled={(variant.priceImages || []).length >= 4}
+                      onClick={() => removeVariant(index)}
+                      className="text-destructive hover:text-destructive"
                     >
-                      <Image className="h-4 w-4 mr-2" />
-                      Agregar Imagen
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  </div>
-
-                  {(variant.priceImages || []).map((image, imageIndex) => (
-                    <div key={imageIndex} className="flex gap-2">
-                      <Input
-                        value={image}
-                        onChange={(e) => updatePriceImage(index, imageIndex, e.target.value)}
-                        placeholder={`URL de imagen de precio ${imageIndex + 1}`}
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removePriceImage(index, imageIndex)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-
-                  {(variant.priceImages || []).length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      No hay imágenes de precios configuradas para esta variante
-                    </p>
-                  )}
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`variant-default-${index}`}
-                    checked={variant.isDefault}
-                    onCheckedChange={(checked) => updateVariant(index, 'isDefault', checked)}
-                  />
-                  <Label htmlFor={`variant-default-${index}`} className="text-sm">
-                    Establecer como variante predeterminada
-                  </Label>
-                </div>
-              </CardContent>
-            )}
-          </Card>
-        ))}
-      </div>
-
-      {variants.length > 0 && (
-        <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-          <h4 className="font-medium mb-2">Resumen de Variantes</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
-            <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-muted-foreground" />
-              <span>{variants.length} variante(s) configurada(s)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <span>
-                Rango: {variants.filter(v => v.price).length > 0 
-                  ? `${Math.min(...variants.filter(v => v.price).map(v => parseFloat(v.price) || 0))} - ${Math.max(...variants.filter(v => v.price).map(v => parseFloat(v.price) || 0))}`
-                  : 'Sin precios configurados'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Image className="h-4 w-4 text-muted-foreground" />
-              <span>
-                {variants.reduce((acc, v) => acc + (v.priceImages?.length || 0), 0)} imagen(es) de precios
-              </span>
-            </div>
-          </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>
