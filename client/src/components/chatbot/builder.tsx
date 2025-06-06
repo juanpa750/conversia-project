@@ -379,12 +379,13 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
               </div>
             </TabsContent>
             
-            <TabsContent value="product" className="m-0 flex-1 p-4 outline-none">
-              <div className="space-y-6 max-h-[600px] overflow-y-auto">
-                <div className="flex items-center gap-2">
-                  <RiSettings3Line className="h-5 w-5" />
-                  <h3 className="text-lg font-medium">Configuración de Producto</h3>
-                </div>
+            <TabsContent value="product" className="m-0 flex-1 outline-none">
+              <div className="h-full overflow-y-auto p-4">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2">
+                    <RiSettings3Line className="h-5 w-5" />
+                    <h3 className="text-lg font-medium">Configuración de Producto</h3>
+                  </div>
                 
                 {/* Selección de Producto */}
                 <Card>
@@ -473,6 +474,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                     </div>
                   </CardContent>
                 </Card>
+                </div>
               </div>
             </TabsContent>
             
