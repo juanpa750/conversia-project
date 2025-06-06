@@ -1,6 +1,8 @@
 import { useCallback, useState, useEffect } from 'react';
 import { useParams } from 'wouter';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 import ReactFlow, {
   addEdge,
   Background,
@@ -39,6 +41,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [chatbotName, setChatbotName] = useState('Nuevo Chatbot');
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const { toast } = useToast();
 
   // Fetch chatbot data if editing existing chatbot
   const { data: chatbot, isLoading } = useQuery({
@@ -46,14 +49,76 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
     enabled: !!chatbotId,
   });
 
+  // Save chatbot mutation
+  const saveChatbotMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const flowData = {
+        name: chatbotName,
+        flow: { nodes, edges },
+        updatedAt: new Date().toISOString()
+      };
+      
+      if (chatbotId) {
+        return apiRequest('PATCH', `/api/chatbots/${chatbotId}`, flowData);
+      } else {
+        return apiRequest('POST', '/api/chatbots', {
+          ...flowData,
+          type: 'support',
+          status: 'draft'
+        });
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: "Chatbot guardado",
+        description: "Los cambios se han guardado correctamente",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/chatbots"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "No se pudieron guardar los cambios",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Publish chatbot mutation
+  const publishChatbotMutation = useMutation({
+    mutationFn: async () => {
+      if (!chatbotId) {
+        throw new Error('Debe guardar el chatbot antes de publicarlo');
+      }
+      return apiRequest('PATCH', `/api/chatbots/${chatbotId}`, {
+        status: 'active',
+        flow: { nodes, edges }
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Chatbot publicado",
+        description: "El chatbot está ahora activo y funcionando",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/chatbots"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "No se pudo publicar el chatbot",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Load chatbot flow when data is available
   useEffect(() => {
-    if (chatbot && chatbot.flow) {
-      setChatbotName(chatbot.name);
-      if (chatbot.flow.nodes) {
+    if (chatbot && chatbot.flow && typeof chatbot.flow === 'object') {
+      setChatbotName(chatbot.name || 'Chatbot');
+      if (Array.isArray(chatbot.flow.nodes)) {
         setNodes(chatbot.flow.nodes);
       }
-      if (chatbot.flow.edges) {
+      if (Array.isArray(chatbot.flow.edges)) {
         setEdges(chatbot.flow.edges);
       }
     }

@@ -8,7 +8,7 @@ import Login from "@/pages/auth/login";
 import Register from "@/pages/auth/register";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import Chatbots from "@/pages/chatbots";
-import ChatbotBuilder from "@/pages/chatbots/builder";
+import ChatbotBuilderPage from "@/pages/chatbots/builder";
 import ChatbotTemplates from "@/pages/chatbots/templates";
 import Clients from "@/pages/clients";
 import Analytics from "@/pages/analytics";
@@ -72,13 +72,13 @@ function Router() {
           <Route path="/chatbots/builder/:id">
             {(params) => (
               <Layout>
-                <ChatbotBuilder id={params.id} />
+                <ChatbotBuilderPage id={params.id} />
               </Layout>
             )}
           </Route>
           <Route path="/chatbots/builder">
             <Layout>
-              <ChatbotBuilder />
+              <ChatbotBuilderPage />
             </Layout>
           </Route>
           <Route path="/chatbots/templates">
