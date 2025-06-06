@@ -15,7 +15,9 @@ import {
   Bot,
   Zap,
   Star,
-  ShoppingCart
+  ShoppingCart,
+  Grid3X3,
+  List
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +31,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -49,6 +59,7 @@ export default function StorePage() {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -206,6 +217,12 @@ export default function StorePage() {
     });
   };
 
+  // Helper function to format price
+  const formatPrice = (price: number, currency?: string) => {
+    const symbol = currency || '$';
+    return `${symbol}${price.toLocaleString()}`;
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
@@ -303,22 +320,78 @@ export default function StorePage() {
             ))}
           </SelectContent>
         </Select>
+        
+        {/* View Mode Toggle */}
+        <div className="flex border rounded-lg">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            className="rounded-r-none"
+          >
+            <Grid3X3 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'table' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('table')}
+            className="rounded-l-none"
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
-      {/* Products Grid */}
+      {/* Products Display */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2 mb-4"></div>
-                <div className="h-32 bg-gray-200 rounded mb-4"></div>
-                <div className="h-3 bg-gray-200 rounded w-full"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-6">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2 mb-4"></div>
+                  <div className="h-32 bg-gray-200 rounded mb-4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-full"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Producto</TableHead>
+                  <TableHead>Precio</TableHead>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Stock</TableHead>
+                  <TableHead>Chatbot</TableHead>
+                  <TableHead>Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(6)].map((_, i) => (
+                  <TableRow key={i} className="animate-pulse">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-200 rounded"></div>
+                        <div className="h-4 bg-gray-200 rounded w-32"></div>
+                      </div>
+                    </TableCell>
+                    <TableCell><div className="h-4 bg-gray-200 rounded w-16"></div></TableCell>
+                    <TableCell><div className="h-4 bg-gray-200 rounded w-20"></div></TableCell>
+                    <TableCell><div className="h-6 bg-gray-200 rounded w-24"></div></TableCell>
+                    <TableCell><div className="h-4 bg-gray-200 rounded w-12"></div></TableCell>
+                    <TableCell><div className="h-6 bg-gray-200 rounded w-20"></div></TableCell>
+                    <TableCell><div className="h-8 bg-gray-200 rounded w-8"></div></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        )
       ) : filteredProducts.length === 0 ? (
         <Card className="p-12 text-center">
           <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -338,7 +411,7 @@ export default function StorePage() {
             </Button>
           )}
         </Card>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => (
             <Card key={product.id} className="group hover:shadow-lg transition-shadow">
@@ -454,6 +527,122 @@ export default function StorePage() {
             </Card>
           ))}
         </div>
+      ) : (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Producto</TableHead>
+                <TableHead>Precio</TableHead>
+                <TableHead>Categoría</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Stock</TableHead>
+                <TableHead>Chatbot</TableHead>
+                <TableHead>Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProducts.map((product) => (
+                <TableRow key={product.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      {product.productImage ? (
+                        <img
+                          src={product.productImage}
+                          alt={product.name}
+                          className="w-10 h-10 rounded object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
+                          <Package className="h-4 w-4 text-gray-400" />
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-medium">{product.name}</div>
+                        <div className="text-sm text-muted-foreground line-clamp-1">
+                          {product.description}
+                        </div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="h-4 w-4 text-green-600" />
+                      <span className="font-medium text-green-600">
+                        {formatPrice(product.price, product.currency)}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{product.category || 'Sin categoría'}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={product.availability ? "default" : "secondary"}>
+                      {product.availability ? "Disponible" : "No disponible"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm">{product.stock || 0}</span>
+                  </TableCell>
+                  <TableCell>
+                    {product.chatbotId ? (
+                      <Badge variant="outline" className="text-blue-600">
+                        <Bot className="h-3 w-3 mr-1" />
+                        Activo
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">Sin chatbot</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setIsEditDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        {!product.chatbotId && (
+                          <DropdownMenuItem
+                            onClick={() => handleCreateChatbot(product.id)}
+                            disabled={createChatbotMutation.isPending}
+                            className="text-blue-600 font-medium"
+                          >
+                            <Zap className="h-4 w-4 mr-2" />
+                            {createChatbotMutation.isPending ? 'Generando...' : 'Generar Chatbot IA'}
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       {/* Create Product Dialog */}
