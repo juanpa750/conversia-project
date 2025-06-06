@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,21 +19,24 @@ import {
   FormLabel, 
   FormMessage 
 } from '@/components/ui/form';
-import { Plus, X, Upload, Image as ImageIcon } from 'lucide-react';
+import { Plus, X, Upload, Image as ImageIcon, FileText, Truck, CreditCard } from 'lucide-react';
 import type { Product } from '@shared/schema';
 
 const productSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
-  description: z.string().optional(),
+  description: z.string().min(10, 'Describe detalladamente el producto (mínimo 10 caracteres)'),
   price: z.string().optional(),
   currency: z.string().default('USD'),
   category: z.string().optional(),
-  images: z.array(z.string()).default([]),
-  features: z.array(z.string()).default([]),
+  productImage: z.string().optional(),
+  testimonialImages: z.array(z.string()).max(4, 'Máximo 4 imágenes de testimonio').default([]),
+  priceImages: z.array(z.string()).max(4, 'Máximo 4 imágenes de precio').default([]),
   availability: z.boolean().default(true),
   stock: z.number().min(0).default(0),
   sku: z.string().optional(),
   tags: z.array(z.string()).default([]),
+  freeShipping: z.boolean().default(false),
+  cashOnDelivery: z.enum(['yes', 'no', 'not_applicable']).default('no'),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -46,9 +49,14 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductFormProps) {
-  const [newFeature, setNewFeature] = useState('');
   const [newTag, setNewTag] = useState('');
-  const [newImage, setNewImage] = useState('');
+  const [newTestimonialImage, setNewTestimonialImage] = useState('');
+  const [newPriceImage, setNewPriceImage] = useState('');
+  
+  // File upload refs
+  const productImageRef = useRef<HTMLInputElement>(null);
+  const testimonialImageRef = useRef<HTMLInputElement>(null);
+  const priceImageRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -58,30 +66,40 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
       price: product?.price || '',
       currency: product?.currency || 'USD',
       category: product?.category || '',
-      images: product?.images || [],
-      features: product?.features || [],
+      productImage: product?.productImage || '',
+      testimonialImages: product?.testimonialImages || [],
+      priceImages: product?.priceImages || [],
       availability: product?.availability ?? true,
       stock: product?.stock || 0,
       sku: product?.sku || '',
       tags: product?.tags || [],
+      freeShipping: product?.freeShipping ?? false,
+      cashOnDelivery: product?.cashOnDelivery || 'no',
     },
   });
 
-  const watchedFeatures = form.watch('features');
   const watchedTags = form.watch('tags');
-  const watchedImages = form.watch('images');
+  const watchedTestimonialImages = form.watch('testimonialImages');
+  const watchedPriceImages = form.watch('priceImages');
+  const watchedProductImage = form.watch('productImage');
 
-  const addFeature = () => {
-    if (newFeature.trim()) {
-      const currentFeatures = form.getValues('features');
-      form.setValue('features', [...currentFeatures, newFeature.trim()]);
-      setNewFeature('');
-    }
+  // Convert file to base64 or URL (simplified for demo)
+  const handleFileUpload = (file: File, callback: (url: string) => void) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      callback(result);
+    };
+    reader.readAsDataURL(file);
   };
 
-  const removeFeature = (index: number) => {
-    const currentFeatures = form.getValues('features');
-    form.setValue('features', currentFeatures.filter((_, i) => i !== index));
+  const handleProductImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file, (url) => {
+        form.setValue('productImage', url);
+      });
+    }
   };
 
   const addTag = () => {
@@ -97,17 +115,50 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
     form.setValue('tags', currentTags.filter((_, i) => i !== index));
   };
 
-  const addImage = () => {
-    if (newImage.trim()) {
-      const currentImages = form.getValues('images');
-      form.setValue('images', [...currentImages, newImage.trim()]);
-      setNewImage('');
+  const addTestimonialImage = () => {
+    if (newTestimonialImage.trim() && watchedTestimonialImages.length < 4) {
+      const currentImages = form.getValues('testimonialImages');
+      form.setValue('testimonialImages', [...currentImages, newTestimonialImage.trim()]);
+      setNewTestimonialImage('');
     }
   };
 
-  const removeImage = (index: number) => {
-    const currentImages = form.getValues('images');
-    form.setValue('images', currentImages.filter((_, i) => i !== index));
+  const removeTestimonialImage = (index: number) => {
+    const currentImages = form.getValues('testimonialImages');
+    form.setValue('testimonialImages', currentImages.filter((_, i) => i !== index));
+  };
+
+  const handleTestimonialImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && watchedTestimonialImages.length < 4) {
+      handleFileUpload(file, (url) => {
+        const currentImages = form.getValues('testimonialImages');
+        form.setValue('testimonialImages', [...currentImages, url]);
+      });
+    }
+  };
+
+  const addPriceImage = () => {
+    if (newPriceImage.trim() && watchedPriceImages.length < 4) {
+      const currentImages = form.getValues('priceImages');
+      form.setValue('priceImages', [...currentImages, newPriceImage.trim()]);
+      setNewPriceImage('');
+    }
+  };
+
+  const removePriceImage = (index: number) => {
+    const currentImages = form.getValues('priceImages');
+    form.setValue('priceImages', currentImages.filter((_, i) => i !== index));
+  };
+
+  const handlePriceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && watchedPriceImages.length < 4) {
+      handleFileUpload(file, (url) => {
+        const currentImages = form.getValues('priceImages');
+        form.setValue('priceImages', [...currentImages, url]);
+      });
+    }
   };
 
   const handleSubmit = (data: ProductFormData) => {
@@ -145,11 +196,14 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descripción</FormLabel>
+                  <FormLabel>Descripción Completa *</FormLabel>
+                  <FormDescription>
+                    Incluye todo lo necesario para que la IA conozca el producto: características, beneficios, preguntas frecuentes, modo de uso, especificaciones técnicas, garantía, etc.
+                  </FormDescription>
                   <FormControl>
                     <Textarea 
-                      placeholder="Describe las características principales del producto..."
-                      className="min-h-[100px]"
+                      placeholder="Describe detalladamente el producto. Incluye características, beneficios, preguntas frecuentes, modo de uso, especificaciones técnicas, garantía, etc..."
+                      className="min-h-[150px]"
                       {...field}
                     />
                   </FormControl>
@@ -271,106 +325,311 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
           </CardContent>
         </Card>
 
-        {/* Images */}
+        {/* Product Image */}
         <Card>
           <CardHeader>
-            <CardTitle>Imágenes del Producto</CardTitle>
+            <CardTitle>Imagen del Producto</CardTitle>
             <CardDescription>
-              URLs de las imágenes del producto
+              Imagen principal del producto (1 imagen)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="URL de la imagen"
-                value={newImage}
-                onChange={(e) => setNewImage(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addImage();
-                  }
-                }}
-              />
-              <Button type="button" onClick={addImage} variant="outline">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {watchedImages.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {watchedImages.map((image, index) => (
-                  <div key={index} className="relative group">
-                    <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                      <img
-                        src={image}
-                        alt={`Imagen ${index + 1}`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiAxNkM5LjggMTYgOCAxNC4yIDggMTJDOCA5LjggOS44IDggMTIgOEMxNC4yIDggMTYgOS44IDE2IDEyQzE2IDE0LjIgMTQuMiAxNiAxMiAxNloiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
-                        }}
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeImage(index)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
+            <div className="space-y-4">
+              {/* File Upload */}
+              <div>
+                <input
+                  type="file"
+                  ref={productImageRef}
+                  onChange={handleProductImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => productImageRef.current?.click()}
+                  className="w-full"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Subir Imagen desde Archivo
+                </Button>
               </div>
-            )}
+
+              {/* URL Input */}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="O ingresa la URL de la imagen"
+                  value={watchedProductImage}
+                  onChange={(e) => form.setValue('productImage', e.target.value)}
+                />
+              </div>
+
+              {/* Image Preview */}
+              {watchedProductImage && (
+                <div className="relative">
+                  <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden max-w-xs">
+                    <img
+                      src={watchedProductImage}
+                      alt="Vista previa del producto"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiAxNkM5LjggMTYgOCAxNC4yIDggMTJDOCA5LjggOS44IDggMTIgOEMxNC4yIDggMTYgOS44IDE2IDEyQzE2IDE0LjIgMTQuMiAxNiAxMiAxNloiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
+                      }}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={() => form.setValue('productImage', '')}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Features */}
+        {/* Testimonial Images */}
         <Card>
           <CardHeader>
-            <CardTitle>Características</CardTitle>
+            <CardTitle>Imágenes de Testimonios</CardTitle>
             <CardDescription>
-              Lista de características principales del producto
+              Imágenes de testimonios, reseñas o casos de éxito (máximo 4)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Ej: Pantalla OLED, 256GB almacenamiento, etc."
-                value={newFeature}
-                onChange={(e) => setNewFeature(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addFeature();
-                  }
-                }}
-              />
-              <Button type="button" onClick={addFeature} variant="outline">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {watchedFeatures.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {watchedFeatures.map((feature, index) => (
-                  <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                    {feature}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 ml-1"
-                      onClick={() => removeFeature(index)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                ))}
+            <div className="space-y-4">
+              {/* File Upload */}
+              <div>
+                <input
+                  type="file"
+                  ref={testimonialImageRef}
+                  onChange={handleTestimonialImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => testimonialImageRef.current?.click()}
+                  disabled={watchedTestimonialImages.length >= 4}
+                  className="w-full"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Subir Imagen de Testimonio ({watchedTestimonialImages.length}/4)
+                </Button>
               </div>
-            )}
+
+              {/* URL Input */}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="O ingresa URL de imagen de testimonio"
+                  value={newTestimonialImage}
+                  onChange={(e) => setNewTestimonialImage(e.target.value)}
+                  disabled={watchedTestimonialImages.length >= 4}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addTestimonialImage();
+                    }
+                  }}
+                />
+                <Button 
+                  type="button" 
+                  onClick={addTestimonialImage} 
+                  variant="outline"
+                  disabled={watchedTestimonialImages.length >= 4}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Images Grid */}
+              {watchedTestimonialImages.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {watchedTestimonialImages.map((image, index) => (
+                    <div key={index} className="relative group">
+                      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                        <img
+                          src={image}
+                          alt={`Testimonio ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiAxNkM5LjggMTYgOCAxNC4yIDggMTJDOCA5LjggOS44IDggMTIgOEMxNC4yIDggMTYgOS44IDE2IDEyQzE2IDE0LjIgMTQuMiAxNiAxMiAxNloiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
+                          }}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeTestimonialImage(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Price Images */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Imágenes de Precios</CardTitle>
+            <CardDescription>
+              Imágenes con información de precios, ofertas o promociones (máximo 4)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-4">
+              {/* File Upload */}
+              <div>
+                <input
+                  type="file"
+                  ref={priceImageRef}
+                  onChange={handlePriceImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => priceImageRef.current?.click()}
+                  disabled={watchedPriceImages.length >= 4}
+                  className="w-full"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Subir Imagen de Precio ({watchedPriceImages.length}/4)
+                </Button>
+              </div>
+
+              {/* URL Input */}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="O ingresa URL de imagen de precio"
+                  value={newPriceImage}
+                  onChange={(e) => setNewPriceImage(e.target.value)}
+                  disabled={watchedPriceImages.length >= 4}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addPriceImage();
+                    }
+                  }}
+                />
+                <Button 
+                  type="button" 
+                  onClick={addPriceImage} 
+                  variant="outline"
+                  disabled={watchedPriceImages.length >= 4}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Images Grid */}
+              {watchedPriceImages.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {watchedPriceImages.map((image, index) => (
+                    <div key={index} className="relative group">
+                      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                        <img
+                          src={image}
+                          alt={`Precio ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiAxNkM5LjggMTYgOCAxNC4yIDggMTJDOCA5LjggOS44IDggMTIgOEMxNC4yIDggMTYgOS44IDE2IDEyQzE2IDE0LjIgMTQuMiAxNiAxMiAxNloiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
+                          }}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removePriceImage(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Shipping & Payment Options */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5" />
+              Opciones de Envío y Pago
+            </CardTitle>
+            <CardDescription>
+              Configura las opciones de entrega y formas de pago disponibles
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="freeShipping"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base flex items-center gap-2">
+                      <Truck className="h-4 w-4" />
+                      Envío Gratis
+                    </FormLabel>
+                    <FormDescription>
+                      ¿Este producto incluye envío gratuito?
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="cashOnDelivery"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    Pago Contra Entrega
+                  </FormLabel>
+                  <FormDescription>
+                    ¿Se acepta pago contra entrega para este producto?
+                  </FormDescription>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="yes">Sí, se acepta pago contra entrega</SelectItem>
+                      <SelectItem value="no">No se acepta pago contra entrega</SelectItem>
+                      <SelectItem value="not_applicable">No aplica</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
         </Card>
 

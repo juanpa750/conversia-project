@@ -369,10 +369,10 @@ export default function StorePage() {
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                {product.images && product.images.length > 0 && (
+                {product.productImage && (
                   <div className="aspect-video bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
                     <img
-                      src={product.images[0]}
+                      src={product.productImage}
                       alt={product.name}
                       className="w-full h-full object-cover rounded-lg"
                       onError={(e) => {

@@ -207,17 +207,19 @@ export const products = pgTable("products", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id),
   name: varchar("name").notNull(),
-  description: text("description"),
+  description: text("description"), // Ahora incluye características, beneficios, FAQ, modo de uso, etc.
   price: varchar("price"),
   currency: varchar("currency").default("USD"),
   category: varchar("category"),
-  images: text("images").array(),
-  features: text("features").array(),
-  specifications: jsonb("specifications"),
+  productImage: varchar("product_image"), // 1 imagen principal del producto
+  testimonialImages: text("testimonial_images").array(), // hasta 4 imágenes de testimonios
+  priceImages: text("price_images").array(), // hasta 4 imágenes de precios
   availability: boolean("availability").default(true),
   stock: integer("stock").default(0),
   sku: varchar("sku"),
   tags: text("tags").array(),
+  freeShipping: boolean("free_shipping").default(false), // Envío gratis sí/no
+  cashOnDelivery: varchar("cash_on_delivery").default("no"), // "yes", "no", "not_applicable"
   chatbotId: integer("chatbot_id").references(() => chatbots.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
