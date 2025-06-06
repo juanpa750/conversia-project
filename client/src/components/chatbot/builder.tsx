@@ -43,6 +43,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   const [chatbotName, setChatbotName] = useState('Nuevo Chatbot');
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const { toast } = useToast();
 
   // Fetch chatbot data if editing existing chatbot
@@ -217,11 +218,15 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   };
 
   const handleTest = () => {
-    toast({
-      title: "Modo de prueba",
-      description: "Abriendo simulador de conversación...",
-    });
-    console.log('Testing chatbot:', { name: chatbotName, nodes, edges });
+    if (nodes.length === 0) {
+      toast({
+        title: "Error",
+        description: "Agregue al menos un nodo antes de probar",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsTestModalOpen(true);
   };
 
   const handlePublish = () => {
@@ -640,6 +645,15 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
           </Tabs>
         </div>
       </div>
+
+      {/* Test Simulator Modal */}
+      <TestSimulator
+        isOpen={isTestModalOpen}
+        onClose={() => setIsTestModalOpen(false)}
+        chatbotName={chatbotName}
+        nodes={nodes}
+        edges={edges}
+      />
     </div>
   );
 }
