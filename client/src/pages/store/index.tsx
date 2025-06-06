@@ -172,10 +172,7 @@ export default function StorePage() {
   // Get unique categories
   const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
 
-  const formatPrice = (price: string | null, currency: string | null) => {
-    if (!price) return 'Sin precio';
-    return `${price} ${currency || 'USD'}`;
-  };
+
 
   const handleCreateProduct = (data: any) => {
     createProductMutation.mutate(data);
@@ -218,10 +215,25 @@ export default function StorePage() {
   };
 
   // Helper function to format price
-  const formatPrice = (price: number, currency?: string) => {
+  const formatPrice = (price: string | null, currency?: string) => {
     const symbol = currency || '$';
-    return `${symbol}${price.toLocaleString()}`;
+    const numericPrice = parseFloat(price || '0');
+    return `${symbol}${numericPrice.toLocaleString()}`;
   };
+
+  // Get unique categories
+  const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+
+  // Filter products based on search and category
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = !searchTerm || 
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
+    
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -497,7 +509,7 @@ export default function StorePage() {
                     <div className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4 text-green-600" />
                       <span className="font-semibold text-green-600">
-                        {formatPrice(product.price, product.currency)}
+                        {formatPrice(product.price, product.currency || '$')}
                       </span>
                     </div>
                     {product.category && (
@@ -505,18 +517,18 @@ export default function StorePage() {
                     )}
                   </div>
 
-                  {product.features && product.features.length > 0 && (
+                  {product.tags && product.tags.length > 0 && (
                     <div className="pt-2">
-                      <p className="text-xs text-gray-500 mb-1">Características:</p>
+                      <p className="text-xs text-gray-500 mb-1">Etiquetas:</p>
                       <div className="flex flex-wrap gap-1">
-                        {product.features.slice(0, 3).map((feature, index) => (
+                        {product.tags.slice(0, 3).map((tag: string, index: number) => (
                           <Badge key={index} variant="secondary" className="text-xs">
-                            {feature}
+                            {tag}
                           </Badge>
                         ))}
-                        {product.features.length > 3 && (
+                        {product.tags.length > 3 && (
                           <Badge variant="secondary" className="text-xs">
-                            +{product.features.length - 3} más
+                            +{product.tags.length - 3} más
                           </Badge>
                         )}
                       </div>
@@ -572,7 +584,7 @@ export default function StorePage() {
                     <div className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4 text-green-600" />
                       <span className="font-medium text-green-600">
-                        {formatPrice(product.price, product.currency)}
+                        {formatPrice(product.price, product.currency || '$')}
                       </span>
                     </div>
                   </TableCell>
