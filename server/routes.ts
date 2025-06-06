@@ -52,51 +52,85 @@ function extractTitle(html: string, url: string): string {
 function extractDescription(html: string): string {
   let descriptions: string[] = [];
   
-  // Try Open Graph description
+  // Extract Open Graph and meta descriptions
   let match = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i);
-  if (match) descriptions.push(cleanText(match[1]));
+  if (match) descriptions.push("META: " + cleanText(match[1]));
   
-  // Try meta description
   match = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
-  if (match) descriptions.push(cleanText(match[1]));
+  if (match) descriptions.push("DESCRIPCIÓN: " + cleanText(match[1]));
   
-  // Extract detailed product descriptions from common containers
-  const descriptionPatterns = [
-    // Product description sections
-    /<div[^>]*class="[^"]*product[_-]?description[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
-    /<section[^>]*class="[^"]*description[^"]*"[^>]*>([\s\S]*?)<\/section>/gi,
-    /<div[^>]*class="[^"]*description[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+  // Extract comprehensive product information from ALL possible containers
+  const comprehensivePatterns = [
+    // Product main sections with deep nesting
+    /<div[^>]*class="[^"]*product[_-]?(description|info|details|content|summary)[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<section[^>]*class="[^"]*product[_-]?(description|info|details|content|summary)[^"]*"[^>]*>([\s\S]*?)<\/section>/gi,
+    /<article[^>]*class="[^"]*product[_-]?(description|info|details|content|summary)[^"]*"[^>]*>([\s\S]*?)<\/article>/gi,
     
-    // Features and specifications
-    /<div[^>]*class="[^"]*features[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
-    /<div[^>]*class="[^"]*specifications[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
-    /<div[^>]*class="[^"]*specs[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
-    /<div[^>]*class="[^"]*details[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    // General content sections
+    /<div[^>]*class="[^"]*(?:description|details|info|content|overview|summary|about)[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<section[^>]*class="[^"]*(?:description|details|info|content|overview|summary|about)[^"]*"[^>]*>([\s\S]*?)<\/section>/gi,
     
-    // Benefits and characteristics
-    /<div[^>]*class="[^"]*benefits[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
-    /<div[^>]*class="[^"]*characteristics[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
-    /<div[^>]*class="[^"]*overview[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    // Features and specifications sections
+    /<div[^>]*class="[^"]*(?:features|specifications|specs|characteristics|benefits|advantages|highlights)[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<section[^>]*class="[^"]*(?:features|specifications|specs|characteristics|benefits|advantages|highlights)[^"]*"[^>]*>([\s\S]*?)<\/section>/gi,
     
-    // Lists and bullet points
-    /<ul[^>]*class="[^"]*features[^"]*"[^>]*>([\s\S]*?)<\/ul>/gi,
-    /<ul[^>]*class="[^"]*benefits[^"]*"[^>]*>([\s\S]*?)<\/ul>/gi,
+    // Lists of information
+    /<ul[^>]*class="[^"]*(?:features|benefits|specs|details|info|list)[^"]*"[^>]*>([\s\S]*?)<\/ul>/gi,
+    /<ol[^>]*class="[^"]*(?:features|benefits|specs|details|info|list)[^"]*"[^>]*>([\s\S]*?)<\/ol>/gi,
+    
+    // Text content areas
+    /<div[^>]*class="[^"]*(?:text|content|copy|body)[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<p[^>]*class="[^"]*(?:description|text|content|details)[^"]*"[^>]*>([\s\S]*?)<\/p>/gi,
+    
+    // Specific e-commerce patterns
+    /<div[^>]*id="[^"]*(?:description|details|specs|features)[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<section[^>]*id="[^"]*(?:description|details|specs|features)[^"]*"[^>]*>([\s\S]*?)<\/section>/gi,
+    
+    // Tables with product information
+    /<table[^>]*class="[^"]*(?:specs|specifications|details|features|attributes)[^"]*"[^>]*>([\s\S]*?)<\/table>/gi,
+    
+    // Additional content areas
+    /<div[^>]*class="[^"]*(?:tab-content|accordion|collapsible)[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
   ];
   
-  for (const pattern of descriptionPatterns) {
+  // Extract content from all patterns
+  for (const pattern of comprehensivePatterns) {
     let match;
     while ((match = pattern.exec(html)) !== null) {
-      const content = extractTextFromHtml(match[1]);
-      if (content.length > 50 && content.length < 2000) {
-        descriptions.push(content);
+      const rawContent = match[2] || match[1];
+      const content = extractTextFromHtml(rawContent);
+      
+      // Accept longer content blocks
+      if (content.length > 30 && content.length < 5000) {
+        // Clean and format the content
+        const cleanContent = content
+          .replace(/\s+/g, ' ')
+          .replace(/\n\s*\n/g, '\n')
+          .trim();
+        
+        if (cleanContent.length > 50 && !descriptions.some(desc => desc.includes(cleanContent.substring(0, 100)))) {
+          descriptions.push(cleanContent);
+        }
       }
     }
   }
   
-  // Extract key features from structured data
+  // Extract from paragraphs that contain substantial text
+  const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi);
+  if (paragraphs) {
+    for (const p of paragraphs.slice(0, 20)) { // Check more paragraphs
+      const content = extractTextFromHtml(p);
+      if (content.length > 100 && content.length < 1000 && 
+          !descriptions.some(desc => desc.includes(content.substring(0, 50)))) {
+        descriptions.push("PÁRRAFO: " + content);
+      }
+    }
+  }
+  
+  // Extract structured data features
   const structuredFeatures = extractStructuredFeatures(html);
   if (structuredFeatures) {
-    descriptions.push(structuredFeatures);
+    descriptions.push("DATOS ESTRUCTURADOS:\n" + structuredFeatures);
   }
   
   // Extract technical specifications
@@ -105,11 +139,17 @@ function extractDescription(html: string): string {
     descriptions.push(techSpecs);
   }
   
-  // Combine all descriptions with proper formatting
+  // Extract additional information from common containers
+  const additionalInfo = extractAdditionalProductInfo(html);
+  if (additionalInfo) {
+    descriptions.push("INFORMACIÓN ADICIONAL:\n" + additionalInfo);
+  }
+  
+  // Combine all descriptions
   const finalDescription = descriptions
-    .filter(desc => desc && desc.length > 20)
-    .slice(0, 3) // Limit to top 3 descriptions
-    .join('\n\n');
+    .filter(desc => desc && desc.length > 30)
+    .slice(0, 8) // Include more sections
+    .join('\n\n---\n\n');
   
   return finalDescription || '';
 }
@@ -532,6 +572,147 @@ function extractTechnicalSpecs(html: string): string {
   }
   
   return specs.length > 0 ? 'Especificaciones técnicas:\n' + specs.join('\n') : '';
+}
+
+// Extract additional product information from various sources
+function extractAdditionalProductInfo(html: string): string {
+  const additionalInfo: string[] = [];
+  
+  // Extract reviews and ratings information
+  const reviewPatterns = [
+    /<div[^>]*class="[^"]*(?:review|rating|testimonial|feedback)[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<section[^>]*class="[^"]*(?:review|rating|testimonial|feedback)[^"]*"[^>]*>([\s\S]*?)<\/section>/gi,
+  ];
+  
+  for (const pattern of reviewPatterns) {
+    let match;
+    while ((match = pattern.exec(html)) !== null && additionalInfo.length < 15) {
+      const content = extractTextFromHtml(match[1]);
+      if (content.length > 50 && content.length < 800) {
+        additionalInfo.push("RESEÑA: " + content);
+      }
+    }
+  }
+  
+  // Extract warranty and shipping information
+  const servicePatterns = [
+    /<div[^>]*class="[^"]*(?:warranty|guarantee|shipping|delivery|return)[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<p[^>]*class="[^"]*(?:warranty|guarantee|shipping|delivery|return)[^"]*"[^>]*>([\s\S]*?)<\/p>/gi,
+  ];
+  
+  for (const pattern of servicePatterns) {
+    let match;
+    while ((match = pattern.exec(html)) !== null && additionalInfo.length < 20) {
+      const content = extractTextFromHtml(match[1]);
+      if (content.length > 20 && content.length < 500) {
+        additionalInfo.push("SERVICIO: " + content);
+      }
+    }
+  }
+  
+  // Extract FAQ content
+  const faqPatterns = [
+    /<div[^>]*class="[^"]*(?:faq|question|answer)[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<dt[^>]*>([\s\S]*?)<\/dt>/gi,
+    /<dd[^>]*>([\s\S]*?)<\/dd>/gi,
+  ];
+  
+  for (const pattern of faqPatterns) {
+    let match;
+    while ((match = pattern.exec(html)) !== null && additionalInfo.length < 25) {
+      const content = extractTextFromHtml(match[1]);
+      if (content.length > 30 && content.length < 400) {
+        additionalInfo.push("FAQ: " + content);
+      }
+    }
+  }
+  
+  // Extract availability and stock information
+  const availabilityPatterns = [
+    /<[^>]*class="[^"]*(?:stock|availability|inventory|quantity)[^"]*"[^>]*>([^<]+)<\/[^>]*>/gi,
+    /<[^>]*data-stock="([^"]*)"[^>]*>/gi,
+    /<[^>]*data-availability="([^"]*)"[^>]*>/gi,
+  ];
+  
+  for (const pattern of availabilityPatterns) {
+    let match;
+    while ((match = pattern.exec(html)) !== null && additionalInfo.length < 30) {
+      const content = cleanText(match[1]);
+      if (content.length > 5 && content.length < 100) {
+        additionalInfo.push("DISPONIBILIDAD: " + content);
+      }
+    }
+  }
+  
+  // Extract promotional information
+  const promoPatterns = [
+    /<div[^>]*class="[^"]*(?:promo|offer|discount|sale|deal)[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<span[^>]*class="[^"]*(?:promo|offer|discount|sale|deal)[^"]*"[^>]*>([^<]+)<\/span>/gi,
+  ];
+  
+  for (const pattern of promoPatterns) {
+    let match;
+    while ((match = pattern.exec(html)) !== null && additionalInfo.length < 35) {
+      const content = extractTextFromHtml(match[1]);
+      if (content.length > 10 && content.length < 300) {
+        additionalInfo.push("PROMOCIÓN: " + content);
+      }
+    }
+  }
+  
+  // Extract size and dimension information
+  const dimensionPatterns = [
+    /<[^>]*class="[^"]*(?:size|dimension|measurement|weight)[^"]*"[^>]*>([^<]+)<\/[^>]*>/gi,
+    /<[^>]*data-size="([^"]*)"[^>]*>/gi,
+    /<[^>]*data-weight="([^"]*)"[^>]*>/gi,
+    /<[^>]*data-dimension="([^"]*)"[^>]*>/gi,
+  ];
+  
+  for (const pattern of dimensionPatterns) {
+    let match;
+    while ((match = pattern.exec(html)) !== null && additionalInfo.length < 40) {
+      const content = cleanText(match[1]);
+      if (content.length > 3 && content.length < 150) {
+        additionalInfo.push("DIMENSIONES: " + content);
+      }
+    }
+  }
+  
+  // Extract usage instructions and care information
+  const instructionPatterns = [
+    /<div[^>]*class="[^"]*(?:instruction|usage|care|maintenance|how-to)[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<section[^>]*class="[^"]*(?:instruction|usage|care|maintenance|how-to)[^"]*"[^>]*>([\s\S]*?)<\/section>/gi,
+  ];
+  
+  for (const pattern of instructionPatterns) {
+    let match;
+    while ((match = pattern.exec(html)) !== null && additionalInfo.length < 45) {
+      const content = extractTextFromHtml(match[1]);
+      if (content.length > 50 && content.length < 1000) {
+        additionalInfo.push("INSTRUCCIONES: " + content);
+      }
+    }
+  }
+  
+  // Extract any remaining meaningful content blocks
+  const contentPatterns = [
+    /<div[^>]*class="[^"]*(?:content|text|info|block)[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<article[^>]*>([\s\S]*?)<\/article>/gi,
+    /<main[^>]*>([\s\S]*?)<\/main>/gi,
+  ];
+  
+  for (const pattern of contentPatterns) {
+    let match;
+    while ((match = pattern.exec(html)) !== null && additionalInfo.length < 50) {
+      const content = extractTextFromHtml(match[1]);
+      if (content.length > 100 && content.length < 2000 && 
+          !additionalInfo.some(info => info.includes(content.substring(0, 100)))) {
+        additionalInfo.push("CONTENIDO: " + content);
+      }
+    }
+  }
+  
+  return additionalInfo.length > 0 ? additionalInfo.join('\n\n') : '';
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
