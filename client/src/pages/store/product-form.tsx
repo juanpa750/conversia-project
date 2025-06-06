@@ -621,9 +621,8 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="yes">Sí, se acepta pago contra entrega</SelectItem>
-                      <SelectItem value="no">No se acepta pago contra entrega</SelectItem>
-                      <SelectItem value="not_applicable">No aplica</SelectItem>
+                      <SelectItem value="yes">Sí</SelectItem>
+                      <SelectItem value="no">No</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
