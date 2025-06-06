@@ -48,7 +48,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
-  const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [selectedProductId, setSelectedProductId] = useState<string>('none');
   const [triggerKeywords, setTriggerKeywords] = useState<string[]>([]);
   const [aiInstructions, setAiInstructions] = useState<string>('');
   const [newKeyword, setNewKeyword] = useState<string>('');
@@ -86,7 +86,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
       const flowData = {
         name: chatbotName,
         flow: { nodes, edges },
-        productId: selectedProductId ? parseInt(selectedProductId) : null,
+        productId: selectedProductId && selectedProductId !== 'none' ? parseInt(selectedProductId) : null,
         triggerKeywords,
         aiInstructions,
         updatedAt: new Date().toISOString()
@@ -399,7 +399,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                           <SelectValue placeholder="Seleccione un producto" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Sin producto</SelectItem>
+                          <SelectItem value="none">Sin producto</SelectItem>
                           {products && Array.isArray(products) ? products.map((product: any) => (
                             <SelectItem key={product.id} value={product.id.toString()}>
                               {product.name}
