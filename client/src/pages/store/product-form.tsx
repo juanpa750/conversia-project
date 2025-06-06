@@ -36,7 +36,7 @@ const productSchema = z.object({
   sku: z.string().optional(),
   tags: z.array(z.string()).default([]),
   freeShipping: z.boolean().default(false),
-  cashOnDelivery: z.enum(['yes', 'no', 'not_applicable']).default('no'),
+  cashOnDelivery: z.enum(['yes', 'no']).default('no'),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
