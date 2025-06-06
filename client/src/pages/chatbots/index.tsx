@@ -114,8 +114,135 @@ export function Chatbots() {
     }
   });
 
+  // Delete chatbot mutation
+  const deleteChatbot = useMutation({
+    mutationFn: async (chatbotId: string) => {
+      const response = await fetch(`/api/chatbots/${chatbotId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Error al eliminar chatbot');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chatbots"] });
+      toast({
+        title: "Chatbot eliminado",
+        description: "El chatbot ha sido eliminado exitosamente.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el chatbot. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Update chatbot status mutation
+  const updateChatbotStatus = useMutation({
+    mutationFn: async ({ chatbotId, status }: { chatbotId: string, status: string }) => {
+      const response = await fetch(`/api/chatbots/${chatbotId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
+      if (!response.ok) {
+        throw new Error('Error al actualizar estado');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chatbots"] });
+      toast({
+        title: "Estado actualizado",
+        description: "El estado del chatbot ha sido actualizado.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Duplicate chatbot mutation
+  const duplicateChatbot = useMutation({
+    mutationFn: async (chatbot: any) => {
+      const response = await fetch('/api/chatbots', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: `${chatbot.name} (Copia)`,
+          description: chatbot.description,
+          type: chatbot.type,
+          flow: chatbot.flow,
+          status: 'draft'
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Error al duplicar chatbot');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chatbots"] });
+      toast({
+        title: "Chatbot duplicado",
+        description: "Se ha creado una copia del chatbot exitosamente.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo duplicar el chatbot. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleAssistantComplete = (config: any) => {
     createChatbot.mutate(config);
+  };
+
+  // Handle actions
+  const handleDeleteChatbot = (chatbotId: string) => {
+    if (confirm('¿Estás seguro de que quieres eliminar este chatbot? Esta acción no se puede deshacer.')) {
+      deleteChatbot.mutate(chatbotId);
+    }
+  };
+
+  const handleToggleStatus = (chatbot: any) => {
+    const newStatus = chatbot.status === 'active' ? 'inactive' : 'active';
+    updateChatbotStatus.mutate({ chatbotId: chatbot.id, status: newStatus });
+  };
+
+  const handleDuplicateChatbot = (chatbot: any) => {
+    duplicateChatbot.mutate(chatbot);
+  };
+
+  const handleShareChatbot = (chatbot: any) => {
+    const shareUrl = `${window.location.origin}/chat/${chatbot.id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      toast({
+        title: "Enlace copiado",
+        description: "El enlace del chatbot ha sido copiado al portapapeles.",
+      });
+    }).catch(() => {
+      toast({
+        title: "Error",
+        description: "No se pudo copiar el enlace. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    });
   };
 
   const filteredChatbots = typedChatbots.filter((chatbot: any) => {
@@ -245,11 +372,25 @@ export function Chatbots() {
                 <Link href={`/chatbots/builder/${chatbot.id}`}>Editar</Link>
               </Button>
               <div className="flex space-x-2">
-                <Button variant="ghost" size="sm" className="text-gray-500">
-                  <RiBarChart2Line />
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-gray-500"
+                  asChild
+                >
+                  <Link href={`/analytics?chatbot=${chatbot.id}`}>
+                    <RiBarChart2Line />
+                  </Link>
                 </Button>
-                <Button variant="ghost" size="sm" className="text-gray-500">
-                  <RiWhatsappLine />
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-gray-500"
+                  asChild
+                >
+                  <Link href={`/integrations/whatsapp?chatbot=${chatbot.id}`}>
+                    <RiWhatsappLine />
+                  </Link>
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -260,11 +401,20 @@ export function Chatbots() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>Duplicar</DropdownMenuItem>
-                    <DropdownMenuItem>Compartir</DropdownMenuItem>
-                    <DropdownMenuItem>Desactivar</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDuplicateChatbot(chatbot)}>
+                      Duplicar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleShareChatbot(chatbot)}>
+                      Compartir
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleToggleStatus(chatbot)}>
+                      {chatbot.status === 'active' ? 'Desactivar' : 'Activar'}
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-red-600">
+                    <DropdownMenuItem 
+                      className="text-red-600"
+                      onClick={() => handleDeleteChatbot(chatbot.id)}
+                    >
                       Eliminar
                     </DropdownMenuItem>
                   </DropdownMenuContent>
