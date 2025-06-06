@@ -113,13 +113,16 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
 
   // Load chatbot flow when data is available
   useEffect(() => {
-    if (chatbot && chatbot.flow && typeof chatbot.flow === 'object') {
-      setChatbotName(chatbot.name || 'Chatbot');
-      if (Array.isArray(chatbot.flow.nodes)) {
-        setNodes(chatbot.flow.nodes);
-      }
-      if (Array.isArray(chatbot.flow.edges)) {
-        setEdges(chatbot.flow.edges);
+    if (chatbot) {
+      setChatbotName((chatbot as any).name || 'Chatbot');
+      const flow = (chatbot as any).flow;
+      if (flow && typeof flow === 'object') {
+        if (flow.nodes && Array.isArray(flow.nodes)) {
+          setNodes(flow.nodes);
+        }
+        if (flow.edges && Array.isArray(flow.edges)) {
+          setEdges(flow.edges);
+        }
       }
     }
   }, [chatbot, setNodes, setEdges]);
@@ -164,8 +167,27 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   );
 
   const handleSave = () => {
-    // In a real app, we would save the chatbot configuration to the backend
-    console.log('Saving chatbot:', { name: chatbotName, nodes, edges });
+    saveChatbotMutation.mutate({});
+  };
+
+  const handleTest = () => {
+    toast({
+      title: "Modo de prueba",
+      description: "Abriendo simulador de conversación...",
+    });
+    console.log('Testing chatbot:', { name: chatbotName, nodes, edges });
+  };
+
+  const handlePublish = () => {
+    if (nodes.length === 0) {
+      toast({
+        title: "Error",
+        description: "Agregue al menos un nodo antes de publicar",
+        variant: "destructive",
+      });
+      return;
+    }
+    publishChatbotMutation.mutate();
   };
 
   return (
@@ -179,17 +201,17 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
           />
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleTest}>
             <RiTestTubeLine className="mr-2" />
             Probar
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handlePublish} disabled={publishChatbotMutation.isPending}>
             <RiWhatsappLine className="mr-2" />
-            Publicar
+            {publishChatbotMutation.isPending ? 'Publicando...' : 'Publicar'}
           </Button>
-          <Button size="sm" onClick={handleSave}>
+          <Button size="sm" onClick={handleSave} disabled={saveChatbotMutation.isPending}>
             <RiSave3Line className="mr-2" />
-            Guardar
+            {saveChatbotMutation.isPending ? 'Guardando...' : 'Guardar'}
           </Button>
         </div>
       </div>
