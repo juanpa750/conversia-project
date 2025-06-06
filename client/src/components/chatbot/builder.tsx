@@ -392,11 +392,11 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden rounded-md border border-gray-200 bg-white">
+      <div className="flex flex-1 rounded-md border border-gray-200 bg-white">
         <SidebarPalette />
         
-        <div className="flex-1">
-          <Tabs defaultValue="flow">
+        <div className="flex-1 flex flex-col">
+          <Tabs defaultValue="flow" className="flex flex-col flex-1">
             <div className="border-b border-gray-200">
               <TabsList className="ml-4 mt-1">
                 <TabsTrigger value="flow">Flujo</TabsTrigger>
@@ -428,9 +428,9 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
               </div>
             </TabsContent>
             
-            <TabsContent value="instruction" className="m-0 flex-1 outline-none overflow-hidden">
-              <div className="h-full overflow-y-auto p-4">
-                <div className="space-y-6 pb-40">
+            <TabsContent value="instruction" className="m-0 flex-1 outline-none">
+              <div className="max-h-[calc(100vh-12rem)] overflow-y-auto p-4">
+                <div className="space-y-6 pb-96">
                   <div className="flex items-center gap-2">
                     <RiBrainLine className="h-5 w-5" />
                     <h3 className="text-lg font-medium">Instrucciones del Chatbot</h3>
@@ -512,9 +512,9 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
               </div>
             </TabsContent>
             
-            <TabsContent value="objective" className="m-0 flex-1 outline-none overflow-hidden">
-              <div className="h-full overflow-y-auto p-4">
-                <div className="space-y-6 pb-40">
+            <TabsContent value="objective" className="m-0 flex-1 outline-none">
+              <div className="max-h-[calc(100vh-12rem)] overflow-y-auto p-4">
+                <div className="space-y-6 pb-96">
                   <div className="flex items-center gap-2">
                     <RiFlagLine className="h-5 w-5" />
                     <h3 className="text-lg font-medium">Objetivo de la Conversación</h3>
@@ -609,8 +609,8 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
               </div>
             </TabsContent>
             
-            <TabsContent value="settings" className="m-0 flex-1 outline-none overflow-hidden">
-              <div className="h-full overflow-y-auto p-4">
+            <TabsContent value="settings" className="m-0 flex-1 outline-none">
+              <div className="max-h-[calc(100vh-12rem)] overflow-y-auto p-4">
                 <div className="space-y-6 pb-40">
                   <div className="flex items-center gap-2">
                     <RiSettings3Line className="h-5 w-5" />
@@ -771,8 +771,8 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
               </div>
             </TabsContent>
             
-            <TabsContent value="integrations" className="m-0 flex-1 outline-none overflow-hidden">
-              <div className="h-full overflow-y-auto p-4">
+            <TabsContent value="integrations" className="m-0 flex-1 outline-none">
+              <div className="max-h-[calc(100vh-12rem)] overflow-y-auto p-4">
                 <div className="space-y-6 pb-40">
                   <div className="flex items-center gap-2">
                     <RiWhatsappLine className="h-5 w-5" />
