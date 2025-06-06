@@ -117,10 +117,27 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   useEffect(() => {
     if (chatbot && !isInitialized) {
       console.log('Loading chatbot:', chatbot);
-      setChatbotName((chatbot as any).name || 'Chatbot');
-      const flow = (chatbot as any).flow;
+      console.log('Chatbot type:', typeof chatbot);
+      console.log('Chatbot keys:', Object.keys(chatbot));
       
-      console.log('Flow object:', flow);
+      setChatbotName((chatbot as any).name || 'Chatbot');
+      
+      // Handle different possible data structures
+      let flow = (chatbot as any).flow;
+      
+      // If flow is a string, try to parse it as JSON
+      if (typeof flow === 'string') {
+        try {
+          flow = JSON.parse(flow);
+          console.log('Parsed flow from string:', flow);
+        } catch (e) {
+          console.error('Failed to parse flow JSON:', e);
+          flow = null;
+        }
+      }
+      
+      console.log('Final flow object:', flow);
+      console.log('Flow type:', typeof flow);
       console.log('Flow nodes:', flow?.nodes);
       console.log('Nodes is array:', Array.isArray(flow?.nodes));
       console.log('Nodes length:', flow?.nodes?.length);
