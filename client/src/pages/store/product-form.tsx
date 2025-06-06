@@ -19,8 +19,9 @@ import {
   FormLabel, 
   FormMessage 
 } from '@/components/ui/form';
-import { Plus, X, Upload, Image as ImageIcon, FileText, Truck, CreditCard, LinkIcon, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, X, Upload, Image as ImageIcon, FileText, Truck, CreditCard, LinkIcon, Sparkles, Loader2, Package } from 'lucide-react';
 import type { Product } from '@shared/schema';
+import { ProductVariants } from '@/components/store/product-variants';
 
 const productSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
@@ -54,6 +55,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
   const [newPriceImage, setNewPriceImage] = useState('');
   const [productUrl, setProductUrl] = useState('');
   const [isAnalyzingUrl, setIsAnalyzingUrl] = useState(false);
+  const [variants, setVariants] = useState<any[]>([]);
   
   // File upload refs
   const productImageRef = useRef<HTMLInputElement>(null);
@@ -402,6 +404,25 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
                   </FormControl>
                 </FormItem>
               )}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Product Variants */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Variantes de Producto
+            </CardTitle>
+            <CardDescription>
+              Configura diferentes opciones de precio con características específicas
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ProductVariants
+              variants={variants}
+              onChange={setVariants}
             />
           </CardContent>
         </Card>
