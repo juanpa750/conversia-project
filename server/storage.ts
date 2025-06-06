@@ -680,6 +680,9 @@ export class DatabaseStorage implements IStorage {
       })
     };
 
+    // Get product variants for intelligent pricing information
+    const variants = await this.getProductVariants(productId);
+
     const chatbot = await this.createChatbot(chatbotData);
     await this.updateProduct(productId, { chatbotId: chatbot.id });
 
@@ -693,7 +696,7 @@ export class DatabaseStorage implements IStorage {
       product.category?.toLowerCase(),
       ...extractedFeatures.flatMap(f => f.split(' ').filter(w => w.length > 3).slice(0, 2)),
       ...extractedBenefits.flatMap(b => b.split(' ').filter(w => w.length > 3).slice(0, 2))
-    ].filter(Boolean).slice(0, 20);
+    ].filter(Boolean).filter((item): item is string => typeof item === 'string').slice(0, 20);
 
     const advancedPhrases = [
       `información sobre ${product.name}`,
@@ -704,9 +707,6 @@ export class DatabaseStorage implements IStorage {
       `disponibilidad de ${product.name}`,
       ...extractedFeatures.slice(0, 3).map(f => `${product.name} ${f.split(' ')[0]}`)
     ];
-
-    // Get product variants for intelligent pricing information
-    const variants = await this.getProductVariants(productId);
 
     await this.createProductTrigger({
       productId: product.id,
@@ -721,23 +721,9 @@ export class DatabaseStorage implements IStorage {
     await this.createProductAiConfig({
       productId: product.id,
       chatbotId: chatbot.id,
-      aiPersonality: 'expert_consultant',
-      responseStyle: 'detailed_helpful',
-      salesApproach: 'aida_methodology',
-      knowledgeBase: JSON.stringify({
-        features: extractedFeatures,
-        benefits: extractedBenefits,
-        specifications: technicalSpecs,
-        advantages: competitiveAdvantages,
-        audience: targetAudience
-      }),
-      customPrompts: JSON.stringify({
-        system: `Experto en ${product.name} con metodología AIDA consultiva`,
-        features: `Características: ${extractedFeatures.join(', ')}`,
-        benefits: `Beneficios: ${extractedBenefits.join(', ')}`,
-        technical: `Especificaciones: ${technicalSpecs.join(', ')}`,
-        sales: `Guía usando AIDA con información específica del producto`
-      })
+      salesPitch: `Experto en ${product.name} con metodología AIDA consultiva`,
+      targetAudience: targetAudience.join(', '),
+      aiInstructions: `Especialista en ${product.name}. Usar metodología AIDA: Atención->Interés->Deseo->Acción. Características: ${extractedFeatures.join(', ')}. Beneficios: ${extractedBenefits.join(', ')}. Especificaciones: ${technicalSpecs.join(', ')}.`
     });
 
     return chatbot;
@@ -762,7 +748,7 @@ export class DatabaseStorage implements IStorage {
       }
     });
     
-    return [...new Set(features)].slice(0, 10);
+    return Array.from(new Set(features)).slice(0, 10);
   }
 
   private extractProductBenefits(description: string): string[] {
@@ -1002,9 +988,7 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
 
     // Update chatbot with complete AIDA flows
     await this.updateChatbot(chatbotId, {
-      flows: JSON.stringify(aidaFlows),
-      welcomeMessage: aidaFlows.attention.welcome,
-      template: this.generateAdvancedTemplate(product, features, benefits, variants)
+      flow: aidaFlows
     });
   }
 }
