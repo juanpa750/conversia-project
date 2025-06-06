@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 interface ProductVariant {
   id?: number;
   image: string;
-  specification: string;
   variant: string;
   price: string;
   currency: string;
@@ -58,7 +57,6 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
     if (variants.length === 0 && basicProduct) {
       const firstVariant: ProductVariant = {
         image: "",
-        specification: "Producto estándar",
         variant: "Estándar",
         price: basicProduct.price,
         currency: basicProduct.currency,
@@ -72,7 +70,6 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
       // Agregar nueva variante vacía
       const newVariant: ProductVariant = {
         image: "",
-        specification: "",
         variant: "",
         price: "",
         currency: basicProduct?.currency || "USD",
@@ -232,7 +229,6 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
             <TableHeader>
               <TableRow>
                 <TableHead>Imagen</TableHead>
-                <TableHead>Especificación</TableHead>
                 <TableHead>Característica/Variante</TableHead>
                 <TableHead>Precio</TableHead>
                 <TableHead>Moneda</TableHead>
@@ -279,14 +275,6 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
                         </div>
                       )}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      value={variant.specification}
-                      onChange={(e) => updateVariant(index, 'specification', e.target.value)}
-                      placeholder="Especificación"
-                      className="min-w-32"
-                    />
                   </TableCell>
                   <TableCell>
                     <Input
