@@ -1412,7 +1412,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/products/:id", isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
+      console.log('PUT /api/products/:id - Full request body:', JSON.stringify(req.body, null, 2));
       const { variants, ...productData } = req.body;
+      console.log('Extracted variants:', JSON.stringify(variants, null, 2));
       
       // Update the product
       const product = await storage.updateProduct(id, productData);
@@ -1430,7 +1432,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create new variants
         for (let i = 0; i < variants.length; i++) {
           const variant = variants[i];
-          await storage.createProductVariant({
+          console.log('Processing variant:', JSON.stringify(variant, null, 2));
+          
+          const variantData = {
             productId: id,
             variantName: variant.variant || variant.variantName || `Variante ${i + 1}`,
             characteristics: variant.variant || variant.characteristics || variant.variantName || `Variante ${i + 1}`,
@@ -1439,7 +1443,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             variantImage: variant.image || variant.variantImage,
             stock: variant.stock || 0,
             sortOrder: i
-          });
+          };
+          
+          console.log('Creating variant with data:', JSON.stringify(variantData, null, 2));
+          await storage.createProductVariant(variantData);
         }
       }
       
