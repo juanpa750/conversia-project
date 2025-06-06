@@ -25,6 +25,7 @@ interface BasicProduct {
   stock: number;
   category: string;
   sku: string;
+  priceImages?: string[];
 }
 
 interface ProductVariantsProps {
@@ -136,8 +137,13 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
                   const file = e.target.files?.[0];
                   if (file) {
                     handleFileUpload(file, (url) => {
-                      // Aquí podrías agregar la imagen a un campo específico si fuera necesario
-                      console.log('Foto de precio subida:', url);
+                      // Guardar la imagen de precio en el producto básico
+                      if (onBasicProductChange) {
+                        const currentImages = basicProduct?.priceImages || [];
+                        const updatedImages = [...currentImages, url];
+                        onBasicProductChange('priceImages', updatedImages);
+                        console.log('Foto de precio agregada:', url);
+                      }
                     });
                   }
                 }}
@@ -153,7 +159,39 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
                 <Image className="h-4 w-4 mr-2" />
                 Foto de precio
               </Button>
+              {basicProduct?.priceImages && basicProduct.priceImages.length > 0 && (
+                <span className="text-xs text-gray-500">
+                  {basicProduct.priceImages.length} imagen{basicProduct.priceImages.length > 1 ? 'es' : ''} subida{basicProduct.priceImages.length > 1 ? 's' : ''}
+                </span>
+              )}
             </div>
+            {basicProduct?.priceImages && basicProduct.priceImages.length > 0 && (
+              <div className="mt-2">
+                <div className="flex flex-wrap gap-2">
+                  {basicProduct.priceImages.map((imageUrl, index) => (
+                    <div key={index} className="relative group">
+                      <img 
+                        src={imageUrl} 
+                        alt={`Precio ${index + 1}`}
+                        className="w-16 h-16 object-cover rounded border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onBasicProductChange) {
+                            const updatedImages = basicProduct.priceImages.filter((_, i) => i !== index);
+                            onBasicProductChange('priceImages', updatedImages);
+                          }
+                        }}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
