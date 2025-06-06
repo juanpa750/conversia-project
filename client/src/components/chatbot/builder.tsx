@@ -48,6 +48,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   // Fetch chatbot data if editing existing chatbot
   const { data: chatbot, isLoading } = useQuery({
     queryKey: ["/api/chatbots", chatbotId],
+    queryFn: () => chatbotId ? apiRequest('GET', `/api/chatbots/${chatbotId}`) : null,
     enabled: !!chatbotId,
   });
 
