@@ -49,48 +49,7 @@ interface Chatbot {
   createdAt: string;
 }
 
-const DUMMY_CHATBOTS: Chatbot[] = [
-  {
-    id: "1",
-    name: "Soporte Técnico",
-    description: "Chatbot para resolver problemas técnicos comunes",
-    status: "active",
-    type: "support",
-    messages: 1245,
-    contacts: 356,
-    createdAt: "2023-10-15",
-  },
-  {
-    id: "2",
-    name: "Ventas de Productos",
-    description: "Asistente para consultas de productos y compras",
-    status: "active",
-    type: "sales",
-    messages: 2189,
-    contacts: 512,
-    createdAt: "2023-09-20",
-  },
-  {
-    id: "3",
-    name: "FAQ Empresa",
-    description: "Respuestas a preguntas frecuentes sobre la empresa",
-    status: "inactive",
-    type: "information",
-    messages: 875,
-    contacts: 231,
-    createdAt: "2023-11-05",
-  },
-  {
-    id: "4",
-    name: "Reservas de Citas",
-    description: "Gestión de reservas y citas con clientes",
-    status: "draft",
-    type: "sales",
-    messages: 0,
-    contacts: 0,
-    createdAt: "2023-12-01",
-  },
-];
+
 
 const TYPE_BADGES = {
   support: "bg-blue-100 text-blue-800",
@@ -123,10 +82,11 @@ export function Chatbots() {
   const [filter, setFilter] = useState("all");
 
   // Fetch chatbots data
-  const { data: chatbots = DUMMY_CHATBOTS } = useQuery({
-    queryKey: ["/api/chatbots", { search: searchQuery, filter }],
-    queryFn: () => Promise.resolve(DUMMY_CHATBOTS),
+  const { data: chatbots = [], isLoading } = useQuery({
+    queryKey: ["/api/chatbots"],
   });
+
+  const typedChatbots = (chatbots as any[]) || [];
 
   // Create chatbot mutation
   const createChatbot = useMutation({
@@ -158,7 +118,7 @@ export function Chatbots() {
     createChatbot.mutate(config);
   };
 
-  const filteredChatbots = chatbots.filter((chatbot) => {
+  const filteredChatbots = typedChatbots.filter((chatbot: any) => {
     if (filter !== "all" && chatbot.type !== filter) {
       return false;
     }
@@ -170,6 +130,14 @@ export function Chatbots() {
     }
     return true;
   });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <>
