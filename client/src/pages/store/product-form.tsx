@@ -219,7 +219,12 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
   };
 
   const handleSubmit = (data: ProductFormData) => {
-    onSubmit(data);
+    // Incluir las variantes en los datos del producto
+    const productDataWithVariants = {
+      ...data,
+      variants: variants
+    };
+    onSubmit(productDataWithVariants);
   };
 
   return (

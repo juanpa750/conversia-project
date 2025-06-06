@@ -1367,8 +1367,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/products", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.userId;
-      const productData = { ...req.body, userId };
-      const product = await storage.createProduct(productData);
+      const { variants, ...productData } = req.body;
+      const productDataWithUserId = { ...productData, userId };
+      const product = await storage.createProduct(productDataWithUserId);
+      
+      // Create variants if provided
+      if (variants && variants.length > 0) {
+        for (let i = 0; i < variants.length; i++) {
+          const variant = variants[i];
+          await storage.createProductVariant({
+            ...variant,
+            productId: product.id,
+            sortOrder: i
+          });
+        }
+      }
+      
       res.json(product);
     } catch (error) {
       console.error("Error creating product:", error);
@@ -1393,7 +1407,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/products/:id", isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
-      const product = await storage.updateProduct(id, req.body);
+      const { variants, ...productData } = req.body;
+      
+      // Update the product
+      const product = await storage.updateProduct(id, productData);
+      
+      // Handle variants if provided
+      if (variants && variants.length > 0) {
+        // Get existing variants
+        const existingVariants = await storage.getProductVariants(id);
+        
+        // Delete existing variants
+        for (const existingVariant of existingVariants) {
+          await storage.deleteProductVariant(existingVariant.id);
+        }
+        
+        // Create new variants
+        for (let i = 0; i < variants.length; i++) {
+          const variant = variants[i];
+          await storage.createProductVariant({
+            ...variant,
+            productId: id,
+            sortOrder: i
+          });
+        }
+      }
+      
       res.json(product);
     } catch (error) {
       console.error("Error updating product:", error);
