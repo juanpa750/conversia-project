@@ -77,11 +77,6 @@ function Router() {
               </Layout>
             )}
           </Route>
-          <Route path="/chatbots/builder">
-            <Layout>
-              <ChatbotBuilderPage />
-            </Layout>
-          </Route>
           <Route path="/chatbots/templates">
             <Layout>
               <ChatbotTemplates />
