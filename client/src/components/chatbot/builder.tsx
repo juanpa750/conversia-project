@@ -83,15 +83,16 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
       setAiPersonality((chatbot as any).aiPersonality || '');
       setConversationObjective((chatbot as any).conversationObjective || '');
       
-      if ((chatbot as any).configuration) {
+      if ((chatbot as any).flow) {
         try {
-          const config = typeof (chatbot as any).configuration === 'string' 
-            ? JSON.parse((chatbot as any).configuration) 
-            : (chatbot as any).configuration;
+          const config = typeof (chatbot as any).flow === 'string' 
+            ? JSON.parse((chatbot as any).flow) 
+            : (chatbot as any).flow;
+          console.log('🎯 Parsed flow config:', config);
           setNodes(config.nodes || initialNodes);
           setEdges(config.edges || []);
         } catch (error) {
-          console.error('Error parsing chatbot configuration:', error);
+          console.error('Error parsing chatbot flow:', error);
           setNodes(initialNodes);
           setEdges([]);
         }
@@ -112,7 +113,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
       const chatbotData = {
         name: chatbotName,
         type: 'sales' as const,
-        configuration: JSON.stringify({ nodes, edges }),
+        flow: JSON.stringify({ nodes, edges }),
         productId: data.productId,
         triggerKeywords: data.triggerKeywords || triggerKeywords,
         aiInstructions: data.aiInstructions || aiInstructions,

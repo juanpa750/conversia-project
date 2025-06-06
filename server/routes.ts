@@ -847,7 +847,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🎯 API: User ID:', req.userId);
       
       const chatbot = await storage.getChatbot(requestedId);
-      console.log('🎯 API: Retrieved chatbot:', chatbot ? { id: chatbot.id, name: chatbot.name, userId: chatbot.userId } : 'null');
+      console.log('🎯 API: Retrieved chatbot:', chatbot ? { 
+        id: chatbot.id, 
+        name: chatbot.name, 
+        userId: chatbot.userId,
+        flow: chatbot.flow ? 'has flow' : 'no flow',
+        aiPersonality: chatbot.aiPersonality ? 'has personality' : 'no personality'
+      } : 'null');
       
       if (!chatbot) {
         console.log('🎯 API: Chatbot not found');
