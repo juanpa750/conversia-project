@@ -1376,8 +1376,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (let i = 0; i < variants.length; i++) {
           const variant = variants[i];
           await storage.createProductVariant({
-            ...variant,
             productId: product.id,
+            variantName: variant.variant || variant.variantName || `Variante ${i + 1}`,
+            characteristics: variant.variant || variant.characteristics || variant.variantName || `Variante ${i + 1}`,
+            price: variant.price,
+            currency: variant.currency || 'USD',
+            variantImage: variant.image || variant.variantImage,
+            stock: variant.stock || 0,
             sortOrder: i
           });
         }
@@ -1426,8 +1431,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (let i = 0; i < variants.length; i++) {
           const variant = variants[i];
           await storage.createProductVariant({
-            ...variant,
             productId: id,
+            variantName: variant.variant || variant.variantName || `Variante ${i + 1}`,
+            characteristics: variant.variant || variant.characteristics || variant.variantName || `Variante ${i + 1}`,
+            price: variant.price,
+            currency: variant.currency || 'USD',
+            variantImage: variant.image || variant.variantImage,
+            stock: variant.stock || 0,
             sortOrder: i
           });
         }
