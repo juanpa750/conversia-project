@@ -71,9 +71,14 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   });
 
   // Fetch products for selection
-  const { data: products } = useQuery({
+  const { data: products, isLoading: isProductsLoading, error: productsError } = useQuery({
     queryKey: ["/api/products"],
   });
+
+  // Debug products
+  console.log('Products data:', products);
+  console.log('Products loading:', isProductsLoading);
+  console.log('Products error:', productsError);
 
   // Save chatbot mutation
   const saveChatbotMutation = useMutation({
@@ -395,11 +400,11 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="">Sin producto</SelectItem>
-                          {products?.map((product: any) => (
+                          {products && Array.isArray(products) ? products.map((product: any) => (
                             <SelectItem key={product.id} value={product.id.toString()}>
                               {product.name}
                             </SelectItem>
-                          ))}
+                          )) : null}
                         </SelectContent>
                       </Select>
                     </div>
