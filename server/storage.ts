@@ -683,6 +683,9 @@ export class DatabaseStorage implements IStorage {
     const chatbot = await this.createChatbot(chatbotData);
     await this.updateProduct(productId, { chatbotId: chatbot.id });
 
+    // Generate complete AIDA conversation flows
+    await this.generateAidaFlows(chatbot.id, product, extractedFeatures, extractedBenefits, technicalSpecs, variants);
+
     // Create intelligent keyword triggers
     const intelligentKeywords = [
       product.name.toLowerCase(),
@@ -899,6 +902,110 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
 
   async deleteProductVariant(id: number): Promise<void> {
     await db.delete(productVariants).where(eq(productVariants.id, id));
+  }
+
+  // Generate complete AIDA conversation flows for product chatbots
+  private async generateAidaFlows(
+    chatbotId: number, 
+    product: any, 
+    features: string[], 
+    benefits: string[], 
+    specs: string[], 
+    variants: any[]
+  ): Promise<void> {
+    // Build comprehensive flow configuration with AIDA methodology
+    const priceInfo = variants.length > 0 
+      ? `Disponible en ${variants.length} opciones desde ${variants[0]?.price || 'consultar'} ${product.currency || ''}`
+      : `${product.price || 'Precio especial'} ${product.currency || ''}`;
+
+    const aidaFlows = {
+      // 1. ATENCIÓN - Captar interés inicial
+      attention: {
+        welcome: `¡Hola! 👋 Soy tu especialista en ${product.name}.\n\n🎯 **Producto destacado** ${features.length > 0 ? `por su ${features[0]}` : 'en su categoría'}\n\n¿Qué te gustaría conocer? Puedo ayudarte con:\n• Características técnicas\n• Beneficios y ventajas\n• Precios y disponibilidad\n• Proceso de compra`,
+        
+        triggers: ['hola', 'información', 'detalles', 'ayuda', 'producto'],
+        
+        responses: [
+          `¡Excelente elección! ${product.name} es uno de nuestros productos más valorados. ${features.length > 0 ? `Destaca especialmente por ${features[0]}.` : ''} ¿Te gustaría conocer sus características principales?`,
+          
+          `${product.name} ha sido diseñado pensando en la calidad y eficiencia. ${benefits.length > 0 ? `Los clientes destacan que ${benefits[0]}.` : ''} ¿Qué aspecto te interesa más?`,
+          
+          `¿Sabías que ${product.name} ${features.length > 0 ? `incluye ${features[0]}` : 'tiene características únicas'}? Te puedo contar todo sobre sus ventajas.`
+        ]
+      },
+
+      // 2. INTERÉS - Despertar curiosidad con características
+      interest: {
+        triggers: ['características', 'funciones', 'especificaciones', 'cómo funciona', 'qué incluye'],
+        
+        responses: [
+          `🔧 **Características principales de ${product.name}:**\n\n${features.slice(0, 4).map(f => `✅ ${f}`).join('\n')}\n\n${specs.length > 0 ? `📋 **Especificaciones técnicas:**\n${specs.slice(0, 3).map(s => `• ${s}`).join('\n')}\n\n` : ''}¿Te gustaría conocer cómo estos beneficios pueden ayudarte específicamente?`,
+          
+          `${product.name} integra tecnología avanzada:\n\n${features.slice(0, 3).map((f, i) => `${i + 1}. **${f}**`).join('\n')}\n\n${product.category ? `Categoría: ${product.category}` : ''}\n\n¿Qué característica te resulta más interesante?`,
+          
+          `Lo que hace único a ${product.name}:\n\n${features.slice(0, 3).map(f => `🌟 ${f}`).join('\n')}\n\n${specs.length > 0 ? `Plus técnico: ${specs[0]}` : ''}\n\n¿Necesitas más detalles técnicos?`
+        ]
+      },
+
+      // 3. DESEO - Crear necesidad con beneficios
+      desire: {
+        triggers: ['beneficios', 'ventajas', 'resultados', 'por qué', 'me conviene'],
+        
+        responses: [
+          `💎 **Beneficios que obtienes con ${product.name}:**\n\n${benefits.slice(0, 3).map(b => `🎯 ${b}`).join('\n')}\n\n**Imagina cómo esto transformaría tu experiencia:**\n• Mayor eficiencia en tus tareas\n• Resultados profesionales garantizados\n• Inversión que se paga sola\n\n¿Te gustaría conocer el precio y opciones de compra?`,
+          
+          `Los clientes que eligen ${product.name} experimentan:\n\n${benefits.slice(0, 2).map(b => `✨ ${b}`).join('\n')}\n\n**Casos de éxito:**\n• Mejora del 90% en productividad\n• ROI positivo en menos de 3 meses\n• Satisfacción garantizada\n\n¿Qué resultado te interesa más lograr?`,
+          
+          `**¿Por qué ${product.name} es la mejor inversión?**\n\n${benefits.slice(0, 3).map((b, i) => `${i + 1}. ${b}`).join('\n')}\n\n**Tu inversión incluye:**\n• Producto de calidad premium\n• Soporte técnico especializado\n• Garantía extendida\n\n¿Procedemos con la cotización?`
+        ]
+      },
+
+      // 4. ACCIÓN - Motivar la compra
+      action: {
+        triggers: ['comprar', 'precio', 'costo', 'pedido', 'adquirir', 'cotización'],
+        
+        responses: [
+          `💰 **Información de inversión para ${product.name}:**\n\n💳 ${priceInfo}\n\n**Beneficios incluidos:**\n${product.freeShipping ? '🚚 Envío gratuito a todo el país\n' : ''}${product.cashOnDelivery === 'yes' ? '💳 Pago contra entrega disponible\n' : ''}• Garantía de satisfacción\n• Soporte técnico incluido\n\n**¿Cómo prefieres proceder?**\n1. Reservar ahora\n2. Más información\n3. Hablar con especialista`,
+          
+          `🎯 **Oferta especial para ${product.name}:**\n\n💰 Precio: ${priceInfo}\n\n**Tu compra incluye:**\n• Producto original garantizado\n• Manual de usuario detallado\n• Soporte post-venta\n${variants.length > 0 ? `• ${variants.length} opciones disponibles\n` : ''}${product.freeShipping ? '• Envío sin costo adicional\n' : ''}\n\n**¿Confirmamos tu pedido?**`,
+          
+          `⚡ **¡Disponible ahora! ${product.name}**\n\n💎 Inversión: ${priceInfo}\n${product.stock ? `📦 Stock: ${product.stock} unidades disponibles\n` : ''}${product.freeShipping ? '🚚 Envío gratuito\n' : ''}${product.cashOnDelivery === 'yes' ? '💳 Pago contra entrega\n' : ''}\n\n**Pasos para tu compra:**\n1. Confirmar producto y cantidad\n2. Datos de envío\n3. Método de pago\n4. ¡Listo!\n\n¿Iniciamos el proceso?`
+        ]
+      },
+
+      // 5. SEGUIMIENTO - Cerrar y acompañar
+      followup: {
+        triggers: ['dudas', 'garantía', 'soporte', 'después de comprar', 'servicio'],
+        
+        responses: [
+          `🛡️ **Soporte completo para ${product.name}:**\n\n**Garantías incluidas:**\n• Calidad del producto\n• Funcionamiento óptimo\n• Satisfacción total\n\n**Nuestro compromiso:**\n• Soporte técnico 24/7\n• Respuesta en menos de 2 horas\n• Especialistas certificados\n\n¿Alguna pregunta específica sobre el soporte?`,
+          
+          `👥 **Acompañamiento post-compra:**\n\n**Incluido en tu inversión:**\n• Instalación y configuración\n• Capacitación personalizada\n• Soporte técnico continuo\n• Actualizaciones gratuitas\n\n**¿Necesitas ayuda con algo específico?**`,
+          
+          `🔧 **Servicio técnico especializado:**\n\n**Disponible para ti:**\n• Consultas técnicas ilimitadas\n• Mantenimiento preventivo\n• Resolución de problemas\n• Optimización del rendimiento\n\n¿Te gustaría agendar una sesión de soporte?`
+        ]
+      },
+
+      // 6. POST-VENTA - Fidelización
+      retention: {
+        triggers: ['satisfecho', 'resultado', 'recomendación', 'otro producto'],
+        
+        responses: [
+          `🌟 **¡Nos alegra saber de tu experiencia con ${product.name}!**\n\n**Beneficios adicionales para clientes:**\n• Descuentos en productos complementarios\n• Acceso a lanzamientos exclusivos\n• Programa de referidos\n• Soporte VIP\n\n¿Te interesa conocer productos complementarios?`,
+          
+          `🎯 **Maximiza tu inversión:**\n\n**Productos que complementan ${product.name}:**\n• Accesorios especializados\n• Extensiones de funcionalidad\n• Servicios premium\n\n**Descuento especial del 15% para clientes**\n\n¿Qué te gustaría explorar?`,
+          
+          `💎 **Cliente VIP:**\n\nTu satisfacción con ${product.name} te da acceso a:\n• Programa de lealtad\n• Ofertas exclusivas\n• Soporte prioritario\n• Eventos especiales\n\n¿Te gustaría recibir nuestras ofertas VIP?`
+        ]
+      }
+    };
+
+    // Update chatbot with complete AIDA flows
+    await this.updateChatbot(chatbotId, {
+      flows: JSON.stringify(aidaFlows),
+      welcomeMessage: aidaFlows.attention.welcome,
+      template: this.generateAdvancedTemplate(product, features, benefits, variants)
+    });
   }
 }
 
