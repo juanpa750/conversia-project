@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -56,6 +57,7 @@ import type { Product } from '@shared/schema';
 export default function StorePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -163,7 +165,8 @@ export default function StorePage() {
   // Create chatbot from product mutation
   const createChatbotMutation = useMutation({
     mutationFn: async (productId: number) => {
-      return await apiRequest('POST', `/api/products/${productId}/create-chatbot`);
+      const response = await apiRequest('POST', `/api/products/${productId}/create-chatbot`);
+      return await response.json();
     },
     onSuccess: (chatbot) => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
@@ -172,6 +175,9 @@ export default function StorePage() {
         title: "Chatbot creado automáticamente",
         description: `Se ha creado el chatbot "${chatbot.name}" para este producto`,
       });
+      
+      // Redirect to the chatbot builder with the newly created chatbot and auto-configure the product
+      setLocation(`/chatbots/builder/${chatbot.id}`);
     },
     onError: (error: Error) => {
       toast({

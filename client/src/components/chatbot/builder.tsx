@@ -237,8 +237,31 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
       setSelectedProductId(chatbotData.productId ? chatbotData.productId.toString() : '');
       setTriggerKeywords(chatbotData.triggerKeywords || []);
       setAiInstructions(chatbotData.aiInstructions || '');
+      
+      console.log('✅ Auto-configured product settings:', {
+        productId: chatbotData.productId,
+        triggerKeywords: chatbotData.triggerKeywords,
+        aiInstructions: chatbotData.aiInstructions
+      });
     }
   }, [chatbot]);
+
+  // Auto-configure product when chatbot is created from a product (detected via URL search params)
+  useEffect(() => {
+    if (!chatbotId && location) {
+      const urlParams = new URLSearchParams(location.split('?')[1] || '');
+      const fromProductId = urlParams.get('fromProduct');
+      
+      if (fromProductId && fromProductId !== selectedProductId) {
+        console.log('🎯 Auto-configuring chatbot with product ID:', fromProductId);
+        setSelectedProductId(fromProductId);
+        toast({
+          title: "Producto configurado automáticamente",
+          description: "El chatbot se ha configurado con el producto seleccionado",
+        });
+      }
+    }
+  }, [location, chatbotId, selectedProductId]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
