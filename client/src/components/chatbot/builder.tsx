@@ -22,7 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RiSave3Line, RiTestTubeLine, RiWhatsappLine, RiSettings3Line, RiBrainLine, RiTargetLine } from 'react-icons/ri';
+import { RiSave3Line, RiTestTubeLine, RiWhatsappLine, RiSettings3Line, RiBrainLine, RiFlagLine } from 'react-icons/ri';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -478,16 +478,17 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                 <Card>
                   <CardHeader>
                     <CardTitle>Instrucciones para la IA</CardTitle>
+                    <p className="text-sm text-gray-600">Define las reglas específicas y el comportamiento esperado</p>
                   </CardHeader>
                   <CardContent>
                     <div>
                       <Label htmlFor="ai-instructions">Instrucciones específicas</Label>
                       <Textarea
                         id="ai-instructions"
-                        placeholder="Describe cómo debe comportarse la IA para este producto..."
+                        placeholder="Ej: Cuando el cliente pregunte sobre precios, siempre menciona ofertas especiales. Si no tienes información específica, pide al cliente que espere mientras consultas con un especialista..."
                         value={aiInstructions}
                         onChange={(e) => setAiInstructions(e.target.value)}
-                        rows={4}
+                        rows={6}
                         className="mt-2"
                       />
                     </div>
@@ -496,54 +497,260 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                 </div>
               </div>
             </TabsContent>
+
+            <TabsContent value="objective" className="m-0 flex-1 outline-none overflow-hidden">
+              <div className="h-full overflow-y-auto p-4">
+                <div className="space-y-6 pb-8">
+                  <div className="flex items-center gap-2">
+                    <RiFlagLine className="h-5 w-5" />
+                    <h3 className="text-lg font-medium">Objetivo de Conversación</h3>
+                  </div>
+                
+                {/* Selección de Objetivo */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>¿Cuál es el objetivo principal de este chatbot?</CardTitle>
+                    <p className="text-sm text-gray-600">El objetivo determina cómo se desarrollará la conversación y qué estrategias usará la IA</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id="sales"
+                            name="objective"
+                            value="sales"
+                            checked={conversationObjective === 'sales'}
+                            onChange={(e) => setConversationObjective(e.target.value)}
+                            className="text-blue-600"
+                          />
+                          <label htmlFor="sales" className="font-medium">Ventas</label>
+                        </div>
+                        <p className="text-sm text-gray-600 ml-6">Enfocado en convertir leads en clientes y cerrar ventas</p>
+                        
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id="appointments"
+                            name="objective"
+                            value="appointments"
+                            checked={conversationObjective === 'appointments'}
+                            onChange={(e) => setConversationObjective(e.target.value)}
+                            className="text-blue-600"
+                          />
+                          <label htmlFor="appointments" className="font-medium">Agendar Citas</label>
+                        </div>
+                        <p className="text-sm text-gray-600 ml-6">Agendar reuniones, consultas o citas con especialistas</p>
+                        
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id="support"
+                            name="objective"
+                            value="support"
+                            checked={conversationObjective === 'support'}
+                            onChange={(e) => setConversationObjective(e.target.value)}
+                            className="text-blue-600"
+                          />
+                          <label htmlFor="support" className="font-medium">Soporte al Cliente</label>
+                        </div>
+                        <p className="text-sm text-gray-600 ml-6">Resolver dudas, problemas y brindar asistencia técnica</p>
+                        
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id="information"
+                            name="objective"
+                            value="information"
+                            checked={conversationObjective === 'information'}
+                            onChange={(e) => setConversationObjective(e.target.value)}
+                            className="text-blue-600"
+                          />
+                          <label htmlFor="information" className="font-medium">Información General</label>
+                        </div>
+                        <p className="text-sm text-gray-600 ml-6">Proporcionar información sobre productos, servicios o empresa</p>
+                        
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id="lead_generation"
+                            name="objective"
+                            value="lead_generation"
+                            checked={conversationObjective === 'lead_generation'}
+                            onChange={(e) => setConversationObjective(e.target.value)}
+                            className="text-blue-600"
+                          />
+                          <label htmlFor="lead_generation" className="font-medium">Generación de Leads</label>
+                        </div>
+                        <p className="text-sm text-gray-600 ml-6">Capturar información de contacto y clasificar prospectos</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Descripción del comportamiento según objetivo */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Comportamiento según el Objetivo</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      {conversationObjective === 'sales' && (
+                        <div>
+                          <h4 className="font-medium text-blue-900 mb-2">Estrategia de Ventas</h4>
+                          <p className="text-sm text-blue-800">La IA se enfocará en identificar necesidades, presentar beneficios del producto, manejar objeciones y guiar hacia la compra. Usará técnicas persuasivas y creará urgencia cuando sea apropiado.</p>
+                        </div>
+                      )}
+                      {conversationObjective === 'appointments' && (
+                        <div>
+                          <h4 className="font-medium text-blue-900 mb-2">Estrategia de Agendamiento</h4>
+                          <p className="text-sm text-blue-800">La IA se enfocará en calificar al prospecto, explicar el valor de la cita, superar resistencias al agendamiento y facilitar la programación de fechas y horarios.</p>
+                        </div>
+                      )}
+                      {conversationObjective === 'support' && (
+                        <div>
+                          <h4 className="font-medium text-blue-900 mb-2">Estrategia de Soporte</h4>
+                          <p className="text-sm text-blue-800">La IA priorizará la resolución rápida de problemas, brindará instrucciones claras, escalará casos complejos cuando sea necesario y asegurará la satisfacción del cliente.</p>
+                        </div>
+                      )}
+                      {conversationObjective === 'information' && (
+                        <div>
+                          <h4 className="font-medium text-blue-900 mb-2">Estrategia Informativa</h4>
+                          <p className="text-sm text-blue-800">La IA proporcionará información precisa y completa, responderá preguntas frecuentes, ofrecerá recursos adicionales y mantendrá un tono educativo y servicial.</p>
+                        </div>
+                      )}
+                      {conversationObjective === 'lead_generation' && (
+                        <div>
+                          <h4 className="font-medium text-blue-900 mb-2">Estrategia de Generación de Leads</h4>
+                          <p className="text-sm text-blue-800">La IA se enfocará en capturar datos de contacto, calificar el interés del prospecto, ofrecer contenido valioso a cambio de información y nutrir la relación para futuras oportunidades.</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+                </div>
+              </div>
+            </TabsContent>
             
-            <TabsContent value="settings">
-              <div className="p-4 space-y-6 max-h-[600px] overflow-y-auto">
-                <h3 className="mb-4 text-lg font-medium">Configuración del Chatbot</h3>
+            <TabsContent value="settings" className="m-0 flex-1 outline-none overflow-hidden">
+              <div className="h-full overflow-y-auto p-4">
+                <div className="space-y-6 pb-8">
+                  <div className="flex items-center gap-2">
+                    <RiSettings3Line className="h-5 w-5" />
+                    <h3 className="text-lg font-medium">Configuración del Chatbot</h3>
+                  </div>
                 
                 {/* Configuración Básica */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm text-gray-600">Información Básica</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Nombre del Chatbot</label>
-                      <Input 
-                        value={chatbotName}
-                        onChange={(e) => setChatbotName(e.target.value)}
-                        placeholder="Ej: Asistente de Ventas"
-                      />
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Información Básica</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="chatbot-name">Nombre del Chatbot</Label>
+                        <Input 
+                          id="chatbot-name"
+                          value={chatbotName}
+                          onChange={(e) => setChatbotName(e.target.value)}
+                          placeholder="Ej: Asistente de Ventas"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="language">Idioma Principal</Label>
+                        <Select defaultValue="es">
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar idioma" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="es">Español</SelectItem>
+                            <SelectItem value="en">Inglés</SelectItem>
+                            <SelectItem value="pt">Portugués</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Idioma Principal</label>
-                      <select className="w-full p-2 border rounded-md">
-                        <option value="es">Español</option>
-                        <option value="en">Inglés</option>
-                        <option value="pt">Portugués</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
 
-                {/* Personalidad del Chatbot */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm text-gray-600">Personalidad</h4>
-                  <div className="grid grid-cols-2 gap-4">
+                {/* Palabras Clave Activadoras */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Palabras Clave Activadoras</CardTitle>
+                    <p className="text-sm text-gray-600">Define qué palabras o frases activan este chatbot específico</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Tono de Comunicación</label>
-                      <select className="w-full p-2 border rounded-md">
-                        <option value="profesional">Profesional</option>
-                        <option value="amigable">Amigable</option>
-                        <option value="casual">Casual</option>
-                        <option value="formal">Formal</option>
-                      </select>
+                      <Label>Palabras que activan este chatbot</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Agregar palabra clave..."
+                          value={newKeyword}
+                          onChange={(e) => setNewKeyword(e.target.value)}
+                          onKeyPress={handleKeyPress}
+                        />
+                        <Button onClick={addKeyword} variant="outline">
+                          Agregar
+                        </Button>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Estilo de Respuesta</label>
-                      <select className="w-full p-2 border rounded-md">
-                        <option value="conciso">Conciso</option>
-                        <option value="detallado">Detallado</option>
-                        <option value="conversacional">Conversacional</option>
-                      </select>
+                    
+                    {triggerKeywords.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {triggerKeywords.map((keyword) => (
+                          <Badge 
+                            key={keyword} 
+                            variant="secondary" 
+                            className="flex items-center gap-1"
+                          >
+                            {keyword}
+                            <button
+                              onClick={() => removeKeyword(keyword)}
+                              className="ml-1 text-red-500 hover:text-red-700"
+                            >
+                              ×
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Configuración Avanzada */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Configuración Avanzada</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="tone">Tono de Comunicación</Label>
+                        <Select defaultValue="profesional">
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar tono" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="profesional">Profesional</SelectItem>
+                            <SelectItem value="amigable">Amigable</SelectItem>
+                            <SelectItem value="casual">Casual</SelectItem>
+                            <SelectItem value="formal">Formal</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="response-style">Estilo de Respuesta</Label>
+                        <Select defaultValue="conciso">
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar estilo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="conciso">Conciso</SelectItem>
+                            <SelectItem value="detallado">Detallado</SelectItem>
+                            <SelectItem value="conversacional">Conversacional</SelectItem>
+                          </SelectContent>
+                        </Select>
                     </div>
                   </div>
                 </div>
