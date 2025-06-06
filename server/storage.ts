@@ -856,6 +856,36 @@ ${product.cashOnDelivery === 'yes' ? '💳 Pago contra entrega' : ''}
 ¿Más detalles o proceder con pedido?
     `.trim();
   }
+
+  // Product variants operations
+  async getProductVariants(productId: number): Promise<ProductVariant[]> {
+    return await db
+      .select()
+      .from(productVariants)
+      .where(eq(productVariants.productId, productId))
+      .orderBy(productVariants.sortOrder, productVariants.createdAt);
+  }
+
+  async createProductVariant(variantData: InsertProductVariant): Promise<ProductVariant> {
+    const [variant] = await db
+      .insert(productVariants)
+      .values(variantData)
+      .returning();
+    return variant;
+  }
+
+  async updateProductVariant(id: number, data: Partial<ProductVariant>): Promise<ProductVariant> {
+    const [variant] = await db
+      .update(productVariants)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(productVariants.id, id))
+      .returning();
+    return variant;
+  }
+
+  async deleteProductVariant(id: number): Promise<void> {
+    await db.delete(productVariants).where(eq(productVariants.id, id));
+  }
 }
 
 export const storage = new DatabaseStorage();

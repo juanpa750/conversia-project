@@ -1425,6 +1425,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Product variants routes
+  app.get("/api/products/:id/variants", isAuthenticated, async (req: any, res) => {
+    try {
+      const productId = parseInt(req.params.id);
+      const variants = await storage.getProductVariants(productId);
+      res.json(variants);
+    } catch (error) {
+      console.error("Error fetching product variants:", error);
+      res.status(500).json({ message: "Failed to fetch product variants" });
+    }
+  });
+
+  app.post("/api/products/:id/variants", isAuthenticated, async (req: any, res) => {
+    try {
+      const productId = parseInt(req.params.id);
+      const variantData = { ...req.body, productId };
+      const variant = await storage.createProductVariant(variantData);
+      res.json(variant);
+    } catch (error) {
+      console.error("Error creating product variant:", error);
+      res.status(500).json({ message: "Failed to create product variant" });
+    }
+  });
+
+  app.put("/api/products/variants/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const variant = await storage.updateProductVariant(id, req.body);
+      res.json(variant);
+    } catch (error) {
+      console.error("Error updating product variant:", error);
+      res.status(500).json({ message: "Failed to update product variant" });
+    }
+  });
+
+  app.delete("/api/products/variants/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProductVariant(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting product variant:", error);
+      res.status(500).json({ message: "Failed to delete product variant" });
+    }
+  });
+
   // Product triggers routes
   app.get("/api/chatbots/:id/triggers", isAuthenticated, async (req: any, res) => {
     try {
