@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Trash2, DollarSign, Package } from "lucide-react";
+import { useState, useRef } from "react";
+import { Plus, Trash2, DollarSign, Package, Upload, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,6 +35,24 @@ interface ProductVariantsProps {
 }
 
 export function ProductVariants({ variants, onChange, basicProduct, onBasicProductChange }: ProductVariantsProps) {
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const priceImageRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (file: File, callback: (url: string) => void) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      callback(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleVariantImageUpload = (index: number, file: File) => {
+    handleFileUpload(file, (url) => {
+      updateVariant(index, 'image', url);
+    });
+  };
+
   const addVariant = () => {
     // Si es la primera variante y hay información básica, crear la primera variante con esos datos
     if (variants.length === 0 && basicProduct) {
@@ -108,7 +126,35 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
       {variants.length === 0 && basicProduct ? (
         // Mostrar formulario básico de precio cuando no hay variantes
         <div className="border rounded-lg p-6 space-y-4">
-          <h4 className="font-medium">Información de Precio</h4>
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium">Información de Precio</h4>
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                ref={priceImageRef}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleFileUpload(file, (url) => {
+                      // Aquí podrías agregar la imagen a un campo específico si fuera necesario
+                      console.log('Foto de precio subida:', url);
+                    });
+                  }
+                }}
+                accept="image/*"
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => priceImageRef.current?.click()}
+              >
+                <Image className="h-4 w-4 mr-2" />
+                Foto de precio
+              </Button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Precio</label>
@@ -201,12 +247,38 @@ export function ProductVariants({ variants, onChange, basicProduct, onBasicProdu
               {variants.map((variant, index) => (
                 <TableRow key={index}>
                   <TableCell>
-                    <Input
-                      value={variant.image}
-                      onChange={(e) => updateVariant(index, 'image', e.target.value)}
-                      placeholder="URL de imagen"
-                      className="min-w-32"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        ref={(el) => (fileInputRefs.current[index] = el)}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleVariantImageUpload(index, file);
+                          }
+                        }}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRefs.current[index]?.click()}
+                        className="flex-shrink-0"
+                      >
+                        <Upload className="h-3 w-3" />
+                      </Button>
+                      {variant.image && (
+                        <div className="w-8 h-8 rounded overflow-hidden bg-gray-100 flex-shrink-0">
+                          <img
+                            src={variant.image}
+                            alt="Variante"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Input
