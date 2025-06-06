@@ -51,6 +51,9 @@ export const chatbots = pgTable("chatbots", {
   status: chatbotStatusEnum("status").default('draft'),
   type: chatbotTypeEnum("type").default('support'),
   flow: jsonb("flow"),
+  productId: integer("product_id").references(() => products.id, { onDelete: 'set null' }),
+  triggerKeywords: text("trigger_keywords").array(),
+  aiInstructions: text("ai_instructions"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -212,6 +215,9 @@ export const products = pgTable("products", {
   currency: varchar("currency").default("USD"),
   category: varchar("category"),
   productImage: varchar("product_image"), // 1 imagen principal del producto
+  images: text("images").array(), // Mantener compatibilidad
+  features: text("features").array(), // Mantener campo existente
+  specifications: text("specifications").array(), // Mantener campo existente
   testimonialImages: text("testimonial_images").array(), // hasta 4 imágenes de testimonios
   priceImages: text("price_images").array(), // hasta 4 imágenes de precios
   availability: boolean("availability").default(true),

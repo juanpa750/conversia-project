@@ -646,6 +646,17 @@ export class DatabaseStorage implements IStorage {
     // Get product variants for intelligent pricing information
     const productVariants = await this.getProductVariants(productId);
 
+    // Generate trigger keywords based on product
+    const triggerKeywords = [
+      product.name.toLowerCase(),
+      ...extractedFeatures.slice(0, 3).map(f => f.toLowerCase()),
+      product.category?.toLowerCase() || '',
+      ...(product.tags || []).map(tag => tag.toLowerCase())
+    ].filter(Boolean);
+
+    // Generate AI instructions specific to this product
+    const aiInstructions = this.generateProductAiInstructions(product, extractedFeatures, extractedBenefits, technicalSpecs);
+
     // Generate intelligent flow with visual nodes and edges
     let nodes = [
       {
