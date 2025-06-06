@@ -119,8 +119,14 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
     if (chatbot && !isInitialized) {
       console.log('🔄 Loading chatbot data:', chatbot);
       
-      // Cast chatbot to any to handle typing issues
-      const chatbotData = chatbot as any;
+      // Handle case where API returns array instead of single object
+      let chatbotData = chatbot as any;
+      if (Array.isArray(chatbot) && chatbot.length > 0) {
+        chatbotData = chatbot[0];
+        console.log('🔄 Extracted chatbot from array:', chatbotData);
+      }
+      
+      console.log('🔄 Final chatbot data:', chatbotData);
       console.log('🔄 Chatbot name from data:', chatbotData?.name);
       
       // Set the chatbot name directly from the API response
