@@ -49,7 +49,14 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   // Fetch chatbot data if editing existing chatbot
   const { data: chatbot, isLoading } = useQuery({
     queryKey: ["/api/chatbots", chatbotId],
+    queryFn: () => {
+      console.log('🔍 Making API request for chatbot ID:', chatbotId);
+      console.log('🔍 Request URL:', `/api/chatbots/${chatbotId}`);
+      return apiRequest('GET', `/api/chatbots/${chatbotId}`);
+    },
     enabled: !!chatbotId,
+    staleTime: 0, // Force fresh data
+    gcTime: 0, // Don't cache (React Query v5)
   });
 
   // Save chatbot mutation
