@@ -396,12 +396,12 @@ export function AssistantWizard({ onComplete }: AssistantWizardProps) {
   const getStepMessage = (objective: ChatbotObjective, step: string, index: number) => {
     const stepMessages = {
       'sales': {
-        'Saludar y presentarse': 'Perfecto, me presento formalmente. Soy especialista en soluciones personalizadas para empresas como la tuya.',
-        'Identificar necesidades': '¿Podrías contarme más sobre tu empresa y qué tipo de solución estás buscando?',
-        'Presentar solución': 'Basándome en lo que me has contado, tengo la solución perfecta para ti. Te explico:',
-        'Manejar objeciones': 'Entiendo tus dudas. Permíteme aclarar algunos puntos importantes:',
-        'Cerrar venta': '¿Estás listo para dar el siguiente paso? Puedo preparar una propuesta personalizada.',
-        'Programar seguimiento': 'Excelente, programemos una reunión para continuar. ¿Cuál es tu disponibilidad?'
+        'Atención - Captar interés inicial': '¡Hola! 👋 Soy tu asistente especializado. He visto que buscas soluciones innovadoras para tu negocio. ¿Te gustaría conocer cómo hemos ayudado a empresas como la tuya a aumentar sus ventas en un 40%? 🎯',
+        'Interés - Despertar curiosidad': 'Perfecto! Te envío un breve video que muestra los resultados reales de nuestros clientes. Mientras lo ves, ¿podrías contarme qué desafío específico necesitas resolver? 📹',
+        'Deseo - Crear necesidad del producto': 'Basándome en tu situación, tengo una propuesta que se adapta perfectamente a tus necesidades. Te comparto una infografía que explica los beneficios específicos para tu caso. ¿Te interesa conocer más detalles? 📊',
+        'Acción - Motivar la compra': 'Como puedes ver, esta solución está diseñada exactamente para empresas como la tuya. Tengo una oferta especial válida hoy que incluye un descuento del 25% y implementación gratuita. ¿Aprovechamos esta oportunidad? 💰',
+        'Seguimiento - Cerrar y acompañar': '¡Excelente decisión! Te envío el contrato digital para firma electrónica y los próximos pasos. También te asignaré un especialista dedicado. ¿Cuál es tu horario preferido para la llamada de bienvenida? 📋',
+        'Post-venta - Fidelización': 'Bienvenido a nuestra familia de clientes exitosos! Te envío tu kit de bienvenida digital con tutoriales exclusivos y acceso a nuestro grupo VIP. ¿Hay algo específico en lo que te gustaría enfocarte primero? 🌟'
       },
       'support': {
         'Identificar problema': '¿Podrías describir con detalle el problema que estás experimentando?',

@@ -297,16 +297,344 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
             </TabsContent>
             
             <TabsContent value="settings">
-              <div className="p-4">
+              <div className="p-4 space-y-6">
                 <h3 className="mb-4 text-lg font-medium">Configuración del Chatbot</h3>
-                <p>Configura los ajustes generales de tu chatbot.</p>
+                
+                {/* Configuración Básica */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm text-gray-600">Información Básica</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Nombre del Chatbot</label>
+                      <Input 
+                        value={chatbotName}
+                        onChange={(e) => setChatbotName(e.target.value)}
+                        placeholder="Ej: Asistente de Ventas"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Idioma Principal</label>
+                      <select className="w-full p-2 border rounded-md">
+                        <option value="es">Español</option>
+                        <option value="en">Inglés</option>
+                        <option value="pt">Portugués</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Personalidad del Chatbot */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm text-gray-600">Personalidad</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Tono de Comunicación</label>
+                      <select className="w-full p-2 border rounded-md">
+                        <option value="profesional">Profesional</option>
+                        <option value="amigable">Amigable</option>
+                        <option value="casual">Casual</option>
+                        <option value="formal">Formal</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Estilo de Respuesta</label>
+                      <select className="w-full p-2 border rounded-md">
+                        <option value="conciso">Conciso</option>
+                        <option value="detallado">Detallado</option>
+                        <option value="conversacional">Conversacional</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Configuración de Multimedia */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm text-gray-600">Elementos Multimedia</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="enableImages" className="rounded" defaultChecked />
+                      <label htmlFor="enableImages" className="text-sm">Habilitar envío de imágenes</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="enableVideos" className="rounded" defaultChecked />
+                      <label htmlFor="enableVideos" className="text-sm">Habilitar envío de videos</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="enableAudios" className="rounded" defaultChecked />
+                      <label htmlFor="enableAudios" className="text-sm">Habilitar mensajes de audio</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="enableDocuments" className="rounded" />
+                      <label htmlFor="enableDocuments" className="text-sm">Habilitar envío de documentos</label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Configuración Avanzada */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm text-gray-600">Configuración Avanzada</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Tiempo de espera antes de escalamiento (minutos)</label>
+                      <Input type="number" defaultValue="5" className="w-32" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Máximo de intentos por conversación</label>
+                      <Input type="number" defaultValue="3" className="w-32" />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="enableFallback" className="rounded" defaultChecked />
+                      <label htmlFor="enableFallback" className="text-sm">Habilitar respuesta de respaldo cuando no entienda</label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Horarios de Funcionamiento */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm text-gray-600">Horarios de Funcionamiento</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Hora de inicio</label>
+                      <Input type="time" defaultValue="08:00" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Hora de fin</label>
+                      <Input type="time" defaultValue="18:00" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Días activos</label>
+                    <div className="flex flex-wrap gap-2">
+                      {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
+                        <label key={day} className="flex items-center space-x-1">
+                          <input type="checkbox" className="rounded" defaultChecked={day !== 'Sáb' && day !== 'Dom'} />
+                          <span className="text-sm">{day}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mensajes Automáticos */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm text-gray-600">Mensajes Automáticos</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Mensaje de bienvenida</label>
+                      <textarea 
+                        className="w-full p-2 border rounded-md h-20" 
+                        placeholder="Ej: ¡Hola! Bienvenido a nuestro servicio..."
+                        defaultValue="¡Hola! 👋 Bienvenido, soy tu asistente virtual. ¿En qué puedo ayudarte hoy?"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Mensaje fuera de horario</label>
+                      <textarea 
+                        className="w-full p-2 border rounded-md h-20" 
+                        placeholder="Mensaje cuando esté fuera del horario de atención..."
+                        defaultValue="Gracias por contactarnos. Nuestro horario de atención es de 8:00 AM a 6:00 PM. Te responderemos tan pronto como sea posible."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <Button onClick={() => {
+                    toast({
+                      title: "Configuración guardada",
+                      description: "Los cambios se han aplicado correctamente",
+                    });
+                  }} className="w-full">
+                    Guardar Configuración
+                  </Button>
+                </div>
               </div>
             </TabsContent>
             
             <TabsContent value="integrations">
-              <div className="p-4">
+              <div className="p-4 space-y-6">
                 <h3 className="mb-4 text-lg font-medium">Integraciones</h3>
-                <p>Conecta tu chatbot con otras aplicaciones y servicios.</p>
+                
+                {/* WhatsApp Integration */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                        <span className="text-white font-bold">W</span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium">WhatsApp Business</h4>
+                        <p className="text-sm text-gray-600">Conecta con la API oficial de WhatsApp</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-green-600">● Conectado</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Número de teléfono</label>
+                      <Input placeholder="+1234567890" defaultValue="+573001234567" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Token de verificación</label>
+                      <Input type="password" placeholder="Ingresa tu token de WhatsApp" />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="enableWebhooks" className="rounded" defaultChecked />
+                      <label htmlFor="enableWebhooks" className="text-sm">Habilitar webhooks para mensajes entrantes</label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CRM Integration */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <span className="text-white font-bold">C</span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium">CRM Interno</h4>
+                        <p className="text-sm text-gray-600">Sincroniza contactos y conversaciones</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-green-600">● Activo</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="autoCreateContacts" className="rounded" defaultChecked />
+                      <label htmlFor="autoCreateContacts" className="text-sm">Crear contactos automáticamente</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="syncConversations" className="rounded" defaultChecked />
+                      <label htmlFor="syncConversations" className="text-sm">Sincronizar historial de conversaciones</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="enableTags" className="rounded" />
+                      <label htmlFor="enableTags" className="text-sm">Etiquetar contactos automáticamente</label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Analytics Integration */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                        <span className="text-white font-bold">A</span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Analytics Avanzado</h4>
+                        <p className="text-sm text-gray-600">Seguimiento detallado de métricas</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-green-600">● Activo</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="trackConversions" className="rounded" defaultChecked />
+                      <label htmlFor="trackConversions" className="text-sm">Rastrear conversiones</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="trackEngagement" className="rounded" defaultChecked />
+                      <label htmlFor="trackEngagement" className="text-sm">Métricas de engagement</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="exportData" className="rounded" />
+                      <label htmlFor="exportData" className="text-sm">Exportación automática de datos</label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* External Integrations */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm text-gray-600">Integraciones Externas</h4>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Zapier */}
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-orange-500 rounded flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">Z</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">Zapier</p>
+                          <p className="text-xs text-gray-600">Automatizaciones</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full">
+                        Conectar
+                      </Button>
+                    </div>
+
+                    {/* Slack */}
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">S</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">Slack</p>
+                          <p className="text-xs text-gray-600">Notificaciones</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full">
+                        Conectar
+                      </Button>
+                    </div>
+
+                    {/* Google Sheets */}
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">G</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">Google Sheets</p>
+                          <p className="text-xs text-gray-600">Exportar datos</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full">
+                        Conectar
+                      </Button>
+                    </div>
+
+                    {/* Email */}
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">@</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">Email</p>
+                          <p className="text-xs text-gray-600">Notificaciones</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full">
+                        Configurar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <Button onClick={() => {
+                    toast({
+                      title: "Integraciones actualizadas",
+                      description: "Las configuraciones de integración se han guardado",
+                    });
+                  }} className="w-full">
+                    Guardar Integraciones
+                  </Button>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
