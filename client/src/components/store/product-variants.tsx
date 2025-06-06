@@ -101,7 +101,7 @@ export function ProductVariants({ variants, onChange }: ProductVariantsProps) {
             Agrega diferentes opciones de precio con características específicas
           </p>
         </div>
-        <Button onClick={addVariant} size="sm">
+        <Button type="button" onClick={addVariant} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Agregar Variante
         </Button>
@@ -248,6 +248,7 @@ export function ProductVariants({ variants, onChange }: ProductVariantsProps) {
                       </p>
                     </div>
                     <Button
+                      type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => addPriceImage(index)}
@@ -267,6 +268,7 @@ export function ProductVariants({ variants, onChange }: ProductVariantsProps) {
                         className="flex-1"
                       />
                       <Button
+                        type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => removePriceImage(index, imageIndex)}
