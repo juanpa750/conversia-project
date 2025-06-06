@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect } from 'react';
-import { useParams } from 'wouter';
+import { useParams, useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -52,6 +52,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   const [triggerKeywords, setTriggerKeywords] = useState<string[]>([]);
   const [aiInstructions, setAiInstructions] = useState<string>('');
   const [newKeyword, setNewKeyword] = useState<string>('');
+  const [location] = useLocation();
   const { toast } = useToast();
 
   // Fetch chatbot data if editing existing chatbot
@@ -227,9 +228,15 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   // Load product configuration data when chatbot is loaded
   useEffect(() => {
     if (chatbot) {
-      setSelectedProductId(chatbot.productId ? chatbot.productId.toString() : '');
-      setTriggerKeywords(chatbot.triggerKeywords || []);
-      setAiInstructions(chatbot.aiInstructions || '');
+      // Handle case where API returns array instead of single object
+      let chatbotData = chatbot as any;
+      if (Array.isArray(chatbot) && chatbot.length > 0) {
+        chatbotData = chatbot[0];
+      }
+      
+      setSelectedProductId(chatbotData.productId ? chatbotData.productId.toString() : '');
+      setTriggerKeywords(chatbotData.triggerKeywords || []);
+      setAiInstructions(chatbotData.aiInstructions || '');
     }
   }, [chatbot]);
 
@@ -273,7 +280,17 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   );
 
   const handleSave = () => {
-    saveChatbotMutation.mutate({});
+    console.log('💾 Saving chatbot with product data:', {
+      selectedProductId,
+      triggerKeywords,
+      aiInstructions
+    });
+    
+    saveChatbotMutation.mutate({
+      productId: selectedProductId && selectedProductId !== 'none' ? parseInt(selectedProductId) : null,
+      triggerKeywords,
+      aiInstructions
+    });
   };
 
   const handleTest = () => {
