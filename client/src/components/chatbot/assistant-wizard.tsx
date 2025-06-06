@@ -311,13 +311,142 @@ export function AssistantWizard({ onComplete }: AssistantWizardProps) {
   });
 
   const generateConversationFlow = (objective: ChatbotObjective) => {
-    return objective.recommendations.structure.map((step, index) => ({
-      id: `step-${index + 1}`,
-      name: step,
-      type: 'message',
-      content: `Paso ${index + 1}: ${step}`,
-      nextSteps: index < objective.recommendations.structure.length - 1 ? [`step-${index + 2}`] : []
-    }));
+    const nodes = [];
+    const edges = [];
+    
+    // Nodo de bienvenida inicial
+    nodes.push({
+      id: 'welcome',
+      type: 'start',
+      data: { 
+        label: 'Bienvenida',
+        message: getWelcomeMessage(objective)
+      },
+      position: { x: 250, y: 50 }
+    });
+
+    // Generar nodos basados en la estructura del objetivo
+    objective.recommendations.structure.forEach((step, index) => {
+      const nodeId = `step-${index + 1}`;
+      nodes.push({
+        id: nodeId,
+        type: 'message',
+        data: {
+          label: step,
+          message: getStepMessage(objective, step, index),
+          options: getStepOptions(objective, step)
+        },
+        position: { x: 250 + (index % 3) * 300, y: 200 + Math.floor(index / 3) * 150 }
+      });
+
+      // Conectar nodos secuencialmente
+      if (index === 0) {
+        edges.push({
+          id: `welcome-${nodeId}`,
+          source: 'welcome',
+          target: nodeId
+        });
+      }
+      
+      if (index < objective.recommendations.structure.length - 1) {
+        edges.push({
+          id: `${nodeId}-step-${index + 2}`,
+          source: nodeId,
+          target: `step-${index + 2}`
+        });
+      }
+    });
+
+    // Nodo de cierre con acciones de seguimiento
+    const finalNodeId = 'final-action';
+    nodes.push({
+      id: finalNodeId,
+      type: 'action',
+      data: {
+        label: 'Acción Final',
+        message: getFinalMessage(objective),
+        actions: objective.recommendations.followUpActions
+      },
+      position: { x: 250, y: 200 + Math.ceil(objective.recommendations.structure.length / 3) * 150 }
+    });
+
+    // Conectar último paso con acción final
+    if (objective.recommendations.structure.length > 0) {
+      edges.push({
+        id: `step-${objective.recommendations.structure.length}-${finalNodeId}`,
+        source: `step-${objective.recommendations.structure.length}`,
+        target: finalNodeId
+      });
+    }
+
+    return { nodes, edges };
+  };
+
+  const getWelcomeMessage = (objective: ChatbotObjective) => {
+    const messages = {
+      'sales': `¡Hola! 👋 Soy tu asistente de ventas. Estoy aquí para ayudarte a encontrar la mejor solución para tus necesidades. ¿En qué puedo ayudarte hoy?`,
+      'support': `¡Hola! 👋 Soy tu asistente de soporte técnico. Estoy aquí para resolver cualquier problema que tengas. ¿Cuál es tu consulta?`,
+      'appointments': `¡Hola! 👋 Soy tu asistente de citas. Te ayudo a programar tu cita de forma rápida y sencilla. ¿Qué tipo de cita necesitas?`,
+      'restaurant': `¡Hola! 👋 Bienvenido a nuestro restaurante. Soy tu asistente para pedidos. ¿Te gustaría ver nuestro menú o hacer un pedido?`,
+      'information': `¡Hola! 👋 Soy tu asistente de información. Estoy aquí para responder tus preguntas y proporcionarte la información que necesites.`
+    };
+    return messages[objective.id] || messages['support'];
+  };
+
+  const getStepMessage = (objective: ChatbotObjective, step: string, index: number) => {
+    const stepMessages = {
+      'sales': {
+        'Saludar y presentarse': 'Perfecto, me presento formalmente. Soy especialista en soluciones personalizadas para empresas como la tuya.',
+        'Identificar necesidades': '¿Podrías contarme más sobre tu empresa y qué tipo de solución estás buscando?',
+        'Presentar solución': 'Basándome en lo que me has contado, tengo la solución perfecta para ti. Te explico:',
+        'Manejar objeciones': 'Entiendo tus dudas. Permíteme aclarar algunos puntos importantes:',
+        'Cerrar venta': '¿Estás listo para dar el siguiente paso? Puedo preparar una propuesta personalizada.',
+        'Programar seguimiento': 'Excelente, programemos una reunión para continuar. ¿Cuál es tu disponibilidad?'
+      },
+      'support': {
+        'Identificar problema': '¿Podrías describir con detalle el problema que estás experimentando?',
+        'Recopilar información': 'Para ayudarte mejor, necesito algunos datos adicionales:',
+        'Diagnosticar causa': 'Basándome en la información, veo que el problema podría ser:',
+        'Proponer solución': 'Te propongo la siguiente solución paso a paso:',
+        'Verificar resolución': '¿El problema se ha resuelto completamente?',
+        'Documentar caso': 'Perfecto, he documentado tu caso para futuras referencias.'
+      },
+      'appointments': {
+        'Entender necesidad': '¿Qué tipo de servicio necesitas y cuál es la urgencia?',
+        'Verificar disponibilidad': 'Déjame revisar la disponibilidad en nuestro calendario:',
+        'Confirmar detalles': 'Confirmemos los detalles de tu cita:',
+        'Programar cita': 'Excelente, he programado tu cita. Te envío los detalles:',
+        'Enviar recordatorio': '¿Te gustaría recibir un recordatorio antes de tu cita?'
+      }
+    };
+    
+    const objectiveMessages = stepMessages[objective.id] || stepMessages['support'];
+    return objectiveMessages[step] || `${step}: Te ayudo con este paso importante del proceso.`;
+  };
+
+  const getStepOptions = (objective: ChatbotObjective, step: string) => {
+    const baseOptions = ['Sí, continuar', 'Necesito más información', 'Hablar con un agente'];
+    
+    if (objective.id === 'sales') {
+      return ['Ver propuesta', 'Más información', 'Hablar con vendedor'];
+    } else if (objective.id === 'support') {
+      return ['Problema resuelto', 'Necesito más ayuda', 'Escalar a técnico'];
+    } else if (objective.id === 'appointments') {
+      return ['Confirmar cita', 'Cambiar horario', 'Más opciones'];
+    }
+    
+    return baseOptions;
+  };
+
+  const getFinalMessage = (objective: ChatbotObjective) => {
+    const messages = {
+      'sales': '¡Perfecto! Has completado el proceso de consulta. Un especialista se pondrá en contacto contigo pronto.',
+      'support': '¡Excelente! Tu consulta ha sido resuelta. Si tienes más preguntas, no dudes en contactarnos.',
+      'appointments': '¡Listo! Tu cita ha sido confirmada. Recibirás todos los detalles por WhatsApp.',
+      'restaurant': '¡Perfecto! Tu pedido está siendo preparado. Te notificaremos cuando esté listo.',
+      'information': '¡Espero haberte ayudado! Si necesitas más información, estoy aquí para asistirte.'
+    };
+    return messages[objective.id] || messages['support'];
   };
 
   const generatePersonalityConfig = (objective: ChatbotObjective) => {
@@ -342,13 +471,13 @@ export function AssistantWizard({ onComplete }: AssistantWizardProps) {
       description: chatbotConfig.description || `Chatbot inteligente para ${selectedObjective.name.toLowerCase()}`,
       type: selectedObjective.id,
       status: 'active',
+      flow: conversationFlow, // This will save the complete conversation structure
       settings: {
         objective: selectedObjective.name,
         industry: chatbotConfig.industry,
         targetAudience: chatbotConfig.targetAudience,
         tone: selectedObjective.recommendations.tone,
         personality: personalityConfig,
-        conversationFlow: conversationFlow,
         features: selectedObjective.features,
         templates: selectedObjective.templates,
         keyMessages: selectedObjective.recommendations.keyMessages,

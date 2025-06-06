@@ -17,7 +17,7 @@ export function ChatbotBuilderPage({ id }: { id?: string }) {
     );
   }
 
-  return <ChatbotBuilder />;
+  return <ChatbotBuilder chatbotId={id} />;
 }
 
 export default ChatbotBuilderPage;

@@ -1,4 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
+import { useParams } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import ReactFlow, {
   addEdge,
   Background,
@@ -28,11 +30,34 @@ const initialNodes: Node[] = [
   },
 ];
 
-export function ChatbotBuilder() {
+interface ChatbotBuilderProps {
+  chatbotId?: string;
+}
+
+export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [chatbotName, setChatbotName] = useState('Nuevo Chatbot');
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+
+  // Fetch chatbot data if editing existing chatbot
+  const { data: chatbot, isLoading } = useQuery({
+    queryKey: ["/api/chatbots", chatbotId],
+    enabled: !!chatbotId,
+  });
+
+  // Load chatbot flow when data is available
+  useEffect(() => {
+    if (chatbot && chatbot.flow) {
+      setChatbotName(chatbot.name);
+      if (chatbot.flow.nodes) {
+        setNodes(chatbot.flow.nodes);
+      }
+      if (chatbot.flow.edges) {
+        setEdges(chatbot.flow.edges);
+      }
+    }
+  }, [chatbot, setNodes, setEdges]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
