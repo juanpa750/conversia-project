@@ -706,25 +706,29 @@ function AppointmentForm({ onSubmit, availableSlots, isLoading, selectedDate, de
                 <SelectValue placeholder="Seleccionar" />
               </SelectTrigger>
               <SelectContent>
-                {Array.isArray(availableSlots) && availableSlots.map((slot: any) => {
-                  // Manejar ambos formatos: string (anterior) y objeto (nuevo)
-                  const time = typeof slot === 'string' ? slot : slot.time;
-                  const isOccupied = typeof slot === 'object' && slot.occupied;
-                  const isAvailable = typeof slot === 'string' || slot.available;
-                  
-                  return (
-                    <SelectItem 
-                      key={time} 
-                      value={time}
-                      disabled={isOccupied}
-                      className={isOccupied ? "text-red-500 bg-red-50" : ""}
-                    >
-                      <span className={isOccupied ? "text-red-500" : ""}>
-                        {time} {isOccupied ? "(Ocupado)" : ""}
-                      </span>
-                    </SelectItem>
-                  );
-                })}
+                {Array.isArray(availableSlots) && availableSlots.length > 0 ? 
+                  availableSlots.map((slot: any) => {
+                    // Manejar ambos formatos: string (anterior) y objeto (nuevo)
+                    const time = typeof slot === 'string' ? slot : slot?.time;
+                    const isOccupied = typeof slot === 'object' && slot?.occupied === true;
+                    
+                    if (!time) return null;
+                    
+                    return (
+                      <SelectItem 
+                        key={time} 
+                        value={time}
+                        disabled={isOccupied}
+                        className={isOccupied ? "text-red-500 bg-red-50 opacity-75" : ""}
+                      >
+                        <span className={isOccupied ? "text-red-500 font-medium" : ""}>
+                          {time} {isOccupied ? " (Ocupado)" : ""}
+                        </span>
+                      </SelectItem>
+                    );
+                  }).filter(Boolean) :
+                  <SelectItem value="" disabled>No hay horarios disponibles</SelectItem>
+                }
               </SelectContent>
             </Select>
           </div>
