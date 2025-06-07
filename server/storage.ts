@@ -1471,23 +1471,34 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
       // Aplicar offset de zona horaria
       const localTime = new Date(appointmentDateUTC.getTime() + (timezoneOffset * 60 * 60 * 1000));
       
+      // Verificar que la cita sigue correspondiendo al día consultado después de la conversión
+      const localDateStr = localTime.toISOString().split('T')[0];
+      const queryDateStr = date;
+      
       console.log(`📅 DEBUG - Appointment ${index}:`, {
         scheduledDateUTC: appointment.scheduledDate,
         timezone: timezone,
         offset: timezoneOffset,
         localTime: localTime.toISOString(),
+        localDateStr: localDateStr,
+        queryDateStr: queryDateStr,
         clientName: appointment.clientName
       });
       
-      // Extraer hora local
-      const localHour = localTime.getUTCHours(); // Usar getUTCHours porque ya aplicamos el offset
-      const localMinute = localTime.getUTCMinutes();
-      const localTimeStr = `${localHour.toString().padStart(2, '0')}:${localMinute.toString().padStart(2, '0')}`;
-      
-      console.log(`📅 DEBUG - Appointment ${index} local time:`, localTimeStr);
-      
-      occupiedSlots.add(localTimeStr);
-      console.log(`📅 DEBUG - Added occupied slot:`, localTimeStr);
+      // Solo agregar el slot si la cita pertenece al día que se está consultando
+      if (localDateStr === queryDateStr) {
+        // Extraer hora local
+        const localHour = localTime.getUTCHours(); // Usar getUTCHours porque ya aplicamos el offset
+        const localMinute = localTime.getUTCMinutes();
+        const localTimeStr = `${localHour.toString().padStart(2, '0')}:${localMinute.toString().padStart(2, '0')}`;
+        
+        console.log(`📅 DEBUG - Appointment ${index} local time:`, localTimeStr, '✓ MATCHES DATE');
+        
+        occupiedSlots.add(localTimeStr);
+        console.log(`📅 DEBUG - Added occupied slot:`, localTimeStr);
+      } else {
+        console.log(`📅 DEBUG - Appointment ${index} SKIPPED - belongs to different date:`, localDateStr, 'vs', queryDateStr);
+      }
     });
 
     const occupiedArray = Array.from(occupiedSlots);
