@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -759,6 +759,22 @@ function CalendarSettings({ settings }: any) {
     reminderEnabled: settings?.reminderEnabled || true,
     reminderTime: settings?.reminderTime || 24
   });
+
+  // Actualizar formData cuando cambien los settings
+  useEffect(() => {
+    if (settings) {
+      setFormData({
+        workingHours: settings.workingHours || { start: '09:00', end: '17:00' },
+        workingDays: settings.workingDays || [1, 2, 3, 4, 5],
+        slotDuration: settings.slotDuration || 60,
+        bufferTime: settings.bufferTime || 15,
+        maxAdvanceBooking: settings.maxAdvanceBooking || 30,
+        autoConfirm: settings.autoConfirm || false,
+        reminderEnabled: settings.reminderEnabled || true,
+        reminderTime: settings.reminderTime || 24
+      });
+    }
+  }, [settings]);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -800,14 +816,67 @@ function CalendarSettings({ settings }: any) {
         <div>
           <Label className="text-sm font-medium">Horario de Trabajo</Label>
           <div className="grid grid-cols-2 gap-2 mt-1">
-            <Input type="time" defaultValue="09:00" />
-            <Input type="time" defaultValue="18:00" />
+            <Input 
+              type="time" 
+              value={formData.workingHours.start}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                workingHours: { ...prev.workingHours, start: e.target.value }
+              }))}
+            />
+            <Input 
+              type="time" 
+              value={formData.workingHours.end}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                workingHours: { ...prev.workingHours, end: e.target.value }
+              }))}
+            />
           </div>
         </div>
         
         <div>
           <Label className="text-sm font-medium">Duración por defecto (minutos)</Label>
-          <Input type="number" defaultValue="60" min="15" step="15" className="mt-1" />
+          <Input 
+            type="number" 
+            value={formData.slotDuration}
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              slotDuration: parseInt(e.target.value) || 60
+            }))}
+            min="15" 
+            step="15" 
+            className="mt-1" 
+          />
+        </div>
+        
+        <div>
+          <Label className="text-sm font-medium">Tiempo de buffer (minutos)</Label>
+          <Input 
+            type="number" 
+            value={formData.bufferTime}
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              bufferTime: parseInt(e.target.value) || 15
+            }))}
+            min="0" 
+            step="5" 
+            className="mt-1" 
+          />
+        </div>
+        
+        <div>
+          <Label className="text-sm font-medium">Días de reserva anticipada</Label>
+          <Input 
+            type="number" 
+            value={formData.maxAdvanceBooking}
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              maxAdvanceBooking: parseInt(e.target.value) || 30
+            }))}
+            min="1" 
+            className="mt-1" 
+          />
         </div>
       </div>
       
