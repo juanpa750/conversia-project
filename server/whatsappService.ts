@@ -41,7 +41,7 @@ export class WhatsAppService {
   /**
    * Send WhatsApp appointment confirmation
    */
-  static async sendAppointmentConfirmation(appointment: any, userId: string): Promise<boolean> {
+  static async sendAppointmentConfirmation(userId: string, appointment: any): Promise<boolean> {
     try {
       const user = await storage.getUser(userId);
       const settings = await storage.getCalendarSettings(userId);
@@ -90,7 +90,7 @@ _Mensaje automático - No responder_`;
   /**
    * Send WhatsApp appointment reminder
    */
-  static async sendAppointmentReminder(appointment: any, userId: string, reminderType: 'day' | 'hours'): Promise<boolean> {
+  static async sendAppointmentReminder(userId: string, appointment: any, reminderType: 'day' | 'hours' = 'day'): Promise<boolean> {
     try {
       const user = await storage.getUser(userId);
       const settings = await storage.getCalendarSettings(userId);
