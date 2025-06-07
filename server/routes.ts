@@ -1969,8 +1969,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.userId;
       console.log('📅 Creating appointment - Raw request body:', JSON.stringify(req.body, null, 2));
       
+      // Construir scheduledDate desde date y time si no viene el campo scheduledDate
+      let scheduledDate = req.body.scheduledDate;
+      if (!scheduledDate && req.body.date && req.body.time) {
+        scheduledDate = new Date(`${req.body.date}T${req.body.time}:00`);
+        console.log('📅 Constructed scheduledDate from date/time:', scheduledDate);
+      }
+      
       const appointmentData = {
-        ...req.body,
+        clientName: req.body.clientName,
+        clientPhone: req.body.clientPhone,
+        clientEmail: req.body.clientEmail,
+        service: req.body.service,
+        scheduledDate: scheduledDate,
+        duration: req.body.duration,
+        notes: req.body.notes || '',
+        status: req.body.status || 'scheduled',
         userId
       };
       

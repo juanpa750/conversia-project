@@ -423,7 +423,11 @@ function MonthView({ days, currentDate, selectedDate, onDateSelect, appointments
       {/* Calendar days */}
       {days.map((day: Date, index: number) => {
         const dateStr = day.toISOString().split('T')[0];
-        const dayAppointments = appointments.filter((apt: any) => apt.date === dateStr);
+        const dayAppointments = appointments.filter((apt: any) => {
+          if (!apt.scheduledDate) return false;
+          const appointmentDate = new Date(apt.scheduledDate).toISOString().split('T')[0];
+          return appointmentDate === dateStr;
+        });
         const isSelected = selectedDate === dateStr;
         const isToday = day.toDateString() === new Date().toDateString();
         const isCurrentMonth = day.getMonth() === currentDate.getMonth();
@@ -446,7 +450,7 @@ function MonthView({ days, currentDate, selectedDate, onDateSelect, appointments
                   key={apt.id}
                   className="text-xs bg-blue-100 text-blue-800 rounded px-1 py-0.5 truncate"
                 >
-                  {apt.time} - {apt.clientName}
+                  {new Date(apt.scheduledDate).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})} - {apt.clientName}
                 </div>
               ))}
               {dayAppointments.length > 2 && (
@@ -611,77 +615,143 @@ function DayView({ date, appointments, availableSlots }: any) {
 
 // Appointment Card Component
 function AppointmentCard({ appointment, onUpdateStatus }: any) {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed': return 'bg-green-100 text-green-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       case 'completed': return 'bg-blue-100 text-blue-800';
+      case 'no_show': return 'bg-gray-100 text-gray-800';
       default: return 'bg-yellow-100 text-yellow-800';
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case 'scheduled': return 'Programada';
       case 'confirmed': return 'Confirmada';
       case 'cancelled': return 'Cancelada';
       case 'completed': return 'Completada';
-      default: return 'Programada';
+      case 'no_show': return 'No asistió';
+      default: return status;
     }
   };
 
   return (
-    <Card className="p-4">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{appointment.time}</span>
-            <Badge className={getStatusColor(appointment.status)}>
-              {getStatusText(appointment.status)}
-            </Badge>
+    <Card className="p-4 border-l-4 border-l-blue-500">
+      <div className="space-y-3">
+        {/* Header with name and status */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-muted-foreground" />
+            <span className="font-semibold text-lg">{appointment.clientName}</span>
           </div>
-          
-          <div className="space-y-1 text-sm">
+          <Badge className={getStatusColor(appointment.status)}>
+            {getStatusText(appointment.status)}
+          </Badge>
+        </div>
+        
+        {/* Date and Time - Prominent Display */}
+        <div className="bg-blue-50 p-3 rounded-lg">
+          <div className="flex items-center justify-center gap-4 text-center">
             <div className="flex items-center gap-2">
-              <User className="h-3 w-3" />
-              <span>{appointment.clientName}</span>
+              <Calendar className="h-5 w-5 text-blue-600" />
+              <span className="font-semibold text-blue-900">
+                {formatDate(appointment.scheduledDate)}
+              </span>
             </div>
-            {appointment.clientPhone && (
-              <div className="flex items-center gap-2">
-                <Phone className="h-3 w-3" />
-                <span>{appointment.clientPhone}</span>
-              </div>
-            )}
-            {appointment.clientEmail && (
-              <div className="flex items-center gap-2">
-                <Mail className="h-3 w-3" />
-                <span>{appointment.clientEmail}</span>
-              </div>
-            )}
-            <div className="text-muted-foreground">
-              {appointment.service} • {appointment.duration} min
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-blue-600" />
+              <span className="font-bold text-blue-900 text-xl">
+                {formatTime(appointment.scheduledDate)}
+              </span>
             </div>
           </div>
         </div>
         
-        {onUpdateStatus && appointment.status === 'scheduled' && (
-          <div className="flex flex-col sm:flex-row gap-2 mt-3 w-full">
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 min-w-0"
-              onClick={() => onUpdateStatus('confirmed')}
-            >
-              Confirmar
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 min-w-0"
-              onClick={() => onUpdateStatus('cancelled')}
-            >
-              Cancelar
-            </Button>
+        {/* Contact and service details */}
+        <div className="space-y-2 text-sm text-muted-foreground">
+          {appointment.clientPhone && (
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4" />
+              <span>{appointment.clientPhone}</span>
+            </div>
+          )}
+          {appointment.clientEmail && (
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              <span>{appointment.clientEmail}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="text-sm">🔧</span>
+            <span className="font-medium">{appointment.service}</span>
+            <span>•</span>
+            <span>{appointment.duration} minutos</span>
+          </div>
+        </div>
+        
+        {/* Action buttons */}
+        {onUpdateStatus && (
+          <div className="flex flex-wrap gap-2 pt-2">
+            {appointment.status === 'scheduled' && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                  onClick={() => onUpdateStatus('confirmed')}
+                >
+                  ✅ Confirmar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                  onClick={() => onUpdateStatus('cancelled')}
+                >
+                  ❌ Cancelar
+                </Button>
+              </>
+            )}
+            
+            {appointment.status === 'confirmed' && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                  onClick={() => onUpdateStatus('completed')}
+                >
+                  ✅ Completar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                  onClick={() => onUpdateStatus('no_show')}
+                >
+                  ❌ No asistió
+                </Button>
+              </>
+            )}
           </div>
         )}
       </div>
