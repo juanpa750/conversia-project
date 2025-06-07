@@ -259,46 +259,66 @@ export default function CalendarPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Week headers */}
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {weekDays.map(day => (
-                  <div key={day} className="p-2 text-center text-xs sm:text-sm font-medium text-gray-500">
-                    {day}
+              {currentView === 'month' && (
+                <>
+                  {/* Week headers */}
+                  <div className="grid grid-cols-7 gap-1 mb-2">
+                    {weekDays.map(day => (
+                      <div key={day} className="p-2 text-center text-xs sm:text-sm font-medium text-gray-500">
+                        {day}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              
-              {/* Calendar grid */}
-              <div className="grid grid-cols-7 gap-1">
-                {calendarDays.map((day, index) => {
-                  const dayStr = day.toISOString().split('T')[0];
-                  const isSelected = dayStr === selectedDate;
-                  const isToday = day.toDateString() === new Date().toDateString();
-                  const isCurrentMonth = day.getMonth() === currentDate.getMonth();
-                  const hasAppointments = Array.isArray(appointments) && 
-                    appointments.some((apt: any) => apt.scheduledDate?.startsWith(dayStr));
                   
-                  return (
-                    <Button
-                      key={index}
-                      variant={isSelected ? 'default' : 'ghost'}
-                      className={`
-                        h-10 sm:h-12 p-1 relative text-xs sm:text-sm
-                        ${isToday ? 'ring-2 ring-blue-500' : ''}
-                        ${!isCurrentMonth ? 'text-gray-400' : ''}
-                        ${hasAppointments ? 'bg-blue-50 hover:bg-blue-100' : ''}
-                        ${isSelected ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
-                      `}
-                      onClick={() => setSelectedDate(dayStr)}
-                    >
-                      <span>{day.getDate()}</span>
-                      {hasAppointments && (
-                        <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full" />
-                      )}
-                    </Button>
-                  );
-                })}
-              </div>
+                  {/* Calendar grid */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {calendarDays.map((day, index) => {
+                      const dayStr = day.toISOString().split('T')[0];
+                      const isSelected = dayStr === selectedDate;
+                      const isToday = day.toDateString() === new Date().toDateString();
+                      const isCurrentMonth = day.getMonth() === currentDate.getMonth();
+                      const hasAppointments = Array.isArray(appointments) && 
+                        appointments.some((apt: any) => apt.scheduledDate?.startsWith(dayStr));
+                      
+                      return (
+                        <Button
+                          key={index}
+                          variant={isSelected ? 'default' : 'ghost'}
+                          className={`
+                            h-10 sm:h-12 p-1 relative text-xs sm:text-sm
+                            ${isToday ? 'ring-2 ring-blue-500' : ''}
+                            ${!isCurrentMonth ? 'text-gray-400' : ''}
+                            ${hasAppointments ? 'bg-blue-50 hover:bg-blue-100' : ''}
+                            ${isSelected ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
+                          `}
+                          onClick={() => setSelectedDate(dayStr)}
+                        >
+                          <span>{day.getDate()}</span>
+                          {hasAppointments && (
+                            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full" />
+                          )}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {currentView === 'week' && (
+                <WeekView 
+                  currentDate={currentDate} 
+                  appointments={appointments || []} 
+                  onDateSelect={setSelectedDate}
+                />
+              )}
+
+              {currentView === 'day' && (
+                <DayView 
+                  selectedDate={selectedDate} 
+                  appointments={appointments || []} 
+                  onUpdateStatus={handleUpdateStatus}
+                />
+              )}
             </CardContent>
           </Card>
         </div>
@@ -371,6 +391,103 @@ export default function CalendarPage() {
 }
 
 // Appointment Card Component - MOBILE OPTIMIZED
+// Week View Component
+function WeekView({ currentDate, appointments, onDateSelect }: any) {
+  const weekStart = new Date(currentDate);
+  weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+  
+  const weekDays = [];
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(weekStart);
+    day.setDate(weekStart.getDate() + i);
+    weekDays.push(day);
+  }
+  
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-7 gap-2">
+        {weekDays.map((day, index) => {
+          const dayStr = day.toISOString().split('T')[0];
+          const dayAppointments = appointments.filter((apt: any) => 
+            apt.scheduledDate?.startsWith(dayStr)
+          );
+          const isToday = day.toDateString() === new Date().toDateString();
+          
+          return (
+            <div 
+              key={index} 
+              className={`border rounded-lg p-3 min-h-[120px] cursor-pointer hover:bg-muted/50 ${
+                isToday ? 'ring-2 ring-primary' : ''
+              }`}
+              onClick={() => onDateSelect(dayStr)}
+            >
+              <div className="font-medium text-sm mb-2">
+                {day.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' })}
+              </div>
+              <div className="space-y-1">
+                {dayAppointments.map((apt: any) => (
+                  <div 
+                    key={apt.id}
+                    className={`text-xs p-1 rounded truncate ${
+                      apt.status === 'confirmed' ? 'bg-green-100 text-green-800' : 
+                      apt.status === 'cancelled' ? 'bg-red-100 text-red-800' : 
+                      'bg-blue-100 text-blue-800'
+                    }`}
+                  >
+                    {new Date(apt.scheduledDate).toLocaleTimeString('es-ES', { 
+                      hour: '2-digit', minute: '2-digit' 
+                    })} {apt.clientName}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Day View Component
+function DayView({ selectedDate, appointments, onUpdateStatus }: any) {
+  const dayAppointments = appointments.filter((apt: any) => 
+    apt.scheduledDate?.startsWith(selectedDate)
+  ).sort((a: any, b: any) => 
+    new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime()
+  );
+  
+  const selectedDateObj = new Date(selectedDate);
+  
+  return (
+    <div className="space-y-4">
+      <div className="text-lg font-semibold">
+        {selectedDateObj.toLocaleDateString('es-ES', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        })}
+      </div>
+      
+      {dayAppointments.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          No hay citas programadas para este día
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {dayAppointments.map((appointment: any) => (
+            <AppointmentCard 
+              key={appointment.id} 
+              appointment={appointment} 
+              onUpdateStatus={onUpdateStatus}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AppointmentCard({ appointment, onUpdateStatus }: any) {
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -631,6 +748,44 @@ function AppointmentForm({ onSubmit, availableSlots, isLoading, selectedDate }: 
 
 // Calendar Settings Component
 function CalendarSettings({ settings }: any) {
+  const [formData, setFormData] = useState({
+    workingHours: settings?.workingHours || { start: '09:00', end: '17:00' },
+    workingDays: settings?.workingDays || [1, 2, 3, 4, 5],
+    slotDuration: settings?.slotDuration || 60,
+    bufferTime: settings?.bufferTime || 15,
+    maxAdvanceBooking: settings?.maxAdvanceBooking || 30,
+    autoConfirm: settings?.autoConfirm || false,
+    reminderEnabled: settings?.reminderEnabled || true,
+    reminderTime: settings?.reminderTime || 24
+  });
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest('PUT', '/api/calendar/settings', data);
+      return response;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Configuración guardada",
+        description: "Las configuraciones del calendario se han actualizado correctamente."
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/calendar/settings"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudieron guardar las configuraciones.",
+        variant: "destructive"
+      });
+    }
+  });
+  
+  const handleSave = () => {
+    updateSettingsMutation.mutate(formData);
+  };
   return (
     <div className="space-y-4">
       <div>
@@ -655,8 +810,12 @@ function CalendarSettings({ settings }: any) {
         </div>
       </div>
       
-      <Button className="w-full">
-        Guardar Configuración
+      <Button 
+        className="w-full" 
+        onClick={handleSave}
+        disabled={updateSettingsMutation.isPending}
+      >
+        {updateSettingsMutation.isPending ? "Guardando..." : "Guardar Configuración"}
       </Button>
     </div>
   );
