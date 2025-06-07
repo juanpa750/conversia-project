@@ -2030,11 +2030,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.userId;
       const date = req.query.date as string;
       
-      if (!date) {
-        return res.status(400).json({ message: 'Date parameter is required' });
-      }
+      // Si no se proporciona fecha, usar fecha actual
+      const targetDate = date || new Date().toISOString().split('T')[0];
+      console.log('📅 Getting available slots for user:', userId, 'date:', targetDate);
 
-      const slots = await storage.getAvailableSlots(userId, date);
+      const slots = await storage.getAvailableSlots(userId, targetDate);
+      console.log('📅 Available slots found:', slots.length);
       res.json(slots);
     } catch (error) {
       console.error('Error fetching available slots:', error);

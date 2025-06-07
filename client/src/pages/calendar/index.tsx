@@ -10,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Calendar, Clock, Settings, Plus, User, Phone, Mail, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Clock, Settings, Plus, User, Phone, Mail, ChevronLeft, ChevronRight, Grid, List, CalendarDays } from "lucide-react";
 
 export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [currentView, setCurrentView] = useState<'month' | 'week' | 'day'>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -87,10 +88,19 @@ export default function CalendarPage() {
   };
 
   // Calendar navigation
-  const navigateMonth = (direction: 'prev' | 'next') => {
+  const navigateCalendar = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
-    newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
+    
+    if (currentView === 'month') {
+      newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
+    } else if (currentView === 'week') {
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
+    } else if (currentView === 'day') {
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
+    }
+    
     setCurrentDate(newDate);
+    setSelectedDate(newDate.toISOString().split('T')[0]);
   };
 
   const goToToday = () => {
@@ -210,7 +220,7 @@ export default function CalendarPage() {
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => navigateMonth('prev')}>
+                  <Button variant="outline" size="sm" onClick={() => navigateCalendar('prev')}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <h2 className="text-lg sm:text-xl font-semibold min-w-0">
@@ -219,14 +229,33 @@ export default function CalendarPage() {
                       year: 'numeric' 
                     })}
                   </h2>
-                  <Button variant="outline" size="sm" onClick={() => navigateMonth('next')}>
+                  <Button variant="outline" size="sm" onClick={() => navigateCalendar('next')}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
                 
-                <Button variant="outline" size="sm" onClick={goToToday}>
-                  Hoy
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Tabs value={currentView} onValueChange={(value: any) => setCurrentView(value)}>
+                    <TabsList>
+                      <TabsTrigger value="month">
+                        <Grid className="h-4 w-4 mr-1" />
+                        Mes
+                      </TabsTrigger>
+                      <TabsTrigger value="week">
+                        <List className="h-4 w-4 mr-1" />
+                        Semana
+                      </TabsTrigger>
+                      <TabsTrigger value="day">
+                        <CalendarDays className="h-4 w-4 mr-1" />
+                        Día
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                  
+                  <Button variant="outline" size="sm" onClick={goToToday}>
+                    Hoy
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
