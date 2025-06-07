@@ -462,11 +462,73 @@ export class DatabaseStorage implements IStorage {
   }
 
   // WhatsApp integration operations
+  // WhatsApp Integration methods - Soporte múltiple por usuario y producto
   async getWhatsappIntegration(userId: string): Promise<WhatsappIntegration | undefined> {
     const [integration] = await db
       .select()
       .from(whatsappIntegrations)
-      .where(eq(whatsappIntegrations.userId, userId));
+      .where(eq(whatsappIntegrations.userId, userId))
+      .orderBy(desc(whatsappIntegrations.createdAt))
+      .limit(1);
+    return integration;
+  }
+
+  async getAllWhatsappIntegrations(userId: string): Promise<WhatsappIntegration[]> {
+    return await db
+      .select()
+      .from(whatsappIntegrations)
+      .where(eq(whatsappIntegrations.userId, userId))
+      .orderBy(desc(whatsappIntegrations.createdAt));
+  }
+
+  async getWhatsappIntegrationsByProduct(userId: string, productId: number): Promise<WhatsappIntegration[]> {
+    return await db
+      .select()
+      .from(whatsappIntegrations)
+      .where(
+        and(
+          eq(whatsappIntegrations.userId, userId),
+          eq(whatsappIntegrations.productId, productId)
+        )
+      )
+      .orderBy(desc(whatsappIntegrations.priority));
+  }
+
+  async getActiveWhatsappIntegrations(userId: string): Promise<WhatsappIntegration[]> {
+    return await db
+      .select()
+      .from(whatsappIntegrations)
+      .where(
+        and(
+          eq(whatsappIntegrations.userId, userId),
+          eq(whatsappIntegrations.isActive, true),
+          eq(whatsappIntegrations.status, 'connected')
+        )
+      )
+      .orderBy(desc(whatsappIntegrations.priority));
+  }
+
+  async getWhatsappIntegrationById(id: number): Promise<WhatsappIntegration | undefined> {
+    const [integration] = await db
+      .select()
+      .from(whatsappIntegrations)
+      .where(eq(whatsappIntegrations.id, id));
+    return integration;
+  }
+
+  async getWhatsappIntegrationByProduct(userId: string, productId: number): Promise<WhatsappIntegration | undefined> {
+    const [integration] = await db
+      .select()
+      .from(whatsappIntegrations)
+      .where(
+        and(
+          eq(whatsappIntegrations.userId, userId),
+          eq(whatsappIntegrations.productId, productId),
+          eq(whatsappIntegrations.isActive, true)
+        )
+      )
+      .orderBy(desc(whatsappIntegrations.priority))
+      .limit(1);
     return integration;
   }
 

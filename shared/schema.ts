@@ -160,24 +160,41 @@ export const analytics = pgTable("analytics", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// WhatsApp integrations table
+// WhatsApp integrations table - Soporta múltiples cuentas por usuario
 export const whatsappIntegrations = pgTable("whatsapp_integrations", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  productId: integer("product_id").references(() => products.id), // Vinculado a producto específico (opcional)
+  chatbotId: integer("chatbot_id").references(() => chatbots.id), // Chatbot asociado (opcional)
+  
+  // Información de WhatsApp Business API
   phoneNumber: varchar("phone_number").notNull(),
   phoneNumberId: varchar("phone_number_id"), // WhatsApp Business API phone number ID
   businessAccountId: varchar("business_account_id"), // WhatsApp Business Account ID
   displayName: varchar("display_name").notNull(),
   businessDescription: text("business_description"),
   accessToken: text("access_token"), // WhatsApp Business API access token
+  
+  // Configuración de webhooks
   webhookUrl: varchar("webhook_url"), // Webhook URL for receiving messages
   webhookToken: varchar("webhook_token"), // Webhook verification token
+  
+  // Estado y configuración
   status: varchar("status").default("disconnected").notNull(), // disconnected, connecting, connected, error
+  isActive: boolean("is_active").default(true), // Para activar/desactivar sin eliminar
+  priority: integer("priority").default(1), // Prioridad cuando múltiples números respondan
+  autoRespond: boolean("auto_respond").default(true), // Responder automáticamente
+  
+  // Horarios de operación (JSON con días y horas)
+  operatingHours: jsonb("operating_hours"), // { monday: { start: "09:00", end: "18:00", active: true }, ... }
+  
+  // Estadísticas
   lastError: text("last_error"), // Last connection error
   connectedAt: timestamp("connected_at"),
   lastMessageAt: timestamp("last_message_at"), // Last message sent/received
   messagesSent: integer("messages_sent").default(0),
   messagesReceived: integer("messages_received").default(0),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
