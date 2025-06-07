@@ -165,12 +165,51 @@ export const whatsappIntegrations = pgTable("whatsapp_integrations", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   phoneNumber: varchar("phone_number").notNull(),
+  phoneNumberId: varchar("phone_number_id"), // WhatsApp Business API phone number ID
+  businessAccountId: varchar("business_account_id"), // WhatsApp Business Account ID
   displayName: varchar("display_name").notNull(),
   businessDescription: text("business_description"),
-  status: varchar("status").default("disconnected").notNull(),
+  accessToken: text("access_token"), // WhatsApp Business API access token
+  webhookUrl: varchar("webhook_url"), // Webhook URL for receiving messages
+  webhookToken: varchar("webhook_token"), // Webhook verification token
+  status: varchar("status").default("disconnected").notNull(), // disconnected, connecting, connected, error
+  lastError: text("last_error"), // Last connection error
   connectedAt: timestamp("connected_at"),
+  lastMessageAt: timestamp("last_message_at"), // Last message sent/received
+  messagesSent: integer("messages_sent").default(0),
+  messagesReceived: integer("messages_received").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// WhatsApp messages table
+export const whatsappMessages = pgTable("whatsapp_messages", {
+  id: serial("id").primaryKey(),
+  integrationId: integer("integration_id").notNull().references(() => whatsappIntegrations.id, { onDelete: 'cascade' }),
+  messageId: varchar("message_id").notNull(), // WhatsApp message ID
+  conversationId: varchar("conversation_id").notNull(), // WhatsApp conversation ID
+  fromNumber: varchar("from_number").notNull(),
+  toNumber: varchar("to_number").notNull(),
+  messageType: varchar("message_type").notNull(), // text, image, audio, video, document
+  content: text("content"), // Message content
+  mediaUrl: varchar("media_url"), // URL for media messages
+  direction: varchar("direction").notNull(), // inbound, outbound
+  status: varchar("status").default("sent").notNull(), // sent, delivered, read, failed
+  errorMessage: text("error_message"), // Error details if failed
+  timestamp: timestamp("timestamp").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// WhatsApp webhooks log table
+export const whatsappWebhooks = pgTable("whatsapp_webhooks", {
+  id: serial("id").primaryKey(),
+  integrationId: integer("integration_id").notNull().references(() => whatsappIntegrations.id, { onDelete: 'cascade' }),
+  webhookType: varchar("webhook_type").notNull(), // message, status, error
+  payload: jsonb("payload").notNull(),
+  processed: boolean("processed").default(false),
+  processedAt: timestamp("processed_at"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // User preferences table
@@ -328,6 +367,16 @@ export const insertWhatsappIntegrationSchema = createInsertSchema(whatsappIntegr
   connectedAt: true,
 });
 
+export const insertWhatsappMessageSchema = createInsertSchema(whatsappMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertWhatsappWebhookSchema = createInsertSchema(whatsappWebhooks).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
   createdAt: true,
@@ -386,6 +435,12 @@ export type AnalyticsData = typeof analytics.$inferSelect;
 
 export type WhatsappIntegration = typeof whatsappIntegrations.$inferSelect;
 export type InsertWhatsappIntegration = z.infer<typeof insertWhatsappIntegrationSchema>;
+
+export type WhatsappMessage = typeof whatsappMessages.$inferSelect;
+export type InsertWhatsappMessage = z.infer<typeof insertWhatsappMessageSchema>;
+
+export type WhatsappWebhook = typeof whatsappWebhooks.$inferSelect;
+export type InsertWhatsappWebhook = z.infer<typeof insertWhatsappWebhookSchema>;
 
 export type UserPreference = typeof userPreferences.$inferSelect;
 
