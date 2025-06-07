@@ -60,13 +60,40 @@ export default function CalendarPage() {
 
   // Update appointment mutation
   const updateAppointmentMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => 
-      apiRequest('PUT', `/api/appointments/${id}`, data),
+    mutationFn: ({ id, status }: { id: number; status: string }) => 
+      apiRequest('PATCH', `/api/appointments/${id}`, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/appointments`] });
       toast({
         title: "Cita actualizada",
         description: "El estado de la cita ha sido actualizado",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Error al actualizar la cita",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update calendar settings mutation
+  const updateSettingsMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('PUT', '/api/calendar/settings', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/calendar/settings'] });
+      setIsSettingsOpen(false);
+      toast({
+        title: "Configuración guardada",
+        description: "La configuración del calendario ha sido actualizada",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Error al guardar la configuración",
+        variant: "destructive",
       });
     },
   });
@@ -187,6 +214,10 @@ export default function CalendarPage() {
     };
 
     createAppointmentMutation.mutate(appointmentData);
+  };
+
+  const handleUpdateStatus = (appointmentId: number, newStatus: string) => {
+    updateAppointmentMutation.mutate({ id: appointmentId, status: newStatus });
   };
 
   const calendarDays = getCalendarData();
@@ -389,10 +420,7 @@ export default function CalendarPage() {
                         key={appointment.id} 
                         appointment={appointment}
                         onUpdateStatus={(status: string) => 
-                          updateAppointmentMutation.mutate({ 
-                            id: appointment.id, 
-                            data: { status } 
-                          })
+                          handleUpdateStatus(appointment.id, status)
                         }
                       />
                     ))}
@@ -624,10 +652,7 @@ function DayView({ date, appointments, availableSlots }: any) {
                   key={appointment.id} 
                   appointment={appointment}
                   onUpdateStatus={(status: string) => 
-                    updateAppointmentMutation.mutate({ 
-                      id: appointment.id, 
-                      data: { status } 
-                    })
+                    handleUpdateStatus(appointment.id, status)
                   }
                 />
               ))}
@@ -783,12 +808,12 @@ function AppointmentCard({ appointment, onUpdateStatus }: any) {
                   </Button>
               </>
             )}
-            </div>
-          )}
-        </div>
-      </Card>
-    );
-  }
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
 
 // Appointment Form Component
 function AppointmentForm({ onSubmit, availableSlots, isLoading }: any) {
