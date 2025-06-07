@@ -1,4 +1,4 @@
-import { eq, desc, and, gte, lte } from "drizzle-orm";
+import { eq, desc, and, gte, lte, lt } from "drizzle-orm";
 import { db } from "./db";
 import {
   users,
@@ -18,6 +18,8 @@ import {
   productVariants,
   productTriggers,
   productAiConfig,
+  appointments,
+  calendarSettings,
   type User,
   type UpsertUser,
   type InsertUser,
@@ -47,6 +49,10 @@ import {
   type InsertProductTrigger,
   type ProductAiConfig,
   type InsertProductAiConfig,
+  type Appointment,
+  type InsertAppointment,
+  type CalendarSettings,
+  type InsertCalendarSettings,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -1411,56 +1417,48 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
   }
 
   // Calendar and appointments operations implementation
-  async getAppointments(userId: string, date?: string): Promise<any[]> {
-    // Por ahora simular datos hasta que se actualice la DB
-    const mockAppointments = [
-      {
-        id: 1,
-        title: 'Consulta inicial',
-        scheduledDate: new Date('2025-06-08T10:00:00'),
-        contactName: 'Juan Pérez',
-        contactPhone: '+1234567890',
-        status: 'confirmed',
-        duration: 60
-      },
-      {
-        id: 2,
-        title: 'Seguimiento',
-        scheduledDate: new Date('2025-06-08T14:00:00'),
-        contactName: 'María González',
-        contactPhone: '+0987654321',
-        status: 'scheduled',
-        duration: 30
-      }
-    ];
-
+  async getAppointments(userId: string, date?: string): Promise<Appointment[]> {
+    let query = db.select().from(appointments).where(eq(appointments.userId, userId));
+    
     if (date) {
-      const filterDate = new Date(date).toDateString();
-      return mockAppointments.filter(apt => 
-        new Date(apt.scheduledDate).toDateString() === filterDate
-      );
+      const startDate = new Date(date);
+      const endDate = new Date(date);
+      endDate.setDate(endDate.getDate() + 1);
+      
+      query = db.select().from(appointments).where(and(
+        eq(appointments.userId, userId),
+        gte(appointments.scheduledDate, startDate),
+        lt(appointments.scheduledDate, endDate)
+      ));
     }
-
-    return mockAppointments;
+    
+    return await query.orderBy(appointments.scheduledDate);
   }
 
-  async createAppointment(appointmentData: any): Promise<any> {
-    const newAppointment = {
-      id: Date.now(),
-      ...appointmentData,
-      status: 'scheduled',
-      reminderSent: false,
-      confirmationSent: false,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+  async getAppointmentById(appointmentId: number): Promise<Appointment | undefined> {
+    const [appointment] = await db
+      .select()
+      .from(appointments)
+      .where(eq(appointments.id, appointmentId));
+    return appointment;
+  }
 
-    console.log('📅 Created appointment:', newAppointment);
+  async createAppointment(appointmentData: InsertAppointment): Promise<Appointment> {
+    const [appointment] = await db
+      .insert(appointments)
+      .values(appointmentData)
+      .returning();
 
-    // Enviar confirmación por WhatsApp (simulado)
-    this.sendAppointmentConfirmation(newAppointment);
+    console.log('📅 Created appointment:', appointment);
 
-    return newAppointment;
+    // Send WhatsApp confirmation
+    try {
+      await this.sendAppointmentConfirmation(appointment);
+    } catch (error) {
+      console.error('Error sending WhatsApp confirmation:', error);
+    }
+
+    return appointment;
   }
 
   async updateAppointment(id: number, data: any): Promise<any> {
