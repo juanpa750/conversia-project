@@ -22,6 +22,7 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   role: userRoleEnum("role").default('user').notNull(),
   company: varchar("company"),
+  businessEmail: varchar("business_email"),
   phone: varchar("phone"),
   bio: text("bio"),
   stripeCustomerId: varchar("stripe_customer_id"),
@@ -447,7 +448,13 @@ export const calendarSettings = pgTable("calendar_settings", {
     enabled: true,
     beforeHours: [24, 2], // recordatorios 24h y 2h antes
     whatsapp: true,
-    email: false
+    email: true
+  }),
+  emailNotifications: jsonb("email_notifications").default({
+    enabled: true,
+    confirmationTemplate: "Estimado/a {clientName},\n\nSu cita ha sido confirmada para el {date} a las {time}.\n\nDetalles:\n- Servicio: {service}\n- Duración: {duration} minutos\n\nGracias por su confianza.\n\nSaludos cordiales,\n{companyName}",
+    reminderTemplate: "Estimado/a {clientName},\n\nLe recordamos su cita programada para mañana {date} a las {time}.\n\nDetalles:\n- Servicio: {service}\n- Duración: {duration} minutos\n\nSaludos cordiales,\n{companyName}",
+    cancellationTemplate: "Estimado/a {clientName},\n\nLe informamos que su cita del {date} a las {time} ha sido cancelada.\n\nSi necesita reprogramar, no dude en contactarnos.\n\nSaludos cordiales,\n{companyName}"
   }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
