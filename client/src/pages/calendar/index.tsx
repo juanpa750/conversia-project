@@ -817,89 +817,262 @@ function CalendarSettings({ settings }: any) {
   const handleSave = () => {
     updateSettingsMutation.mutate(formData);
   };
+  const weekDayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+  const toggleWorkingDay = (dayIndex: number) => {
+    setFormData(prev => ({
+      ...prev,
+      workingDays: prev.workingDays.includes(dayIndex) 
+        ? prev.workingDays.filter(d => d !== dayIndex)
+        : [...prev.workingDays, dayIndex].sort()
+    }));
+  };
+
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="font-medium mb-2">Configuración Básica</h3>
-        <p className="text-sm text-gray-600">
-          Personaliza las opciones de tu calendario.
-        </p>
-      </div>
-      
-      <div className="space-y-3">
+    <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+      {/* Configuración Básica */}
+      <div className="space-y-4">
         <div>
-          <Label className="text-sm font-medium">Horario de Trabajo</Label>
-          <div className="grid grid-cols-2 gap-2 mt-1">
-            <Input 
-              type="time" 
-              value={formData.workingHours.start}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                workingHours: { ...prev.workingHours, start: e.target.value }
-              }))}
-            />
-            <Input 
-              type="time" 
-              value={formData.workingHours.end}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                workingHours: { ...prev.workingHours, end: e.target.value }
-              }))}
-            />
+          <h3 className="font-semibold text-lg mb-1">⚙️ Configuración Básica</h3>
+          <p className="text-sm text-gray-600">
+            Horarios y duraciones de las citas
+          </p>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium flex items-center gap-2">
+              🕐 Horario de Trabajo
+            </Label>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <div>
+                <Label className="text-xs text-gray-500">Inicio</Label>
+                <Input 
+                  type="time" 
+                  value={formData.workingHours.start}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    workingHours: { ...prev.workingHours, start: e.target.value }
+                  }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-gray-500">Fin</Label>
+                <Input 
+                  type="time" 
+                  value={formData.workingHours.end}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    workingHours: { ...prev.workingHours, end: e.target.value }
+                  }))}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-medium flex items-center gap-2">
+                ⏱️ Duración por defecto
+              </Label>
+              <div className="flex items-center gap-2 mt-1">
+                <Input 
+                  type="number" 
+                  value={formData.slotDuration}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    slotDuration: parseInt(e.target.value) || 60
+                  }))}
+                  min="15" 
+                  step="15" 
+                  className="flex-1"
+                />
+                <span className="text-xs text-gray-500">min</span>
+              </div>
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium flex items-center gap-2">
+                🔄 Tiempo de buffer
+              </Label>
+              <div className="flex items-center gap-2 mt-1">
+                <Input 
+                  type="number" 
+                  value={formData.bufferTime}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    bufferTime: parseInt(e.target.value) || 15
+                  }))}
+                  min="0" 
+                  step="5" 
+                />
+                <span className="text-xs text-gray-500">min</span>
+              </div>
+            </div>
           </div>
         </div>
-        
+      </div>
+
+      {/* Días Laborables */}
+      <div className="space-y-4">
         <div>
-          <Label className="text-sm font-medium">Duración por defecto (minutos)</Label>
-          <Input 
-            type="number" 
-            value={formData.slotDuration}
-            onChange={(e) => setFormData(prev => ({
-              ...prev,
-              slotDuration: parseInt(e.target.value) || 60
-            }))}
-            min="15" 
-            step="15" 
-            className="mt-1" 
-          />
+          <h3 className="font-semibold text-lg mb-1">📅 Días Laborables</h3>
+          <p className="text-sm text-gray-600">
+            Selecciona los días en que atiendes citas
+          </p>
         </div>
         
+        <div className="grid grid-cols-7 gap-1">
+          {weekDayNames.map((dayName, index) => (
+            <Button
+              key={index}
+              variant={formData.workingDays.includes(index) ? "default" : "outline"}
+              size="sm"
+              className={`h-auto p-2 text-xs flex flex-col items-center ${
+                formData.workingDays.includes(index) 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              onClick={() => toggleWorkingDay(index)}
+            >
+              <span className="font-medium">{dayName.slice(0, 3)}</span>
+              <span className="text-[10px] opacity-75">{dayName.slice(3)}</span>
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Configuración Avanzada */}
+      <div className="space-y-4">
         <div>
-          <Label className="text-sm font-medium">Tiempo de buffer (minutos)</Label>
-          <Input 
-            type="number" 
-            value={formData.bufferTime}
-            onChange={(e) => setFormData(prev => ({
-              ...prev,
-              bufferTime: parseInt(e.target.value) || 15
-            }))}
-            min="0" 
-            step="5" 
-            className="mt-1" 
-          />
+          <h3 className="font-semibold text-lg mb-1">🚀 Configuración Avanzada</h3>
+          <p className="text-sm text-gray-600">
+            Opciones adicionales para la gestión de citas
+          </p>
         </div>
         
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium flex items-center gap-2">
+              📊 Días de reserva anticipada
+            </Label>
+            <div className="flex items-center gap-2 mt-1">
+              <Input 
+                type="number" 
+                value={formData.maxAdvanceBooking}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  maxAdvanceBooking: parseInt(e.target.value) || 30
+                }))}
+                min="1" 
+                max="365"
+                className="flex-1"
+              />
+              <span className="text-xs text-gray-500">días</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Máximo de días en el futuro para reservar citas
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-sm font-medium flex items-center gap-2">
+                ✅ Confirmación automática
+              </Label>
+              <p className="text-xs text-gray-500">
+                Las citas se confirman automáticamente al crearlas
+              </p>
+            </div>
+            <Button
+              variant={formData.autoConfirm ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFormData(prev => ({
+                ...prev,
+                autoConfirm: !prev.autoConfirm
+              }))}
+              className={formData.autoConfirm ? 'bg-green-600 hover:bg-green-700' : ''}
+            >
+              {formData.autoConfirm ? 'Activado' : 'Desactivado'}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Notificaciones */}
+      <div className="space-y-4">
         <div>
-          <Label className="text-sm font-medium">Días de reserva anticipada</Label>
-          <Input 
-            type="number" 
-            value={formData.maxAdvanceBooking}
-            onChange={(e) => setFormData(prev => ({
-              ...prev,
-              maxAdvanceBooking: parseInt(e.target.value) || 30
-            }))}
-            min="1" 
-            className="mt-1" 
-          />
+          <h3 className="font-semibold text-lg mb-1">🔔 Recordatorios</h3>
+          <p className="text-sm text-gray-600">
+            Configuración de notificaciones automáticas
+          </p>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-sm font-medium">Recordatorios habilitados</Label>
+              <p className="text-xs text-gray-500">
+                Enviar recordatorios automáticos por WhatsApp
+              </p>
+            </div>
+            <Button
+              variant={formData.reminderEnabled ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFormData(prev => ({
+                ...prev,
+                reminderEnabled: !prev.reminderEnabled
+              }))}
+              className={formData.reminderEnabled ? 'bg-green-600 hover:bg-green-700' : ''}
+            >
+              {formData.reminderEnabled ? 'Activado' : 'Desactivado'}
+            </Button>
+          </div>
+
+          {formData.reminderEnabled && (
+            <div>
+              <Label className="text-sm font-medium flex items-center gap-2">
+                ⏰ Recordatorio antes de la cita
+              </Label>
+              <div className="flex items-center gap-2 mt-1">
+                <Input 
+                  type="number" 
+                  value={formData.reminderTime}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    reminderTime: parseInt(e.target.value) || 24
+                  }))}
+                  min="1" 
+                  max="168"
+                  className="flex-1"
+                />
+                <span className="text-xs text-gray-500">horas</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Tiempo antes de la cita para enviar recordatorio
+              </p>
+            </div>
+          )}
         </div>
       </div>
       
       <Button 
-        className="w-full" 
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3" 
         onClick={handleSave}
         disabled={updateSettingsMutation.isPending}
       >
-        {updateSettingsMutation.isPending ? "Guardando..." : "Guardar Configuración"}
+        {updateSettingsMutation.isPending ? (
+          <div className="flex items-center gap-2">
+            <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+            Guardando...
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            💾 Guardar Configuración
+          </div>
+        )}
       </Button>
     </div>
   );
