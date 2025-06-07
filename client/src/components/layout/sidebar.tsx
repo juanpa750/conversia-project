@@ -143,13 +143,7 @@ export function Sidebar() {
           Clientes
         </NavItem>
         
-        <NavItem 
-          href="/profile" 
-          icon={<RiSettings3Line />} 
-          active={location.startsWith("/profile")}
-        >
-          Mi Perfil
-        </NavItem>
+
         
         <NavItem 
           href="/analytics" 

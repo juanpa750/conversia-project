@@ -36,7 +36,6 @@ import SalesPipeline from "@/pages/crm/advanced/sales-pipeline";
 import NurtureCampaigns from "@/pages/crm/advanced/nurture-campaigns";
 import AIFlows from "@/pages/templates/ai-flows";
 import CalendarPage from "@/pages/calendar";
-import ProfilePage from "@/pages/profile";
 import { useAuth } from "@/hooks/use-auth";
 
 function Router() {
@@ -136,11 +135,7 @@ function Router() {
               <CalendarPage />
             </Layout>
           </Route>
-          <Route path="/profile">
-            <Layout>
-              <ProfilePage />
-            </Layout>
-          </Route>
+
           <Route path="/clients">
             <Layout>
               <Clients />

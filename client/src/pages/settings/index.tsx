@@ -45,6 +45,7 @@ const profileSchema = z.object({
   lastName: z.string().min(2, { message: "Apellido debe tener al menos 2 caracteres" }),
   email: z.string().email({ message: "Email inválido" }),
   company: z.string().optional(),
+  businessEmail: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional(),
   bio: z.string().optional(),
 });
@@ -93,9 +94,10 @@ export function Settings() {
       firstName: (user as any)?.firstName || "",
       lastName: (user as any)?.lastName || "",
       email: (user as any)?.email || "",
-      company: "",
-      phone: "",
-      bio: "",
+      company: (user as any)?.company || "",
+      businessEmail: (user as any)?.businessEmail || "",
+      phone: (user as any)?.phone || "",
+      bio: (user as any)?.bio || "",
     },
   });
 
@@ -473,19 +475,37 @@ export function Settings() {
                       />
                     </div>
 
-                    <FormField
-                      control={profileForm.control}
-                      name="company"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Empresa</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <FormField
+                        control={profileForm.control}
+                        name="company"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Empresa</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Nombre de tu empresa" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={profileForm.control}
+                        name="businessEmail"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email Empresarial</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="empresa@dominio.com" type="email" />
+                            </FormControl>
+                            <FormDescription>
+                              Este email se usará para confirmaciones y recordatorios de citas
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
                     <FormField
                       control={profileForm.control}
