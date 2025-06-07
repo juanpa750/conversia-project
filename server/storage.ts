@@ -1441,14 +1441,27 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
       slots.push(timeStr);
     }
 
-    // Obtener citas existentes para la fecha
-    const existingAppointments = await this.getAppointments(userId, date);
+    // Obtener citas existentes en un rango amplio para considerar conversión de zona horaria
+    // Para UTC-5, una cita del día siguiente temprano podría aparecer en este día
+    const queryDate = new Date(date);
+    const startDate = new Date(queryDate);
+    startDate.setDate(startDate.getDate() - 1); // Día anterior
+    const endDate = new Date(queryDate);
+    endDate.setDate(endDate.getDate() + 2); // Día siguiente
+    
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
+    console.log('📅 DEBUG - Fetching appointments in range:', startDateStr, 'to', endDateStr);
+    
+    // Obtener todas las citas del usuario sin filtro de fecha específico
+    const allAppointments = await this.getAppointments(userId);
     console.log('📅 DEBUG - Processing appointments with timezone:', timezone);
-    console.log('📅 DEBUG - Found appointments:', existingAppointments.length);
+    console.log('📅 DEBUG - Total appointments found:', allAppointments.length);
     
     const occupiedSlots = new Set<string>();
     
-    existingAppointments.forEach((appointment, index) => {
+    allAppointments.forEach((appointment, index) => {
       if (appointment.status === 'cancelled') {
         return;
       }
