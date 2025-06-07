@@ -192,7 +192,7 @@ export default function CalendarPage() {
                   availableSlots={availableSlots}
                   isLoading={createAppointmentMutation.isPending}
                   selectedDate={selectedDate}
-                  defaultDuration={settings?.slotDuration || 60}
+                  defaultDuration={settings?.appointmentDuration || 60}
                 />
               </DialogContent>
             </Dialog>
@@ -770,7 +770,7 @@ function CalendarSettings({ settings }: any) {
   const createInitialState = (serverSettings: any) => ({
     workingHours: serverSettings?.workingHours || { start: '09:00', end: '17:00' },
     workingDays: serverSettings?.workingDays || [1, 2, 3, 4, 5],
-    slotDuration: serverSettings?.slotDuration !== undefined ? serverSettings.slotDuration : 60,
+    appointmentDuration: serverSettings?.appointmentDuration !== undefined ? serverSettings.appointmentDuration : 60,
     bufferTime: serverSettings?.bufferTime !== undefined ? serverSettings.bufferTime : 15,
     maxAdvanceBooking: serverSettings?.maxAdvanceBooking !== undefined ? serverSettings.maxAdvanceBooking : 30,
     autoConfirm: serverSettings?.autoConfirm !== undefined ? serverSettings.autoConfirm : false,
@@ -893,13 +893,13 @@ function CalendarSettings({ settings }: any) {
               <div className="flex items-center gap-2 mt-1">
                 <Input 
                   type="number" 
-                  value={formData.slotDuration}
+                  value={formData.appointmentDuration}
                   onChange={(e) => {
                     const newDuration = parseInt(e.target.value) || 60;
                     console.log('📅 Cambiando duración a:', newDuration);
                     setFormData(prev => ({
                       ...prev,
-                      slotDuration: newDuration
+                      appointmentDuration: newDuration
                     }));
                   }}
                   min="15" 
