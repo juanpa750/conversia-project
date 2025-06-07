@@ -774,9 +774,11 @@ function CalendarSettings({ settings }: any) {
     reminderTime: settings?.reminderTime || 24
   });
 
-  // Actualizar formData cuando cambien los settings
+  // Inicializar formData solo una vez cuando se cargan los settings por primera vez
+  const [isInitialized, setIsInitialized] = useState(false);
+  
   useEffect(() => {
-    if (settings) {
+    if (settings && !isInitialized) {
       setFormData({
         workingHours: settings.workingHours || { start: '09:00', end: '17:00' },
         workingDays: settings.workingDays || [1, 2, 3, 4, 5],
@@ -787,8 +789,9 @@ function CalendarSettings({ settings }: any) {
         reminderEnabled: settings.reminderEnabled || true,
         reminderTime: settings.reminderTime || 24
       });
+      setIsInitialized(true);
     }
-  }, [settings]);
+  }, [settings, isInitialized]);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
