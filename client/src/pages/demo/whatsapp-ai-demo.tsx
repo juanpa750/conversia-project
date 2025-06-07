@@ -17,7 +17,7 @@ import {
   RiSendPlaneLine,
   RiSparklingLine,
   RiLightbulbLine,
-  RiZapLine
+  RiThunderstormsLine
 } from 'react-icons/ri';
 
 interface DemoMessage {
@@ -155,7 +155,7 @@ export default function WhatsAppAIDemo() {
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card className="border-green-200 bg-green-50 dark:bg-green-900/20">
             <CardContent className="p-6 text-center">
-              <RiZapLine className="w-12 h-12 text-green-500 mx-auto mb-3" />
+              <RiFlashLine className="w-12 h-12 text-green-500 mx-auto mb-3" />
               <h3 className="font-semibold text-green-800 dark:text-green-200 mb-2">
                 Setup en 3 Minutos
               </h3>
