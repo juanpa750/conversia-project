@@ -41,7 +41,7 @@ export class WhatsAppService {
   /**
    * Send WhatsApp appointment confirmation
    */
-  static async sendAppointmentConfirmation(userId: string, appointment: any): Promise<boolean> {
+  static async sendAppointmentConfirmation(appointment: any, userId: string): Promise<boolean> {
     try {
       const user = await storage.getUser(userId);
       const settings = await storage.getCalendarSettings(userId);
