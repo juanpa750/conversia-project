@@ -697,17 +697,35 @@ function AppointmentForm({ onSubmit, availableSlots, isLoading }: any) {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
     
+    console.log('📅 Form submission - Raw form data:');
+    for (let [key, value] of formData.entries()) {
+      console.log(`  ${key}: ${value}`);
+    }
+    
+    const date = formData.get('date') as string;
+    const time = formData.get('time') as string;
+    
+    console.log('📅 Date:', date);
+    console.log('📅 Time:', time);
+    
+    if (!date || !time) {
+      console.error('📅 Missing date or time');
+      return;
+    }
+    
     // Construir el objeto de datos correctamente
     const appointmentData = {
-      clientName: formData.get('clientName'),
-      clientPhone: formData.get('clientPhone'),
-      clientEmail: formData.get('clientEmail'),
-      service: formData.get('service'),
-      scheduledDate: new Date(`${formData.get('date')}T${formData.get('time')}:00`).toISOString(),
+      clientName: formData.get('clientName') as string,
+      clientPhone: formData.get('clientPhone') as string,
+      clientEmail: formData.get('clientEmail') as string,
+      service: formData.get('service') as string,
+      scheduledDate: new Date(`${date}T${time}:00`).toISOString(),
       duration: parseInt(formData.get('duration') as string),
       notes: formData.get('notes') || '',
       status: 'scheduled'
     };
+    
+    console.log('📅 Final appointment data:', appointmentData);
     
     onSubmit(appointmentData);
   };

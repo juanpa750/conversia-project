@@ -1967,10 +1967,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/appointments', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.userId;
+      console.log('📅 Creating appointment - Raw request body:', JSON.stringify(req.body, null, 2));
+      
       const appointmentData = {
         ...req.body,
         userId
       };
+      
+      console.log('📅 Appointment data to be saved:', JSON.stringify(appointmentData, null, 2));
+      
       const appointment = await storage.createAppointment(appointmentData);
       res.json(appointment);
     } catch (error) {
