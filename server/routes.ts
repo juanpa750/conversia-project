@@ -2047,7 +2047,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const targetDate = date || new Date().toISOString().split('T')[0];
       console.log('📅 Getting available slots for user:', userId, 'date:', targetDate);
 
-      const slots = await storage.getAvailableSlots(userId, targetDate);
+      // Obtener zona horaria del usuario
+      const userPreferences = await storage.getUserPreferences(userId);
+      const userTimezone = userPreferences?.timezone || 'America/Bogota';
+      console.log('📅 User timezone:', userTimezone);
+
+      const slots = await storage.getAvailableSlotsWithTimezone(userId, targetDate, userTimezone);
       console.log('📅 Available slots found:', slots.length);
       res.json(slots);
     } catch (error) {

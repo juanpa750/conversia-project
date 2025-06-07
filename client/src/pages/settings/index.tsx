@@ -279,6 +279,27 @@ export function Settings() {
     },
   });
 
+  const updatePreferences = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("PUT", "/api/settings/preferences", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings/preferences"] });
+      toast({
+        title: "Preferencias actualizadas",
+        description: "Tus preferencias han sido guardadas correctamente",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Ha ocurrido un error al guardar las preferencias",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Form submission handlers
   const onProfileSubmit = (data: z.infer<typeof profileSchema>) => {
     updateProfile.mutate(data);
@@ -1000,7 +1021,10 @@ export function Settings() {
                           Zona horaria
                         </label>
                       </div>
-                      <Select defaultValue={preferences.timezone}>
+                      <Select 
+                        defaultValue={preferences.timezone}
+                        onValueChange={(value) => updatePreferences.mutate({ timezone: value })}
+                      >
                         <SelectTrigger id="timezone">
                           <SelectValue placeholder="Seleccionar zona horaria" />
                         </SelectTrigger>
@@ -1016,6 +1040,12 @@ export function Settings() {
                           </SelectItem>
                           <SelectItem value="America/Buenos_Aires">
                             Buenos Aires (GMT-3)
+                          </SelectItem>
+                          <SelectItem value="America/Lima">
+                            Lima (GMT-5)
+                          </SelectItem>
+                          <SelectItem value="America/Santiago">
+                            Santiago (GMT-3)
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -1035,6 +1065,7 @@ export function Settings() {
                       <select
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         defaultValue={preferences.dateFormat}
+                        onChange={(e) => updatePreferences.mutate({ dateFormat: e.target.value })}
                       >
                         <option value="DD/MM/YYYY">DD/MM/YYYY</option>
                         <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -1050,6 +1081,7 @@ export function Settings() {
                       <select
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         defaultValue={preferences.timeFormat}
+                        onChange={(e) => updatePreferences.mutate({ timeFormat: e.target.value })}
                       >
                         <option value="12h">12 horas (AM/PM)</option>
                         <option value="24h">24 horas</option>
