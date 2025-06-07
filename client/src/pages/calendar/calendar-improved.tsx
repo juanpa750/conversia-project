@@ -120,6 +120,14 @@ export default function CalendarPage() {
     setSelectedDate(today.toISOString().split('T')[0]);
   };
 
+  // Handle appointment status updates
+  const handleUpdateStatus = (appointmentId: number, status: string) => {
+    updateAppointmentMutation.mutate({ 
+      id: appointmentId, 
+      status 
+    });
+  };
+
   // Generate calendar data based on current view
   const getCalendarData = () => {
     const today = new Date(currentDate);
@@ -216,9 +224,7 @@ export default function CalendarPage() {
     createAppointmentMutation.mutate(appointmentData);
   };
 
-  const handleUpdateStatus = (appointmentId: number, newStatus: string) => {
-    updateAppointmentMutation.mutate({ id: appointmentId, status: newStatus });
-  };
+
 
   const calendarDays = getCalendarData();
 
@@ -759,54 +765,49 @@ function AppointmentCard({ appointment, onUpdateStatus }: any) {
           </div>
         </div>
         
-        {/* Action buttons - Responsive design */}
+        {/* Action buttons - Fixed mobile layout */}
         {onUpdateStatus && (
           <div className="pt-3 border-t">
-            <div className="grid grid-cols-2 gap-2">
-              {appointment.status === 'scheduled' && (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 w-full"
-                    onClick={() => onUpdateStatus('confirmed')}
-                  >
-                    <span className="hidden sm:inline">✅ Confirmar</span>
-                    <span className="sm:hidden">✅</span>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100 w-full"
-                    onClick={() => onUpdateStatus('cancelled')}
-                  >
-                    <span className="hidden sm:inline">❌ Cancelar</span>
-                    <span className="sm:hidden">❌</span>
-                  </Button>
-                </>
-              )}
-              
-              {appointment.status === 'confirmed' && (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 w-full col-span-2"
-                    onClick={() => onUpdateStatus('completed')}
-                  >
-                    <span className="hidden sm:inline">✅ Completar</span>
-                    <span className="sm:hidden">✅</span>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 w-full col-span-2"
-                    onClick={() => onUpdateStatus('no_show')}
-                  >
-                    <span className="hidden sm:inline">❌ No asistió</span>
-                    <span className="sm:hidden">❌</span>
-                  </Button>
-              </>
+            {appointment.status === 'scheduled' && (
+              <div className="flex flex-col space-y-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 w-full text-xs px-2 py-1"
+                  onClick={() => onUpdateStatus('confirmed')}
+                >
+                  ✅ Confirmar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100 w-full text-xs px-2 py-1"
+                  onClick={() => onUpdateStatus('cancelled')}
+                >
+                  ❌ Cancelar
+                </Button>
+              </div>
+            )}
+            
+            {appointment.status === 'confirmed' && (
+              <div className="flex flex-col space-y-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 w-full text-xs px-2 py-1"
+                  onClick={() => onUpdateStatus('completed')}
+                >
+                  ✅ Completar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 w-full text-xs px-2 py-1"
+                  onClick={() => onUpdateStatus('no_show')}
+                >
+                  ❌ No asistió
+                </Button>
+              </div>
             )}
           </div>
         )}
@@ -824,9 +825,10 @@ function AppointmentForm({ onSubmit, availableSlots, isLoading }: any) {
     const formData = new FormData(e.target as HTMLFormElement);
     
     console.log('📅 Form submission - Raw form data:');
-    for (let [key, value] of formData.entries()) {
+    const entries = Array.from(formData.entries());
+    entries.forEach(([key, value]) => {
       console.log(`  ${key}: ${value}`);
-    }
+    });
     
     const date = formData.get('date') as string;
     const time = formData.get('time') as string;
