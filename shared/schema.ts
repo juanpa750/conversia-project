@@ -10,6 +10,7 @@ export const chatbotTypeEnum = pgEnum('chatbot_type', ['support', 'sales', 'info
 export const contactStatusEnum = pgEnum('contact_status', ['active', 'inactive', 'new']);
 export const contactSourceEnum = pgEnum('contact_source', ['whatsapp', 'web', 'manual']);
 export const ticketStatusEnum = pgEnum('ticket_status', ['open', 'closed', 'pending']);
+export const appointmentStatusEnum = pgEnum('appointment_status', ['scheduled', 'confirmed', 'cancelled', 'completed', 'no_show']);
 
 // Users table
 export const users = pgTable("users", {
@@ -397,3 +398,70 @@ export type InsertProductAiConfig = typeof productAiConfig.$inferInsert;
 
 export type ProductVariant = typeof productVariants.$inferSelect;
 export type InsertProductVariant = typeof productVariants.$inferInsert;
+
+// Appointments table
+export const appointments = pgTable("appointments", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  chatbotId: integer("chatbot_id").references(() => chatbots.id, { onDelete: 'set null' }),
+  contactId: integer("contact_id").references(() => contacts.id, { onDelete: 'cascade' }),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  scheduledDate: timestamp("scheduled_date").notNull(),
+  duration: integer("duration").default(60), // minutos
+  status: appointmentStatusEnum("status").default('scheduled'),
+  contactName: varchar("contact_name").notNull(),
+  contactPhone: varchar("contact_phone").notNull(),
+  contactEmail: varchar("contact_email"),
+  serviceType: varchar("service_type"),
+  notes: text("notes"),
+  reminderSent: boolean("reminder_sent").default(false),
+  confirmationSent: boolean("confirmation_sent").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Availability slots table
+export const availabilitySlots = pgTable("availability_slots", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  dayOfWeek: integer("day_of_week").notNull(), // 0-6 (domingo a sábado)
+  startTime: varchar("start_time").notNull(), // HH:MM format
+  endTime: varchar("end_time").notNull(), // HH:MM format
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Calendar settings table
+export const calendarSettings = pgTable("calendar_settings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  workingHours: jsonb("working_hours").default({ start: '09:00', end: '17:00' }),
+  workingDays: jsonb("working_days").default([1, 2, 3, 4, 5]), // Lunes a Viernes
+  appointmentDuration: integer("appointment_duration").default(60), // minutos
+  bufferTime: integer("buffer_time").default(15), // minutos entre citas
+  advanceBookingDays: integer("advance_booking_days").default(30),
+  timezone: varchar("timezone").default('UTC'),
+  autoConfirm: boolean("auto_confirm").default(false),
+  reminderSettings: jsonb("reminder_settings").default({
+    enabled: true,
+    beforeHours: [24, 2], // recordatorios 24h y 2h antes
+    whatsapp: true,
+    email: false
+  }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAppointmentSchema = createInsertSchema(appointments);
+export const insertAvailabilitySlotSchema = createInsertSchema(availabilitySlots);
+export const insertCalendarSettingsSchema = createInsertSchema(calendarSettings);
+
+export type Appointment = typeof appointments.$inferSelect;
+export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
+
+export type AvailabilitySlot = typeof availabilitySlots.$inferSelect;
+export type InsertAvailabilitySlot = z.infer<typeof insertAvailabilitySlotSchema>;
+
+export type CalendarSettings = typeof calendarSettings.$inferSelect;
+export type InsertCalendarSettings = z.infer<typeof insertCalendarSettingsSchema>;

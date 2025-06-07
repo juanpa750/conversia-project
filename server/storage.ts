@@ -211,6 +211,16 @@ export class DatabaseStorage implements IStorage {
   async updateChatbot(id: number, data: Partial<Chatbot>): Promise<Chatbot> {
     console.log('🗃️ STORAGE: Updating chatbot', id, 'with data:', data);
     
+    // Si se está actualizando el objetivo, regenerar automáticamente el flujo
+    if (data.conversationObjective) {
+      const currentChatbot = await this.getChatbot(id);
+      if (currentChatbot) {
+        const newFlow = await this.generateFlowByObjective(data.conversationObjective, currentChatbot);
+        data.flow = JSON.stringify(newFlow);
+        console.log('🔄 AUTO-REGENERATED FLOW based on new objective:', data.conversationObjective);
+      }
+    }
+    
     const [chatbot] = await db
       .update(chatbots)
       .set({ ...data, updatedAt: new Date() })
@@ -797,10 +807,9 @@ PALABRAS CLAVE DE ACTIVACIÓN: ${triggerKeywords.join(', ')}`;
       description: `Asistente virtual especializado en ${product.name} con conocimiento profundo del producto y metodología AIDA para ventas consultivas.`,
       type: 'sales' as any,
       status: 'active' as any,
-      // Configuración de producto específico (omitido temporalmente para compatibilidad)
-      // productId: product.id,
-      // triggerKeywords,
-      // aiInstructions,
+      productId: product.id,
+      triggerKeywords,
+      aiInstructions,
       flow: JSON.stringify({
         nodes,
         edges,
@@ -1083,6 +1092,313 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
 
   async deleteProductVariant(id: number): Promise<void> {
     await db.delete(productVariants).where(eq(productVariants.id, id));
+  }
+
+  // Genera flujos dinámicos basados en el objetivo de conversación
+  async generateFlowByObjective(objective: string, chatbot: any): Promise<any> {
+    const baseFlow = chatbot.flow ? JSON.parse(chatbot.flow) : { nodes: [], edges: [] };
+    
+    console.log(`🎯 Generating dynamic flow for objective: ${objective}`);
+    
+    // Obtener información del producto si está vinculado
+    let product = null;
+    if (chatbot.productId) {
+      product = await this.getProduct(chatbot.productId);
+    }
+
+    switch (objective.toLowerCase()) {
+      case 'ventas':
+      case 'vender':
+      case 'venta':
+        return this.generateSalesFlow(product, chatbot);
+      
+      case 'soporte':
+      case 'ayuda':
+      case 'support':
+        return this.generateSupportFlow(product, chatbot);
+      
+      case 'citas':
+      case 'agendar':
+      case 'reservar':
+      case 'cita':
+        return this.generateAppointmentFlow(product, chatbot);
+      
+      case 'información':
+      case 'informacion':
+      case 'info':
+        return this.generateInformationFlow(product, chatbot);
+      
+      default:
+        return this.generateGeneralFlow(objective, product, chatbot);
+    }
+  }
+
+  private generateSalesFlow(product: any, chatbot: any) {
+    const nodes = [
+      {
+        id: 'start',
+        type: 'message',
+        position: { x: 100, y: 100 },
+        data: {
+          type: 'message',
+          text: `¡Hola! 👋 Soy tu especialista en ventas${product ? ` de ${product.name}` : ''}. Estoy aquí para ayudarte a encontrar la solución perfecta.`
+        }
+      },
+      {
+        id: 'qualify',
+        type: 'question',
+        position: { x: 300, y: 100 },
+        data: {
+          type: 'question',
+          text: '¿Qué tipo de solución estás buscando?',
+          responses: ['Ver productos', 'Consultar precios', 'Hablar con vendedor']
+        }
+      },
+      {
+        id: 'presentation',
+        type: 'message',
+        position: { x: 500, y: 100 },
+        data: {
+          type: 'message',
+          text: product 
+            ? `Te presento ${product.name}: ${product.description || 'Nuestra solución destacada'}`
+            : 'Te presento nuestras mejores soluciones disponibles.'
+        }
+      },
+      {
+        id: 'objections',
+        type: 'question',
+        position: { x: 700, y: 100 },
+        data: {
+          type: 'question',
+          text: '¿Tienes alguna duda o preocupación?',
+          responses: ['Sobre el precio', 'Sobre características', 'Sobre garantía', 'Sin dudas']
+        }
+      },
+      {
+        id: 'close',
+        type: 'action',
+        position: { x: 900, y: 100 },
+        data: {
+          type: 'action',
+          text: '¡Perfecto! ¿Estás listo para proceder con la compra?',
+          actions: ['Comprar ahora', 'Más información', 'Contactar vendedor']
+        }
+      }
+    ];
+
+    const edges = [
+      { id: 'e1', source: 'start', target: 'qualify' },
+      { id: 'e2', source: 'qualify', target: 'presentation' },
+      { id: 'e3', source: 'presentation', target: 'objections' },
+      { id: 'e4', source: 'objections', target: 'close' }
+    ];
+
+    return { nodes, edges, objective: 'ventas', productContext: product };
+  }
+
+  private generateAppointmentFlow(product: any, chatbot: any) {
+    const nodes = [
+      {
+        id: 'start',
+        type: 'message',
+        position: { x: 100, y: 100 },
+        data: {
+          type: 'message',
+          text: `¡Hola! 👋 Soy tu asistente de citas${product ? ` para ${product.name}` : ''}. Te ayudo a agendar tu cita de manera rápida y sencilla.`
+        }
+      },
+      {
+        id: 'service-type',
+        type: 'question',
+        position: { x: 300, y: 100 },
+        data: {
+          type: 'question',
+          text: '¿Qué tipo de servicio necesitas?',
+          responses: ['Consulta inicial', 'Seguimiento', 'Urgente', 'Información general']
+        }
+      },
+      {
+        id: 'date-selection',
+        type: 'calendar',
+        position: { x: 500, y: 100 },
+        data: {
+          type: 'calendar',
+          text: 'Selecciona tu fecha preferida:',
+          availableDates: this.getAvailableDates(),
+          timeSlots: ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00']
+        }
+      },
+      {
+        id: 'contact-info',
+        type: 'form',
+        position: { x: 700, y: 100 },
+        data: {
+          type: 'form',
+          text: 'Para confirmar tu cita, necesito tus datos:',
+          fields: [
+            { name: 'name', label: 'Nombre completo', required: true },
+            { name: 'phone', label: 'Teléfono', required: true },
+            { name: 'email', label: 'Email', required: false }
+          ]
+        }
+      },
+      {
+        id: 'confirmation',
+        type: 'action',
+        position: { x: 900, y: 100 },
+        data: {
+          type: 'action',
+          text: '¡Cita confirmada! Te enviaremos un recordatorio por WhatsApp.',
+          actions: ['Confirmar cita', 'Modificar horario', 'Cancelar']
+        }
+      }
+    ];
+
+    const edges = [
+      { id: 'e1', source: 'start', target: 'service-type' },
+      { id: 'e2', source: 'service-type', target: 'date-selection' },
+      { id: 'e3', source: 'date-selection', target: 'contact-info' },
+      { id: 'e4', source: 'contact-info', target: 'confirmation' }
+    ];
+
+    return { 
+      nodes, 
+      edges, 
+      objective: 'citas', 
+      productContext: product,
+      calendarConfig: {
+        workingHours: { start: '09:00', end: '17:00' },
+        workingDays: [1, 2, 3, 4, 5], // Lunes a Viernes
+        duration: 60, // minutos
+        buffer: 15 // minutos entre citas
+      }
+    };
+  }
+
+  private generateSupportFlow(product: any, chatbot: any) {
+    const nodes = [
+      {
+        id: 'start',
+        type: 'message',
+        position: { x: 100, y: 100 },
+        data: {
+          type: 'message',
+          text: `¡Hola! 👋 Soy tu asistente de soporte${product ? ` para ${product.name}` : ''}. ¿En qué puedo ayudarte hoy?`
+        }
+      },
+      {
+        id: 'issue-type',
+        type: 'question',
+        position: { x: 300, y: 100 },
+        data: {
+          type: 'question',
+          text: '¿Qué tipo de problema tienes?',
+          responses: ['Problema técnico', 'Consulta de uso', 'Garantía', 'Devolución', 'Otro']
+        }
+      },
+      {
+        id: 'diagnosis',
+        type: 'message',
+        position: { x: 500, y: 100 },
+        data: {
+          type: 'message',
+          text: 'Entiendo tu situación. Déjame ayudarte a resolver este problema paso a paso.'
+        }
+      },
+      {
+        id: 'solution',
+        type: 'action',
+        position: { x: 700, y: 100 },
+        data: {
+          type: 'action',
+          text: '¿Esta solución resolvió tu problema?',
+          actions: ['Sí, resuelto', 'Necesito más ayuda', 'Hablar con técnico']
+        }
+      }
+    ];
+
+    const edges = [
+      { id: 'e1', source: 'start', target: 'issue-type' },
+      { id: 'e2', source: 'issue-type', target: 'diagnosis' },
+      { id: 'e3', source: 'diagnosis', target: 'solution' }
+    ];
+
+    return { nodes, edges, objective: 'soporte', productContext: product };
+  }
+
+  private generateInformationFlow(product: any, chatbot: any) {
+    const nodes = [
+      {
+        id: 'start',
+        type: 'message',
+        position: { x: 100, y: 100 },
+        data: {
+          type: 'message',
+          text: `¡Hola! 👋 Soy tu asistente de información${product ? ` sobre ${product.name}` : ''}. Te ayudo a encontrar lo que necesitas.`
+        }
+      },
+      {
+        id: 'info-menu',
+        type: 'question',
+        position: { x: 300, y: 100 },
+        data: {
+          type: 'question',
+          text: '¿Qué información necesitas?',
+          responses: ['Características', 'Especificaciones', 'Precios', 'Disponibilidad', 'Comparar productos']
+        }
+      }
+    ];
+
+    const edges = [
+      { id: 'e1', source: 'start', target: 'info-menu' }
+    ];
+
+    return { nodes, edges, objective: 'información', productContext: product };
+  }
+
+  private generateGeneralFlow(objective: string, product: any, chatbot: any) {
+    const nodes = [
+      {
+        id: 'start',
+        type: 'message',
+        position: { x: 100, y: 100 },
+        data: {
+          type: 'message',
+          text: `¡Hola! 👋 Soy tu asistente virtual enfocado en: ${objective}. ¿Cómo puedo ayudarte?`
+        }
+      },
+      {
+        id: 'custom-goal',
+        type: 'question',
+        position: { x: 300, y: 100 },
+        data: {
+          type: 'question',
+          text: `Para cumplir con el objetivo: "${objective}", ¿qué necesitas específicamente?`,
+          responses: ['Más información', 'Consulta personalizada', 'Hablar con experto']
+        }
+      }
+    ];
+
+    const edges = [
+      { id: 'e1', source: 'start', target: 'custom-goal' }
+    ];
+
+    return { nodes, edges, objective: objective, productContext: product };
+  }
+
+  private getAvailableDates(): string[] {
+    const dates = [];
+    const today = new Date();
+    for (let i = 1; i <= 14; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      // Solo días laborables
+      if (date.getDay() >= 1 && date.getDay() <= 5) {
+        dates.push(date.toISOString().split('T')[0]);
+      }
+    }
+    return dates;
   }
 
   // Generate complete AIDA conversation flows for product chatbots
