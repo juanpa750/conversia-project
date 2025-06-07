@@ -200,6 +200,23 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async updateUserPreferences(userId: string, preferences: {
+    language?: string;
+    timezone?: string;
+    dateFormat?: string;
+    timeFormat?: string;
+  }): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        ...preferences, 
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
   // Chatbot operations
   async getChatbots(userId: string): Promise<Chatbot[]> {
     return db

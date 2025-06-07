@@ -2279,6 +2279,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Settings endpoints
+  app.get('/api/settings/preferences', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({
+        language: user.language || 'es',
+        timezone: user.timezone || 'America/Bogota',
+        dateFormat: user.dateFormat || 'DD/MM/YYYY',
+        timeFormat: user.timeFormat || '24h'
+      });
+    } catch (error: any) {
+      console.error('Error fetching preferences:', error);
+      res.status(500).json({ message: 'Error fetching preferences' });
+    }
+  });
+
+  app.put('/api/settings/preferences', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const { language, timezone, dateFormat, timeFormat } = req.body;
+
+      await storage.updateUserPreferences(userId, {
+        language,
+        timezone,
+        dateFormat,
+        timeFormat
+      });
+
+      res.json({ message: 'Preferences updated successfully' });
+    } catch (error: any) {
+      console.error('Error updating preferences:', error);
+      res.status(500).json({ message: 'Error updating preferences' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
