@@ -21,6 +21,7 @@ import CRMDashboard from "@/pages/crm";
 import WhatsAppConnect from "@/pages/integrations/whatsapp-connect";
 import WhatsAppBotConfig from "@/pages/integrations/whatsapp-bot";
 import WhatsAppIntegration from "@/pages/whatsapp";
+import MultiWhatsAppAccounts from "@/pages/whatsapp/multi-accounts";
 import AIAdvanced from "@/pages/ai-advanced";
 import ConversationControl from "@/pages/ai-advanced/conversation-control";
 import Marketing from "@/pages/marketing";
@@ -182,6 +183,11 @@ function Router() {
           <Route path="/whatsapp">
             <Layout>
               <WhatsAppIntegration />
+            </Layout>
+          </Route>
+          <Route path="/whatsapp/multi-accounts">
+            <Layout>
+              <MultiWhatsAppAccounts />
             </Layout>
           </Route>
           <Route path="/ai-advanced">

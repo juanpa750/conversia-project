@@ -6,6 +6,7 @@ import { setupStripe } from "./stripe";
 import { AIAppointmentService } from "./aiAppointmentService";
 import { EmailService } from "./emailService";
 import { WhatsAppService } from "./whatsappService";
+import { registerMultiWhatsAppRoutes } from "./routes-whatsapp-multi";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
@@ -2476,6 +2477,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error updating preferences' });
     }
   });
+
+  // Registrar rutas de múltiples integraciones de WhatsApp
+  registerMultiWhatsAppRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
