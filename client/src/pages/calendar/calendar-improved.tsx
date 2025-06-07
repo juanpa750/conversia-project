@@ -734,56 +734,61 @@ function AppointmentCard({ appointment, onUpdateStatus }: any) {
           </div>
         </div>
         
-        {/* Action buttons */}
+        {/* Action buttons - Responsive design */}
         {onUpdateStatus && (
-          <div className="flex flex-wrap gap-2 pt-2">
-            {appointment.status === 'scheduled' && (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
-                  onClick={() => onUpdateStatus('confirmed')}
-                >
-                  ✅ Confirmar
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
-                  onClick={() => onUpdateStatus('cancelled')}
-                >
-                  ❌ Cancelar
-                </Button>
+          <div className="pt-3 border-t">
+            <div className="grid grid-cols-2 gap-2">
+              {appointment.status === 'scheduled' && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 w-full"
+                    onClick={() => onUpdateStatus('confirmed')}
+                  >
+                    <span className="hidden sm:inline">✅ Confirmar</span>
+                    <span className="sm:hidden">✅</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100 w-full"
+                    onClick={() => onUpdateStatus('cancelled')}
+                  >
+                    <span className="hidden sm:inline">❌ Cancelar</span>
+                    <span className="sm:hidden">❌</span>
+                  </Button>
+                </>
+              )}
+              
+              {appointment.status === 'confirmed' && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 w-full col-span-2"
+                    onClick={() => onUpdateStatus('completed')}
+                  >
+                    <span className="hidden sm:inline">✅ Completar</span>
+                    <span className="sm:hidden">✅</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 w-full col-span-2"
+                    onClick={() => onUpdateStatus('no_show')}
+                  >
+                    <span className="hidden sm:inline">❌ No asistió</span>
+                    <span className="sm:hidden">❌</span>
+                  </Button>
               </>
             )}
-            
-            {appointment.status === 'confirmed' && (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-                  onClick={() => onUpdateStatus('completed')}
-                >
-                  ✅ Completar
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
-                  onClick={() => onUpdateStatus('no_show')}
-                >
-                  ❌ No asistió
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-}
+            </div>
+          )}
+        </div>
+      </Card>
+    );
+  }
 
 // Appointment Form Component
 function AppointmentForm({ onSubmit, availableSlots, isLoading }: any) {

@@ -1956,7 +1956,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.userId;
       const date = req.query.date as string;
+      console.log('📅 Fetching appointments for user:', userId, 'date filter:', date);
+      
+      // Si no hay filtro de fecha, obtener todas las citas del usuario
       const appointments = await storage.getAppointments(userId, date);
+      console.log('📅 Found appointments:', appointments.length);
+      
       res.json(appointments);
     } catch (error) {
       console.error('Error fetching appointments:', error);
