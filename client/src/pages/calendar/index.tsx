@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -763,50 +763,53 @@ function AppointmentForm({ onSubmit, availableSlots, isLoading, selectedDate, de
 
 // Calendar Settings Component
 function CalendarSettings({ settings }: any) {
-  const [formData, setFormData] = useState({
-    workingHours: settings?.workingHours || { start: '09:00', end: '17:00' },
-    workingDays: settings?.workingDays || [1, 2, 3, 4, 5],
-    slotDuration: settings?.slotDuration || 60,
-    bufferTime: settings?.bufferTime || 15,
-    maxAdvanceBooking: settings?.maxAdvanceBooking || 30,
-    autoConfirm: settings?.autoConfirm || false,
-    reminderEnabled: settings?.reminderEnabled || true,
-    reminderTime: settings?.reminderTime || 24
+  // Usar un ref para controlar si ya se inicializó desde el servidor
+  const hasInitializedRef = useRef(false);
+  
+  // Función para crear el estado inicial basado en settings
+  const createInitialState = (serverSettings: any) => ({
+    workingHours: serverSettings?.workingHours || { start: '09:00', end: '17:00' },
+    workingDays: serverSettings?.workingDays || [1, 2, 3, 4, 5],
+    slotDuration: serverSettings?.slotDuration !== undefined ? serverSettings.slotDuration : 60,
+    bufferTime: serverSettings?.bufferTime !== undefined ? serverSettings.bufferTime : 15,
+    maxAdvanceBooking: serverSettings?.maxAdvanceBooking !== undefined ? serverSettings.maxAdvanceBooking : 30,
+    autoConfirm: serverSettings?.autoConfirm !== undefined ? serverSettings.autoConfirm : false,
+    reminderEnabled: serverSettings?.reminderEnabled !== undefined ? serverSettings.reminderEnabled : true,
+    reminderTime: serverSettings?.reminderTime !== undefined ? serverSettings.reminderTime : 24
   });
 
-  // Inicializar formData solo una vez cuando se cargan los settings por primera vez
-  const [isInitialized, setIsInitialized] = useState(false);
+  // Inicializar formData con los datos del servidor si están disponibles
+  const [formData, setFormData] = useState(() => createInitialState(settings));
   
+  // Solo actualizar cuando lleguen los settings por primera vez
   useEffect(() => {
-    if (settings && !isInitialized) {
-      setFormData({
-        workingHours: settings.workingHours || { start: '09:00', end: '17:00' },
-        workingDays: settings.workingDays || [1, 2, 3, 4, 5],
-        slotDuration: settings.slotDuration || 60,
-        bufferTime: settings.bufferTime || 15,
-        maxAdvanceBooking: settings.maxAdvanceBooking || 30,
-        autoConfirm: settings.autoConfirm || false,
-        reminderEnabled: settings.reminderEnabled || true,
-        reminderTime: settings.reminderTime || 24
-      });
-      setIsInitialized(true);
+    if (settings && !hasInitializedRef.current) {
+      console.log('📅 Inicializando configuración con datos del servidor:', settings);
+      console.log('📅 SlotDuration específico del servidor:', settings.slotDuration);
+      const newFormData = createInitialState(settings);
+      console.log('📅 Nuevo formData configurado:', newFormData);
+      setFormData(newFormData);
+      hasInitializedRef.current = true;
     }
-  }, [settings, isInitialized]);
+  }, [settings]);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log('📅 Enviando datos al servidor:', data);
       const response = await apiRequest('PUT', '/api/calendar/settings', data);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('📅 Respuesta del servidor:', data);
       toast({
         title: "Configuración guardada",
         description: "Las configuraciones del calendario se han actualizado correctamente."
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/calendar/settings"] });
+      // NO invalidar la query para evitar que se resetee el formulario
+      // queryClient.invalidateQueries({ queryKey: ["/api/calendar/settings"] });
     },
     onError: () => {
       toast({
