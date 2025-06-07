@@ -450,6 +450,12 @@ export const calendarSettings = pgTable("calendar_settings", {
     whatsapp: true,
     email: true
   }),
+  whatsappNotifications: jsonb("whatsapp_notifications").default({
+    enabled: true,
+    confirmationTemplate: "✅ *Confirmación de Cita*\n\nHola {clientName},\n\nTu cita ha sido *confirmada* para:\n📅 *Fecha:* {date}\n🕐 *Hora:* {time}\n🔧 *Servicio:* {service}\n⏱️ *Duración:* {duration} minutos\n\nGracias por confiar en {companyName}.\n\n_Mensaje automático - No responder_",
+    reminderTemplate: "🔔 *Recordatorio de Cita*\n\nHola {clientName},\n\nTe recordamos tu cita programada para *mañana*:\n📅 *Fecha:* {date}\n🕐 *Hora:* {time}\n🔧 *Servicio:* {service}\n⏱️ *Duración:* {duration} minutos\n\nNos vemos mañana en {companyName}.\n\n_Mensaje automático - No responder_",
+    cancellationTemplate: "❌ *Cita Cancelada*\n\nHola {clientName},\n\nLamentamos informarte que tu cita del *{date} a las {time}* ha sido cancelada.\n\n📞 Si necesitas reprogramar, no dudes en contactarnos.\n\nDisculpa las molestias.\n\nSaludos,\n{companyName}"
+  }),
   emailNotifications: jsonb("email_notifications").default({
     enabled: true,
     confirmationTemplate: "Estimado/a {clientName},\n\nSu cita ha sido confirmada para el {date} a las {time}.\n\nDetalles:\n- Servicio: {service}\n- Duración: {duration} minutos\n\nGracias por su confianza.\n\nSaludos cordiales,\n{companyName}",

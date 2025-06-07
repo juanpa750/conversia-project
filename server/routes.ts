@@ -2147,6 +2147,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // WhatsApp notification endpoints
+  app.post('/api/whatsapp/send-reminder', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const { appointmentId, reminderType } = req.body;
+      
+      const appointment = await storage.getAppointmentById(appointmentId);
+      if (!appointment || appointment.userId !== userId) {
+        return res.status(404).json({ message: 'Appointment not found' });
+      }
+      
+      const result = await WhatsAppService.sendAppointmentReminder(appointment, userId, reminderType);
+      
+      res.json({
+        success: result,
+        message: result ? 'Recordatorio enviado por WhatsApp' : 'Error enviando recordatorio'
+      });
+    } catch (error: any) {
+      console.error('WhatsApp reminder error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Error enviando recordatorio por WhatsApp' 
+      });
+    }
+  });
+
+  app.post('/api/whatsapp/bulk-reminders', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      
+      await WhatsAppService.sendBulkReminders(userId);
+      
+      res.json({
+        success: true,
+        message: 'Recordatorios masivos enviados por WhatsApp'
+      });
+    } catch (error: any) {
+      console.error('Bulk WhatsApp reminders error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Error enviando recordatorios masivos' 
+      });
+    }
+  });
+
+  // Test WhatsApp integration
+  app.post('/api/whatsapp/test', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const { phone, message } = req.body;
+      
+      if (!WhatsAppService.validatePhoneNumber(phone)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Número de teléfono inválido'
+        });
+      }
+      
+      const testAppointment = {
+        clientName: 'Cliente Prueba',
+        clientPhone: WhatsAppService.formatPhoneNumber(phone),
+        service: 'Servicio de Prueba',
+        duration: 60,
+        scheduledDate: new Date(),
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+      };
+      
+      const result = await WhatsAppService.sendAppointmentConfirmation(testAppointment, userId);
+      
+      res.json({
+        success: result,
+        message: result ? 'Mensaje de prueba enviado exitosamente' : 'Error enviando mensaje de prueba',
+        phone: testAppointment.clientPhone
+      });
+    } catch (error: any) {
+      console.error('WhatsApp test error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Error en prueba de WhatsApp' 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
