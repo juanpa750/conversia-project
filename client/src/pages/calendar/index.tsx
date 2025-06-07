@@ -408,10 +408,21 @@ function WeekView({ currentDate, appointments, onDateSelect }: any) {
     <div className="space-y-4">
       <div className="grid grid-cols-7 gap-2">
         {weekDays.map((day, index) => {
-          const dayStr = day.toISOString().split('T')[0];
-          const dayAppointments = appointments.filter((apt: any) => 
-            apt.scheduledDate?.startsWith(dayStr)
-          );
+          // Usar fecha local para evitar problemas de zona horaria
+          const year = day.getFullYear();
+          const month = String(day.getMonth() + 1).padStart(2, '0');
+          const dayNum = String(day.getDate()).padStart(2, '0');
+          const dayStr = `${year}-${month}-${dayNum}`;
+          
+          const dayAppointments = appointments.filter((apt: any) => {
+            if (!apt.scheduledDate) return false;
+            const aptDate = new Date(apt.scheduledDate);
+            const aptYear = aptDate.getFullYear();
+            const aptMonth = String(aptDate.getMonth() + 1).padStart(2, '0');
+            const aptDay = String(aptDate.getDate()).padStart(2, '0');
+            const aptDateStr = `${aptYear}-${aptMonth}-${aptDay}`;
+            return aptDateStr === dayStr;
+          });
           const isToday = day.toDateString() === new Date().toDateString();
           
           return (
