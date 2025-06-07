@@ -15,7 +15,8 @@ import {
   RiAdvertisementLine,
   RiTeamLine,
   RiApps2Line,
-  RiGalleryLine
+  RiGalleryLine,
+  RiCalendarLine
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -124,6 +125,14 @@ export function Sidebar() {
           active={location.startsWith("/crm")}
         >
           CRM Avanzado
+        </NavItem>
+        
+        <NavItem 
+          href="/calendar" 
+          icon={<RiCalendarLine />} 
+          active={location.startsWith("/calendar")}
+        >
+          Calendario
         </NavItem>
         
         <NavItem 
