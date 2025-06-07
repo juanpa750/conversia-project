@@ -21,20 +21,17 @@ export default function CalendarPage() {
 
   // Fetch appointments for selected date
   const { data: appointments = [], isLoading: appointmentsLoading } = useQuery({
-    queryKey: ['/api/appointments', selectedDate],
-    queryFn: () => apiRequest('GET', `/api/appointments?date=${selectedDate}`),
+    queryKey: [`/api/appointments?date=${selectedDate}`],
   });
 
   // Fetch available slots
   const { data: availableSlots = [] } = useQuery({
-    queryKey: ['/api/calendar/available-slots', selectedDate],
-    queryFn: () => apiRequest('GET', `/api/calendar/available-slots?date=${selectedDate}`),
+    queryKey: [`/api/calendar/available-slots?date=${selectedDate}`],
   });
 
   // Fetch calendar settings
   const { data: settings } = useQuery({
     queryKey: ['/api/calendar/settings'],
-    queryFn: () => apiRequest('GET', '/api/calendar/settings'),
   });
 
   // Create appointment mutation
@@ -154,13 +151,13 @@ export default function CalendarPage() {
               <div className="mt-4">
                 <h4 className="font-medium mb-2">Horarios Disponibles</h4>
                 <div className="grid grid-cols-2 gap-2">
-                  {availableSlots.map((slot: string) => (
+                  {Array.isArray(availableSlots) && availableSlots.map((slot: string) => (
                     <Badge key={slot} variant="outline" className="justify-center">
                       {slot}
                     </Badge>
                   ))}
                 </div>
-                {availableSlots.length === 0 && (
+                {(!Array.isArray(availableSlots) || availableSlots.length === 0) && (
                   <p className="text-sm text-muted-foreground">
                     No hay horarios disponibles
                   </p>
@@ -185,7 +182,7 @@ export default function CalendarPage() {
                     <div key={i} className="h-20 bg-gray-100 rounded animate-pulse" />
                   ))}
                 </div>
-              ) : appointments.length === 0 ? (
+              ) : !Array.isArray(appointments) || appointments.length === 0 ? (
                 <div className="text-center py-8">
                   <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                   <p className="text-muted-foreground">
@@ -194,11 +191,11 @@ export default function CalendarPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {appointments.map((appointment: any) => (
+                  {Array.isArray(appointments) && appointments.map((appointment: any) => (
                     <AppointmentCard 
                       key={appointment.id} 
                       appointment={appointment}
-                      onUpdateStatus={(status) => 
+                      onUpdateStatus={(status: string) => 
                         updateAppointmentMutation.mutate({ 
                           id: appointment.id, 
                           data: { status } 
