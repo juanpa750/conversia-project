@@ -1909,6 +1909,81 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
       flow: aidaFlows
     });
   }
+
+  // WhatsApp Messages
+  async createWhatsappMessage(data: InsertWhatsappMessage): Promise<WhatsappMessage> {
+    const [message] = await db
+      .insert(whatsappMessages)
+      .values(data)
+      .returning();
+    return message;
+  }
+
+  async getWhatsappMessages(integrationId: number, limit = 50): Promise<WhatsappMessage[]> {
+    return await db
+      .select()
+      .from(whatsappMessages)
+      .where(eq(whatsappMessages.integrationId, integrationId))
+      .orderBy(desc(whatsappMessages.timestamp))
+      .limit(limit);
+  }
+
+  async getWhatsappConversation(integrationId: number, conversationId: string, limit = 50): Promise<WhatsappMessage[]> {
+    return await db
+      .select()
+      .from(whatsappMessages)
+      .where(
+        and(
+          eq(whatsappMessages.integrationId, integrationId),
+          eq(whatsappMessages.conversationId, conversationId)
+        )
+      )
+      .orderBy(desc(whatsappMessages.timestamp))
+      .limit(limit);
+  }
+
+  async updateWhatsappMessageStatus(messageId: string, status: string): Promise<void> {
+    await db
+      .update(whatsappMessages)
+      .set({ status })
+      .where(eq(whatsappMessages.messageId, messageId));
+  }
+
+  // WhatsApp Webhooks
+  async createWhatsappWebhook(data: InsertWhatsappWebhook): Promise<WhatsappWebhook> {
+    const [webhook] = await db
+      .insert(whatsappWebhooks)
+      .values(data)
+      .returning();
+    return webhook;
+  }
+
+  async getUnprocessedWebhooks(integrationId: number): Promise<WhatsappWebhook[]> {
+    return await db
+      .select()
+      .from(whatsappWebhooks)
+      .where(
+        and(
+          eq(whatsappWebhooks.integrationId, integrationId),
+          eq(whatsappWebhooks.processed, false)
+        )
+      )
+      .orderBy(whatsappWebhooks.createdAt);
+  }
+
+  async markWebhookProcessed(id: number): Promise<void> {
+    await db
+      .update(whatsappWebhooks)
+      .set({ 
+        processed: true, 
+        processedAt: new Date() 
+      })
+      .where(eq(whatsappWebhooks.id, id));
+  }
+
+  async deleteWhatsappIntegration(id: number): Promise<void> {
+    await db.delete(whatsappIntegrations).where(eq(whatsappIntegrations.id, id));
+  }
 }
 
 export const storage = new DatabaseStorage();

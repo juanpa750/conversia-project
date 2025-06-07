@@ -1235,32 +1235,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/settings/whatsapp/connect', isAuthenticated, async (req, res) => {
+  // WhatsApp Integration Endpoints
+  app.get('/api/whatsapp/integration', isAuthenticated, async (req, res) => {
     try {
       const integration = await storage.getWhatsappIntegration(req.userId);
+      res.json(integration || { isConnected: false });
+    } catch (error: any) {
+      console.error('Get WhatsApp integration error:', error);
+      res.status(500).json({ message: 'Error obteniendo integración de WhatsApp' });
+    }
+  });
+
+  app.post('/api/whatsapp/connect', isAuthenticated, async (req, res) => {
+    try {
+      const { phoneNumber, displayName, businessDescription, accessToken, phoneNumberId, businessAccountId } = req.body;
       
-      if (integration) {
+      const existingIntegration = await storage.getWhatsappIntegration(req.userId);
+      
+      if (existingIntegration) {
         // Update existing integration
-        const updatedIntegration = await storage.updateWhatsappIntegration(integration.id, {
-          ...req.body,
+        const updatedIntegration = await storage.updateWhatsappIntegration(existingIntegration.id, {
+          phoneNumber,
+          displayName,
+          businessDescription,
+          accessToken,
+          phoneNumberId,
+          businessAccountId,
           status: 'connected',
-          connectedAt: new Date()
+          connectedAt: new Date(),
+          lastError: null
         });
-        return res.json(updatedIntegration);
+        return res.json({ success: true, integration: updatedIntegration });
       }
       
       // Create new integration
       const newIntegration = await storage.createWhatsappIntegration({
-        ...req.body,
         userId: req.userId,
+        phoneNumber,
+        displayName,
+        businessDescription,
+        accessToken,
+        phoneNumberId,
+        businessAccountId,
         status: 'connected',
-        connectedAt: new Date()
+        connectedAt: new Date(),
+        webhookToken: `wa_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       });
       
-      res.status(201).json(newIntegration);
+      res.status(201).json({ success: true, integration: newIntegration });
     } catch (error: any) {
       console.error('Connect WhatsApp error:', error);
-      res.status(500).json({ message: 'Failed to connect WhatsApp', error: error.message });
+      res.status(500).json({ success: false, message: 'Error conectando WhatsApp', error: error.message });
     }
   });
 
@@ -1281,6 +1306,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Disconnect WhatsApp error:', error);
       res.status(500).json({ message: 'Failed to disconnect WhatsApp', error: error.message });
+    }
+  });
+
+  // Advanced WhatsApp API endpoints
+  app.post('/api/whatsapp/test-connection', isAuthenticated, async (req, res) => {
+    try {
+      const integration = await storage.getWhatsappIntegration(req.userId);
+      
+      if (!integration || integration.status !== 'connected') {
+        return res.status(400).json({ success: false, message: 'WhatsApp no está conectado' });
+      }
+
+      const { WhatsAppAPI } = await import('./whatsappAPI');
+      const testResult = await WhatsAppAPI.testConnection(integration);
+
+      if (testResult.success) {
+        res.json({ success: true, message: 'Conexión a WhatsApp verificada correctamente' });
+      } else {
+        await storage.updateWhatsappIntegration(integration.id, {
+          status: 'error',
+          lastError: testResult.error
+        });
+        res.status(400).json({ success: false, message: testResult.error });
+      }
+    } catch (error: any) {
+      console.error('Test WhatsApp connection error:', error);
+      res.status(500).json({ success: false, message: 'Error probando conexión de WhatsApp', error: error.message });
+    }
+  });
+
+  app.post('/api/whatsapp/send-message', isAuthenticated, async (req, res) => {
+    try {
+      const { to, message, type = 'text' } = req.body;
+      const integration = await storage.getWhatsappIntegration(req.userId);
+      
+      if (!integration || integration.status !== 'connected') {
+        return res.status(400).json({ success: false, message: 'WhatsApp no está conectado' });
+      }
+
+      const { WhatsAppAPI } = await import('./whatsappAPI');
+      const result = await WhatsAppAPI.sendTextMessage(integration, to, message);
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Send WhatsApp message error:', error);
+      res.status(500).json({ success: false, message: 'Error enviando mensaje de WhatsApp', error: error.message });
+    }
+  });
+
+  app.get('/api/whatsapp/messages', isAuthenticated, async (req, res) => {
+    try {
+      const { limit = 50 } = req.query;
+      const integration = await storage.getWhatsappIntegration(req.userId);
+      
+      if (!integration) {
+        return res.status(404).json({ message: 'No se encontró integración de WhatsApp' });
+      }
+
+      const messages = await storage.getWhatsappMessages(integration.id, Number(limit));
+      res.json(messages);
+    } catch (error: any) {
+      console.error('Get WhatsApp messages error:', error);
+      res.status(500).json({ message: 'Error obteniendo mensajes de WhatsApp', error: error.message });
+    }
+  });
+
+  app.get('/api/whatsapp/conversation/:conversationId', isAuthenticated, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const { limit = 50 } = req.query;
+      const integration = await storage.getWhatsappIntegration(req.userId);
+      
+      if (!integration) {
+        return res.status(404).json({ message: 'No se encontró integración de WhatsApp' });
+      }
+
+      const messages = await storage.getWhatsappConversation(integration.id, conversationId, Number(limit));
+      res.json(messages);
+    } catch (error: any) {
+      console.error('Get WhatsApp conversation error:', error);
+      res.status(500).json({ message: 'Error obteniendo conversación de WhatsApp', error: error.message });
+    }
+  });
+
+  // WhatsApp Webhook endpoints
+  app.get('/api/whatsapp/webhook', (req, res) => {
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
+
+    if (mode === 'subscribe') {
+      console.log('📱 WhatsApp webhook verification request');
+      res.status(200).send(challenge);
+    } else {
+      res.status(403).json({ error: 'Forbidden' });
+    }
+  });
+
+  app.post('/api/whatsapp/webhook', async (req, res) => {
+    try {
+      const body = req.body;
+      
+      if (body.object === 'whatsapp_business_account') {
+        const entry = body.entry?.[0];
+        const changes = entry?.changes?.[0];
+        
+        if (changes?.field === 'messages') {
+          const { WhatsAppAPI } = await import('./whatsappAPI');
+          
+          const phoneNumberId = changes.value.metadata.phone_number_id;
+          const messages = changes.value.messages;
+          const statuses = changes.value.statuses;
+
+          if (messages) {
+            for (const message of messages) {
+              console.log('📱 Incoming WhatsApp message:', message);
+            }
+          }
+
+          if (statuses) {
+            for (const status of statuses) {
+              console.log('📱 WhatsApp message status update:', status);
+              await storage.updateWhatsappMessageStatus(status.id, status.status);
+            }
+          }
+        }
+      }
+
+      res.status(200).json({ success: true });
+    } catch (error: any) {
+      console.error('WhatsApp webhook error:', error);
+      res.status(500).json({ error: 'Webhook processing failed' });
     }
   });
 
