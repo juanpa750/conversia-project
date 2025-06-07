@@ -1,9 +1,11 @@
-import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js';
 import QRCode from 'qrcode';
 import { storage } from './storage';
 import { EventEmitter } from 'events';
 import path from 'path';
 import fs from 'fs';
+
+// Simple WhatsApp Web simulation for demo purposes
+// In production, you would use the actual whatsapp-web.js library
 
 interface WhatsAppWebSession {
   userId: string;

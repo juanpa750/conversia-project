@@ -2481,6 +2481,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Registrar rutas de múltiples integraciones de WhatsApp
   registerMultiWhatsAppRoutes(app);
+  
+  // Registrar rutas de WhatsApp Simple (código QR)
+  registerWhatsAppSimpleRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

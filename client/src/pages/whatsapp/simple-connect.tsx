@@ -17,7 +17,7 @@ import {
   RiErrorWarningLine,
   RiSendPlaneLine,
   RiSettingsLine,
-  RiChatLine,
+  RiChat1Line,
   RiRobotLine
 } from 'react-icons/ri';
 
