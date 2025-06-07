@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { isAuthenticated } from "./auth";
+import { isAuthenticated, generateToken, hashPassword, comparePassword } from "./auth";
 import { simpleStorage } from "./storage";
 import { registerSimpleRoutes } from "./routes-simple";
 
@@ -19,8 +19,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Generate token (simplified)
-      const token = Buffer.from(`${user.id}:${Date.now()}`).toString('base64');
+      // Verify password if it exists, otherwise allow login for demo
+      if (user.password && !(await comparePassword(password, user.password))) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Generate proper JWT token
+      const token = generateToken(user);
       
       res.cookie('token', token, { httpOnly: true, secure: false });
       res.json({ 
@@ -34,6 +39,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Login error:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Get current user
+  app.get("/api/auth/me", isAuthenticated, async (req, res) => {
+    try {
+      const user = await simpleStorage.getUser(req.userId!);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role
+      });
+    } catch (error) {
+      console.error('Get user error:', error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
