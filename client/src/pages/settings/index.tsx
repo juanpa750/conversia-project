@@ -147,12 +147,6 @@ export function Settings() {
 
   const { data: preferences } = useQuery({
     queryKey: ["/api/settings/preferences"],
-    initialData: {
-      language: "es",
-      timezone: "Europe/Madrid",
-      dateFormat: "DD/MM/YYYY",
-      timeFormat: "24h",
-    },
   });
 
   // Mutations
@@ -260,27 +254,6 @@ export function Settings() {
     },
   });
 
-  const updateLanguage = useMutation({
-    mutationFn: async (data: { language: string }) => {
-      const res = await apiRequest("PUT", "/api/settings/preferences", data);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/settings/preferences"] });
-      toast({
-        title: "Idioma actualizado",
-        description: "El idioma de la plataforma ha sido cambiado",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Ha ocurrido un error al cambiar el idioma",
-        variant: "destructive",
-      });
-    },
-  });
-
   const updatePreferences = useMutation({
     mutationFn: async (data: any) => {
       const res = await apiRequest("PUT", "/api/settings/preferences", data);
@@ -296,7 +269,7 @@ export function Settings() {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Ha ocurrido un error al guardar las preferencias",
+        description: error.message || "Ha ocurrido un error al actualizar las preferencias",
         variant: "destructive",
       });
     },
