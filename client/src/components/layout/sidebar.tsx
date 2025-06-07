@@ -144,6 +144,14 @@ export function Sidebar() {
         </NavItem>
         
         <NavItem 
+          href="/profile" 
+          icon={<RiSettings3Line />} 
+          active={location.startsWith("/profile")}
+        >
+          Mi Perfil
+        </NavItem>
+        
+        <NavItem 
           href="/analytics" 
           icon={<RiBarChart2Line />} 
           active={location.startsWith("/analytics")}
