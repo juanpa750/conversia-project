@@ -32,6 +32,10 @@ export default function CalendarPage() {
   // Fetch available slots for selected date
   const { data: availableSlots = [] } = useQuery({
     queryKey: ['/api/calendar/available-slots', selectedDate],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/calendar/available-slots?date=${selectedDate}`);
+      return response.json();
+    },
     refetchInterval: 30000,
   });
 
