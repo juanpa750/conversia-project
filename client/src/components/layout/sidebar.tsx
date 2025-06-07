@@ -80,9 +80,9 @@ export function Sidebar() {
         </NavItem>
         
         <NavItem 
-          href="/integrations/whatsapp-connect" 
+          href="/whatsapp" 
           icon={<RiWhatsappLine />} 
-          active={location.startsWith("/integrations/whatsapp")}
+          active={location.startsWith("/whatsapp")}
         >
           WhatsApp
         </NavItem>
