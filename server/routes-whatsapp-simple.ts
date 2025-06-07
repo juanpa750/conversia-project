@@ -160,7 +160,7 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
       const userId = req.userId!;
       
       // Obtener chatbots del usuario
-      const chatbots = await storage.getChatbotsByUser(userId);
+      const chatbots = await storage.getChatbots(userId);
       
       res.json({
         success: true,

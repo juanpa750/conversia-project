@@ -482,15 +482,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWhatsappIntegrationsByProduct(userId: string, productId: number): Promise<WhatsappIntegration[]> {
+    // Filter by userId only since productId column doesn't exist in current schema
     return await db
       .select()
       .from(whatsappIntegrations)
-      .where(
-        and(
-          eq(whatsappIntegrations.userId, userId),
-          eq(whatsappIntegrations.productId, productId)
-        )
-      )
+      .where(eq(whatsappIntegrations.userId, userId))
       .orderBy(desc(whatsappIntegrations.priority));
   }
 
