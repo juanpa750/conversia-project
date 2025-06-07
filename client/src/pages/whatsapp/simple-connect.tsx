@@ -18,9 +18,9 @@ import {
   RiSendPlaneLine,
   RiSettingsLine,
   RiChat1Line,
-
   RiRobotLine
 } from 'react-icons/ri';
+import TestMessageForm from '@/components/TestMessageForm';
 
 interface WhatsAppStatus {
   status: 'disconnected' | 'qr_pending' | 'authenticating' | 'connected' | 'error';
@@ -398,42 +398,15 @@ export default function WhatsAppSimpleConnect() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <RiSendPlaneLine className="w-5 h-5 text-green-500" />
-                  Mensaje de Prueba
+                  <RiRobotLine className="w-5 h-5 text-green-500" />
+                  Prueba las Respuestas Automáticas
                 </CardTitle>
                 <CardDescription>
-                  Envía un mensaje para probar que todo funciona
+                  Simula mensajes entrantes y observa cómo responde la IA automáticamente
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="testTo">Número de destino (con código de país)</Label>
-                  <Input
-                    id="testTo"
-                    value={testMessage.to}
-                    onChange={(e) => setTestMessage(prev => ({ ...prev, to: e.target.value }))}
-                    placeholder="Ej: 5491123456789"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="testMessage">Mensaje</Label>
-                  <Textarea
-                    id="testMessage"
-                    value={testMessage.message}
-                    onChange={(e) => setTestMessage(prev => ({ ...prev, message: e.target.value }))}
-                    rows={3}
-                  />
-                </div>
-                
-                <Button 
-                  onClick={() => sendTestMutation.mutate(testMessage)}
-                  disabled={sendTestMutation.isPending || !testMessage.to || !testMessage.message}
-                  className="w-full"
-                >
-                  <RiSendPlaneLine className="w-4 h-4 mr-2" />
-                  Enviar Mensaje
-                </Button>
+              <CardContent>
+                <TestMessageForm />
               </CardContent>
             </Card>
           </div>
