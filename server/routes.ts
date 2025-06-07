@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { isAuthenticated } from "./auth";
-import { simpleStorage } from "./storage-simple";
+import { simpleStorage } from "./storage";
 import { registerSimpleRoutes } from "./routes-simple";
 
 export async function registerRoutes(app: Express): Promise<Server> {

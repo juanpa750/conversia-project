@@ -1,5 +1,5 @@
 import type { Express } from "express";
-import { simpleStorage } from "./storage-simple";
+import { simpleStorage } from "./storage";
 import { isAuthenticated } from "./auth";
 
 export function registerSimpleRoutes(app: Express) {

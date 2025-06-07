@@ -1,6 +1,8 @@
-import { users, whatsappConnections, type User, type WhatsappConnection } from "@shared/schema";
 import { db } from "./db";
+import { users, whatsappConnections } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
+import type { User, WhatsappConnection } from "@shared/schema";
 
 export interface ISimpleStorage {
   // User operations
@@ -26,17 +28,11 @@ export class SimpleStorage implements ISimpleStorage {
   }
 
   async createUser(userData: any): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values({
-        id: userData.id || `user_${Date.now()}`,
-        email: userData.email,
-        password: userData.password,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        role: userData.role || 'user'
-      })
-      .returning();
+    if (userData.password) {
+      userData.password = await bcrypt.hash(userData.password, 10);
+    }
+    
+    const [user] = await db.insert(users).values(userData).returning();
     return user;
   }
 
@@ -59,7 +55,7 @@ export class SimpleStorage implements ISimpleStorage {
   async updateWhatsappConnection(userId: string, updates: any): Promise<WhatsappConnection> {
     const [connection] = await db
       .update(whatsappConnections)
-      .set(updates)
+      .set({ ...updates, updatedAt: new Date() })
       .where(eq(whatsappConnections.userId, userId))
       .returning();
     return connection;

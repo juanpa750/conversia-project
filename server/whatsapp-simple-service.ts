@@ -1,4 +1,5 @@
-import { execute_sql_tool } from '../tools';
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 interface BusinessSetup {
   businessName: string;
@@ -31,7 +32,7 @@ export class WhatsAppSimpleService {
       
       const welcomeMessage = `¡Hola! Bienvenido a ${businessData.businessName}. ¿En qué puedo ayudarte?`;
       
-      if (existing.length > 0) {
+      if (existing && existing.length > 0) {
         // Actualizar existente
         const updateQuery = `
           UPDATE whatsapp_simple 
@@ -273,33 +274,16 @@ export class WhatsAppSimpleService {
     }
   }
 
-  // Método auxiliar para ejecutar consultas SQL
+  // Método auxiliar para ejecutar consultas SQL usando Drizzle
   private static async executeQuery(query: string, params: any[] = []) {
-    // Simular ejecución de consulta SQL
-    // En un entorno real, esto usaría la base de datos
-    console.log('Ejecutando query:', query, 'Params:', params);
-    
-    // Para efectos de demostración, simulamos respuestas
-    if (query.includes('SELECT') && query.includes('whatsapp_simple')) {
-      if (query.includes('not_configured')) {
-        return [];
-      }
-      return [{
-        id: 1,
-        user_id: params[0],
-        business_name: 'Mi Negocio',
-        business_type: 'products',
-        business_description: 'Descripción del negocio',
-        status: 'connected',
-        is_connected: true,
-        qr_code: null,
-        welcome_message: '¡Hola! Bienvenido a Mi Negocio',
-        messages_sent: 5,
-        messages_received: 3
-      }];
+    try {
+      // Usar la base de datos real con consultas SQL directas
+      const result = await db.execute(query, params);
+      return result.rows || [];
+    } catch (error) {
+      console.error('Error ejecutando query:', error);
+      throw error;
     }
-    
-    return { affectedRows: 1 };
   }
 }
 
