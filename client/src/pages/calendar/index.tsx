@@ -344,11 +344,25 @@ export default function CalendarPage() {
                 <h4 className="font-medium text-sm mb-2">Horarios Disponibles</h4>
                 <div className="grid grid-cols-2 gap-1">
                   {Array.isArray(availableSlots) && availableSlots.length > 0 ? (
-                    availableSlots.map((slot: string) => (
-                      <Badge key={slot} variant="outline" className="justify-center text-xs py-1">
-                        {slot}
-                      </Badge>
-                    ))
+                    availableSlots.map((slot: any) => {
+                      // Manejar ambos formatos: string (anterior) y objeto (nuevo)
+                      const time = typeof slot === 'string' ? slot : slot?.time;
+                      const isOccupied = typeof slot === 'object' && slot?.occupied === true;
+                      
+                      if (!time) return null;
+                      
+                      return (
+                        <Badge 
+                          key={time} 
+                          variant={isOccupied ? "destructive" : "outline"} 
+                          className={`justify-center text-xs py-1 ${
+                            isOccupied ? 'bg-red-100 text-red-800 border-red-200' : ''
+                          }`}
+                        >
+                          {time}
+                        </Badge>
+                      );
+                    }).filter(Boolean)
                   ) : (
                     <p className="text-xs text-gray-500 col-span-2">
                       No hay horarios disponibles
