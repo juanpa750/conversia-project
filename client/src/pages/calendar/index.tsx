@@ -781,15 +781,23 @@ function CalendarSettings({ settings }: any) {
   // Inicializar formData con los datos del servidor si están disponibles
   const [formData, setFormData] = useState(() => createInitialState(settings));
   
-  // Solo actualizar cuando lleguen los settings por primera vez
+  // Solo actualizar cuando lleguen los settings por primera vez o cuando cambie el slotDuration
+  const lastSlotDurationRef = useRef(settings?.slotDuration);
+  
   useEffect(() => {
-    if (settings && !hasInitializedRef.current) {
-      console.log('📅 Inicializando configuración con datos del servidor:', settings);
-      console.log('📅 SlotDuration específico del servidor:', settings.slotDuration);
-      const newFormData = createInitialState(settings);
-      console.log('📅 Nuevo formData configurado:', newFormData);
-      setFormData(newFormData);
-      hasInitializedRef.current = true;
+    if (settings && (!hasInitializedRef.current || settings.slotDuration !== lastSlotDurationRef.current)) {
+      console.log('📅 Actualizando configuración con datos del servidor:', settings);
+      console.log('📅 SlotDuration del servidor:', settings.slotDuration);
+      
+      // Solo actualizar el estado si realmente cambió o es la primera vez
+      if (!hasInitializedRef.current) {
+        const newFormData = createInitialState(settings);
+        console.log('📅 Primera inicialización:', newFormData);
+        setFormData(newFormData);
+        hasInitializedRef.current = true;
+      }
+      
+      lastSlotDurationRef.current = settings.slotDuration;
     }
   }, [settings]);
   
@@ -808,8 +816,9 @@ function CalendarSettings({ settings }: any) {
         title: "Configuración guardada",
         description: "Las configuraciones del calendario se han actualizado correctamente."
       });
-      // NO invalidar la query para evitar que se resetee el formulario
-      // queryClient.invalidateQueries({ queryKey: ["/api/calendar/settings"] });
+      // Invalidar las queries para que el componente padre obtenga los nuevos datos
+      queryClient.invalidateQueries({ queryKey: ["/api/calendar/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/calendar/available-slots"] });
     },
     onError: () => {
       toast({
@@ -821,6 +830,7 @@ function CalendarSettings({ settings }: any) {
   });
   
   const handleSave = () => {
+    console.log('📅 Guardando configuración:', formData);
     updateSettingsMutation.mutate(formData);
   };
   const weekDayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -887,10 +897,14 @@ function CalendarSettings({ settings }: any) {
                 <Input 
                   type="number" 
                   value={formData.slotDuration}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    slotDuration: parseInt(e.target.value) || 60
-                  }))}
+                  onChange={(e) => {
+                    const newDuration = parseInt(e.target.value) || 60;
+                    console.log('📅 Cambiando duración a:', newDuration);
+                    setFormData(prev => ({
+                      ...prev,
+                      slotDuration: newDuration
+                    }));
+                  }}
                   min="15" 
                   step="15" 
                   className="flex-1"
