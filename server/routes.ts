@@ -7,6 +7,7 @@ import { AIAppointmentService } from "./aiAppointmentService";
 import { EmailService } from "./emailService";
 import { WhatsAppService } from "./whatsappService";
 import { registerMultiWhatsAppRoutes } from "./routes-whatsapp-multi";
+import { registerWhatsAppSimpleRoutes } from "./routes-whatsapp-simple";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
