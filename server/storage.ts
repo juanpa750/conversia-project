@@ -1418,12 +1418,16 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
 
   // Calendar and appointments operations implementation
   async getAppointments(userId: string, date?: string): Promise<Appointment[]> {
+    console.log('📅 DEBUG - getAppointments called with userId:', userId, 'date filter:', date);
+    
     let query = db.select().from(appointments).where(eq(appointments.userId, userId));
     
     if (date) {
       const startDate = new Date(date);
       const endDate = new Date(date);
       endDate.setDate(endDate.getDate() + 1);
+      
+      console.log('📅 DEBUG - Date filter range:', startDate.toISOString(), 'to', endDate.toISOString());
       
       query = db.select().from(appointments).where(and(
         eq(appointments.userId, userId),
@@ -1432,7 +1436,21 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
       ));
     }
     
-    return await query.orderBy(appointments.scheduledDate);
+    const result = await query.orderBy(appointments.scheduledDate);
+    console.log('📅 DEBUG - Query returned appointments:', result.length);
+    
+    if (!date) {
+      // Solo para el llamado sin filtro de fecha, mostrar todas las citas
+      console.log('📅 DEBUG - ALL appointments for user:', JSON.stringify(result.map(apt => ({
+        id: apt.id,
+        clientName: apt.clientName,
+        scheduledDate: apt.scheduledDate,
+        localTime: new Date(apt.scheduledDate).toLocaleString(),
+        status: apt.status
+      })), null, 2));
+    }
+    
+    return result;
   }
 
   async getAppointmentById(appointmentId: number): Promise<Appointment | undefined> {
