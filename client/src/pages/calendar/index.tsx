@@ -457,7 +457,9 @@ function DayView({ selectedDate, appointments, onUpdateStatus }: any) {
     new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime()
   );
   
-  const selectedDateObj = new Date(selectedDate);
+  // Arreglar problema de fecha - usar la fecha local correcta
+  const [year, month, day] = selectedDate.split('-').map(Number);
+  const selectedDateObj = new Date(year, month - 1, day);
   
   return (
     <div className="space-y-4">

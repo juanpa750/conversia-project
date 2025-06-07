@@ -1477,6 +1477,14 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
     console.log('📅 Deleted appointment:', id);
   }
 
+  async updateAppointmentConfirmation(id: number, confirmed: boolean): Promise<void> {
+    await db
+      .update(appointments)
+      .set({ confirmationSent: confirmed, updatedAt: new Date() })
+      .where(eq(appointments.id, id));
+    console.log('📅 Updated confirmation status for appointment:', id, 'to:', confirmed);
+  }
+
   async getAvailableSlots(userId: string, date: string): Promise<string[]> {
     const settings = await this.getCalendarSettings(userId);
     const workingHours = settings.workingHours;
@@ -1494,8 +1502,16 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
       }
     }
 
-    // Filtrar slots ocupados (simulado)
-    const occupiedSlots = ['10:00', '14:00'];
+    // Obtener citas existentes para la fecha
+    const existingAppointments = await this.getAppointments(userId, date);
+    const occupiedSlots = existingAppointments.map(appointment => {
+      const appointmentDate = new Date(appointment.scheduledDate);
+      const hours = appointmentDate.getHours().toString().padStart(2, '0');
+      const minutes = appointmentDate.getMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes}`;
+    });
+
+    console.log('📅 Occupied slots for date', date, ':', occupiedSlots);
     return slots.filter(slot => !occupiedSlots.includes(slot));
   }
 

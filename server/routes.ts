@@ -1979,6 +1979,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!scheduledDate && req.body.date && req.body.time) {
         scheduledDate = new Date(`${req.body.date}T${req.body.time}:00`);
         console.log('📅 Constructed scheduledDate from date/time:', scheduledDate);
+      } else if (typeof scheduledDate === 'string') {
+        scheduledDate = new Date(scheduledDate);
       }
       
       const appointmentData = {
@@ -1996,6 +1998,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('📅 Appointment data to be saved:', JSON.stringify(appointmentData, null, 2));
       
       const appointment = await storage.createAppointment(appointmentData);
+      
+      // Enviar notificación de WhatsApp automáticamente
+      if (appointment.clientPhone) {
+        try {
+          await WhatsAppService.sendAppointmentConfirmation(appointment, userId);
+          await storage.updateAppointmentConfirmation(appointment.id, true);
+        } catch (whatsappError) {
+          console.error('Error enviando WhatsApp:', whatsappError);
+        }
+      }
+      
       res.json(appointment);
     } catch (error) {
       console.error('Error creating appointment:', error);
