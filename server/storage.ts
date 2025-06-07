@@ -1512,23 +1512,39 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
 
     // Obtener citas existentes para la fecha
     const existingAppointments = await this.getAppointments(userId, date);
+    console.log('📅 DEBUG - Processing appointments for date:', date);
+    console.log('📅 DEBUG - Found appointments:', existingAppointments.length);
+    console.log('📅 DEBUG - Raw appointments data:', JSON.stringify(existingAppointments, null, 2));
     
     // Calcular slots ocupados considerando duración y buffer
     const occupiedSlots = new Set<string>();
     
-    existingAppointments.forEach(appointment => {
-      if (appointment.status === 'cancelled') return; // Ignorar citas canceladas
+    existingAppointments.forEach((appointment, index) => {
+      if (appointment.status === 'cancelled') {
+        console.log(`📅 DEBUG - Appointment ${index}: CANCELLED - ignoring`);
+        return; // Ignorar citas canceladas
+      }
       
       const appointmentDate = new Date(appointment.scheduledDate);
       const appointmentDuration = appointment.duration || slotDuration;
+      
+      console.log(`📅 DEBUG - Appointment ${index}:`, {
+        scheduledDate: appointment.scheduledDate,
+        duration: appointmentDuration,
+        status: appointment.status,
+        clientName: appointment.clientName
+      });
       
       // Hora exacta de la cita
       const appointmentHour = appointmentDate.getHours();
       const appointmentMinute = appointmentDate.getMinutes();
       const appointmentTimeStr = `${appointmentHour.toString().padStart(2, '0')}:${appointmentMinute.toString().padStart(2, '0')}`;
       
+      console.log(`📅 DEBUG - Appointment ${index} time:`, appointmentTimeStr);
+      
       // Agregar el slot exacto de la cita
       occupiedSlots.add(appointmentTimeStr);
+      console.log(`📅 DEBUG - Added occupied slot:`, appointmentTimeStr);
       
       // Calcular cuántos slots adicionales ocupa la cita
       const slotsNeeded = Math.ceil(appointmentDuration / 30);
@@ -1580,6 +1596,8 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
 
     const occupiedArray = Array.from(occupiedSlots);
     console.log('📅 Occupied slots for date', date, ':', occupiedArray);
+    console.log('📅 DEBUG - All generated slots:', slots);
+    console.log('📅 DEBUG - Occupied slots set:', occupiedArray);
     
     // Devolver todos los slots con información de estado
     const slotsWithStatus = slots.map(slot => ({
@@ -1591,6 +1609,13 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
     console.log('📅 Returning', slotsWithStatus.length, 'slots with status information');
     console.log('📅 Available slots:', slotsWithStatus.filter(s => s.available).length);
     console.log('📅 Occupied slots:', slotsWithStatus.filter(s => s.occupied).length);
+    console.log('📅 DEBUG - Sample slots with status:', slotsWithStatus.slice(0, 5));
+    
+    // Debug: Show specific examples of occupied vs available slots
+    const exampleOccupied = slotsWithStatus.filter(s => s.occupied).slice(0, 3);
+    const exampleAvailable = slotsWithStatus.filter(s => s.available).slice(0, 3);
+    console.log('📅 DEBUG - Example OCCUPIED slots:', exampleOccupied);
+    console.log('📅 DEBUG - Example AVAILABLE slots:', exampleAvailable);
     
     return slotsWithStatus;
   }
