@@ -1499,45 +1499,90 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
     return slots.filter(slot => !occupiedSlots.includes(slot));
   }
 
-  async getCalendarSettings(userId: string): Promise<any> {
-    return {
-      workingHours: { start: '09:00', end: '17:00' },
-      workingDays: [1, 2, 3, 4, 5],
-      appointmentDuration: 60,
-      bufferTime: 15,
-      advanceBookingDays: 30,
-      timezone: 'America/Mexico_City',
-      autoConfirm: false,
-      reminderSettings: {
-        enabled: true,
-        beforeHours: [24, 2],
-        whatsapp: true,
-        email: false
+  async getCalendarSettings(userId: string): Promise<CalendarSettings> {
+    const [settings] = await db
+      .select()
+      .from(calendarSettings)
+      .where(eq(calendarSettings.userId, userId));
+    
+    if (!settings) {
+      const defaultSettings = {
+        userId,
+        workingHours: { start: "09:00", end: "17:00" },
+        workingDays: [1, 2, 3, 4, 5],
+        appointmentDuration: 60,
+        bufferTime: 15,
+        advanceBookingDays: 30,
+        timezone: 'America/Mexico_City',
+        autoConfirm: false,
+        reminderSettings: { enabled: true, beforeHours: [24, 2], whatsapp: true, email: true },
+        whatsappNotifications: {
+          enabled: true,
+          confirmationTemplate: "✅ *Confirmación de Cita*\\n\\nHola {clientName},\\n\\nTu cita ha sido *confirmada* para:\\n📅 *Fecha:* {date}\\n🕐 *Hora:* {time}\\n🔧 *Servicio:* {service}\\n⏱️ *Duración:* {duration} minutos\\n\\nGracias por confiar en {companyName}.\\n\\n_Mensaje automático - No responder_",
+          reminderTemplate: "🔔 *Recordatorio de Cita*\\n\\nHola {clientName},\\n\\nTe recordamos tu cita programada para *mañana*:\\n📅 *Fecha:* {date}\\n🕐 *Hora:* {time}\\n🔧 *Servicio:* {service}\\n⏱️ *Duración:* {duration} minutos\\n\\nNos vemos mañana en {companyName}.\\n\\n_Mensaje automático - No responder_",
+          cancellationTemplate: "❌ *Cita Cancelada*\\n\\nHola {clientName},\\n\\nLamentamos informarte que tu cita del *{date} a las {time}* ha sido cancelada.\\n\\n📞 Si necesitas reprogramar, no dudes en contactarnos.\\n\\nDisculpa las molestias.\\n\\nSaludos,\\n{companyName}"
+        },
+        emailNotifications: {
+          enabled: true,
+          confirmationTemplate: "Estimado/a {clientName},\\n\\nSu cita ha sido confirmada para el {date} a las {time}.\\n\\nDetalles:\\n- Servicio: {service}\\n- Duración: {duration} minutos\\n\\nGracias por su confianza.\\n\\nSaludos cordiales,\\n{companyName}",
+          reminderTemplate: "Estimado/a {clientName},\\n\\nLe recordamos su cita programada para mañana {date} a las {time}.\\n\\nDetalles:\\n- Servicio: {service}\\n- Duración: {duration} minutos\\n\\nSaludos cordiales,\\n{companyName}"
+        }
+      };
+      
+      const [newSettings] = await db
+        .insert(calendarSettings)
+        .values(defaultSettings)
+        .returning();
+      return newSettings;
+    }
+    
+    return settings;
+  }
+
+  async updateCalendarSettings(userId: string, settings: Partial<CalendarSettings>): Promise<CalendarSettings> {
+    const [updatedSettings] = await db
+      .update(calendarSettings)
+      .set({ ...settings, updatedAt: new Date() })
+      .where(eq(calendarSettings.userId, userId))
+      .returning();
+
+    console.log('📅 Updated calendar settings for user:', userId);
+    return updatedSettings;
+  }
+
+  private async sendAppointmentConfirmation(appointment: Appointment) {
+    try {
+      const settings = await this.getCalendarSettings(appointment.userId);
+      const whatsappConfig = settings.whatsappNotifications as any;
+      
+      if (!whatsappConfig?.enabled) {
+        console.log('📱 WhatsApp notifications disabled for user');
+        return;
       }
-    };
-  }
 
-  async updateCalendarSettings(userId: string, settings: any): Promise<any> {
-    console.log('📅 Updated calendar settings for user:', userId, settings);
-    return { ...settings, updatedAt: new Date() };
-  }
+      const templateData = {
+        clientName: appointment.clientName || 'Cliente',
+        date: appointment.scheduledDate.toLocaleDateString('es-ES'),
+        time: appointment.scheduledDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        service: appointment.service || 'Consulta',
+        duration: appointment.duration?.toString() || '60',
+        companyName: 'Tu Empresa'
+      };
 
-  private async sendAppointmentConfirmation(appointment: any) {
-    const message = `
-🗓️ *Cita Confirmada*
+      let message = whatsappConfig.confirmationTemplate || 
+        "✅ *Confirmación de Cita*\\n\\nHola {clientName},\\n\\nTu cita ha sido *confirmada* para:\\n📅 *Fecha:* {date}\\n🕐 *Hora:* {time}\\n🔧 *Servicio:* {service}\\n⏱️ *Duración:* {duration} minutos\\n\\nGracias por confiar en {companyName}.\\n\\n_Mensaje automático - No responder_";
+      
+      Object.entries(templateData).forEach(([key, value]) => {
+        message = message.replace(new RegExp(`{${key}}`, 'g'), value);
+      });
 
-📅 Fecha: ${new Date(appointment.scheduledDate).toLocaleDateString()}
-🕐 Hora: ${new Date(appointment.scheduledDate).toLocaleTimeString()}
-👤 Cliente: ${appointment.contactName}
-📞 Teléfono: ${appointment.contactPhone}
-⏱️ Duración: ${appointment.duration} minutos
-
-¡Tu cita ha sido confirmada exitosamente!
-
-_Te enviaremos un recordatorio 24 horas antes._
-    `.trim();
-
-    console.log('📱 WhatsApp confirmation sent:', message);
+      console.log(`📱 WhatsApp confirmación enviada a ${appointment.clientPhone}: ${message.replace(/\\n/g, '\n')}`);
+      
+      // Mark confirmation as sent
+      await this.updateAppointment(appointment.id, { confirmationSent: true });
+    } catch (error) {
+      console.error('Error sending WhatsApp confirmation:', error);
+    }
   }
 
   // Generate complete AIDA conversation flows for product chatbots
