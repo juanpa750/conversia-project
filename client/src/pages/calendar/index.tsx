@@ -785,7 +785,7 @@ function CalendarSettings({ settings }: any) {
   useEffect(() => {
     if (settings) {
       console.log('📅 Sincronizando formulario con datos del servidor:', settings);
-      console.log('📅 SlotDuration del servidor:', settings.slotDuration);
+      console.log('📅 AppointmentDuration del servidor:', settings.appointmentDuration);
       
       const newFormData = createInitialState(settings);
       console.log('📅 Actualizando formulario:', newFormData);
@@ -806,16 +806,14 @@ function CalendarSettings({ settings }: any) {
     onSuccess: (data) => {
       console.log('📅 Respuesta del servidor:', data);
       
-      // Actualizar inmediatamente el cache con los nuevos datos
-      queryClient.setQueryData(["/api/calendar/settings"], data);
+      // Invalidar y refrescar configuraciones
+      queryClient.invalidateQueries({ queryKey: ["/api/calendar/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/calendar/available-slots"] });
       
       toast({
         title: "Configuración guardada",
         description: "Las configuraciones del calendario se han actualizado correctamente."
       });
-      
-      // Invalidar solo los slots disponibles para que se recalculen
-      queryClient.invalidateQueries({ queryKey: ["/api/calendar/available-slots"] });
     },
     onError: () => {
       toast({

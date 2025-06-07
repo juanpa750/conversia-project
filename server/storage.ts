@@ -1517,24 +1517,65 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
     const occupiedSlots = new Set<string>();
     
     existingAppointments.forEach(appointment => {
+      if (appointment.status === 'cancelled') return; // Ignorar citas canceladas
+      
       const appointmentDate = new Date(appointment.scheduledDate);
       const appointmentDuration = appointment.duration || slotDuration;
       
-      // Agregar buffer antes y después
-      const startTime = new Date(appointmentDate.getTime() - buffer * 60000);
-      const endTime = new Date(appointmentDate.getTime() + (appointmentDuration + buffer) * 60000);
+      // Hora exacta de la cita
+      const appointmentHour = appointmentDate.getHours();
+      const appointmentMinute = appointmentDate.getMinutes();
+      const appointmentTimeStr = `${appointmentHour.toString().padStart(2, '0')}:${appointmentMinute.toString().padStart(2, '0')}`;
       
-      // Marcar todos los slots afectados como ocupados
-      slots.forEach(slot => {
-        const [slotHour, slotMinute] = slot.split(':').map(Number);
-        const slotTime = new Date(appointmentDate);
-        slotTime.setHours(slotHour, slotMinute, 0, 0);
+      // Agregar el slot exacto de la cita
+      occupiedSlots.add(appointmentTimeStr);
+      
+      // Calcular cuántos slots adicionales ocupa la cita
+      const slotsNeeded = Math.ceil(appointmentDuration / 30);
+      
+      // Marcar slots adicionales basado en la duración
+      for (let i = 1; i < slotsNeeded; i++) {
+        const nextSlotMinutes = (appointmentHour * 60 + appointmentMinute) + (i * 30);
+        const nextHour = Math.floor(nextSlotMinutes / 60);
+        const nextMinute = nextSlotMinutes % 60;
+        const nextSlotTime = `${nextHour.toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}`;
         
-        // Si el slot se superpone con la cita (incluyendo buffer), marcarlo como ocupado
-        if (slotTime >= startTime && slotTime < endTime) {
-          occupiedSlots.add(slot);
+        if (slots.includes(nextSlotTime)) {
+          occupiedSlots.add(nextSlotTime);
         }
-      });
+      }
+      
+      // Agregar buffer antes y después si está configurado
+      if (buffer > 0) {
+        const bufferSlotsBefore = Math.ceil(buffer / 30);
+        const bufferSlotsAfter = Math.ceil(buffer / 30);
+        
+        // Buffer antes
+        for (let i = 1; i <= bufferSlotsBefore; i++) {
+          const prevSlotMinutes = (appointmentHour * 60 + appointmentMinute) - (i * 30);
+          if (prevSlotMinutes >= 0) {
+            const prevHour = Math.floor(prevSlotMinutes / 60);
+            const prevMinute = prevSlotMinutes % 60;
+            const prevSlotTime = `${prevHour.toString().padStart(2, '0')}:${prevMinute.toString().padStart(2, '0')}`;
+            
+            if (slots.includes(prevSlotTime)) {
+              occupiedSlots.add(prevSlotTime);
+            }
+          }
+        }
+        
+        // Buffer después
+        for (let i = 1; i <= bufferSlotsAfter; i++) {
+          const nextSlotMinutes = (appointmentHour * 60 + appointmentMinute) + (appointmentDuration) + (i * 30);
+          const nextHour = Math.floor(nextSlotMinutes / 60);
+          const nextMinute = nextSlotMinutes % 60;
+          const nextSlotTime = `${nextHour.toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}`;
+          
+          if (slots.includes(nextSlotTime)) {
+            occupiedSlots.add(nextSlotTime);
+          }
+        }
+      }
     });
 
     const occupiedArray = Array.from(occupiedSlots);
