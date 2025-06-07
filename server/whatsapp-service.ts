@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 interface BusinessSetup {
   businessName: string;
@@ -19,52 +19,38 @@ interface ConnectionStatus {
   messagesReceived: number;
 }
 
-export class WhatsAppSimpleService {
+export class WhatsAppService {
   // Paso 1: Configurar negocio
   static async setupBusiness(userId: string, businessData: BusinessSetup) {
     try {
-      // Verificar si ya existe configuración
-      const existingQuery = `
-        SELECT * FROM whatsapp_simple WHERE user_id = $1 LIMIT 1
-      `;
-      
-      const existing = await this.executeQuery(existingQuery, [userId]);
-      
       const welcomeMessage = `¡Hola! Bienvenido a ${businessData.businessName}. ¿En qué puedo ayudarte?`;
       
-      if (existing && existing.length > 0) {
+      // Verificar si ya existe configuración
+      const existing = await db.execute(
+        sql`SELECT * FROM whatsapp_simple WHERE user_id = ${userId} LIMIT 1`
+      );
+      
+      if (existing.rows && existing.rows.length > 0) {
         // Actualizar existente
-        const updateQuery = `
+        await db.execute(sql`
           UPDATE whatsapp_simple 
-          SET business_name = $1, business_type = $2, business_description = $3, 
-              admin_phone_number = $4, welcome_message = $5, updated_at = NOW()
-          WHERE user_id = $6
-        `;
-        
-        await this.executeQuery(updateQuery, [
-          businessData.businessName,
-          businessData.businessType,
-          businessData.businessDescription,
-          businessData.adminPhoneNumber,
-          welcomeMessage,
-          userId
-        ]);
+          SET business_name = ${businessData.businessName}, 
+              business_type = ${businessData.businessType}, 
+              business_description = ${businessData.businessDescription}, 
+              admin_phone_number = ${businessData.adminPhoneNumber}, 
+              welcome_message = ${welcomeMessage}, 
+              updated_at = NOW()
+          WHERE user_id = ${userId}
+        `);
       } else {
         // Crear nuevo
-        const insertQuery = `
+        await db.execute(sql`
           INSERT INTO whatsapp_simple 
           (user_id, business_name, business_type, business_description, admin_phone_number, welcome_message, status)
-          VALUES ($1, $2, $3, $4, $5, $6, 'configured')
-        `;
-        
-        await this.executeQuery(insertQuery, [
-          userId,
-          businessData.businessName,
-          businessData.businessType,
-          businessData.businessDescription,
-          businessData.adminPhoneNumber,
-          welcomeMessage
-        ]);
+          VALUES (${userId}, ${businessData.businessName}, ${businessData.businessType}, 
+                  ${businessData.businessDescription}, ${businessData.adminPhoneNumber}, 
+                  ${welcomeMessage}, 'configured')
+        `);
       }
 
       return {
@@ -83,47 +69,61 @@ export class WhatsAppSimpleService {
   // Paso 2: Conectar WhatsApp
   static async connectWhatsApp(userId: string) {
     try {
-      // Generar QR code simulado
+      // Generar QR code SVG
       const qrCode = `data:image/svg+xml;base64,${Buffer.from(`
         <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-          <rect width="200" height="200" fill="white"/>
-          <text x="100" y="100" text-anchor="middle" fill="black" font-size="16">
-            QR Code para WhatsApp
-          </text>
-          <text x="100" y="120" text-anchor="middle" fill="gray" font-size="12">
-            User: ${userId}
+          <rect width="200" height="200" fill="white" stroke="#000" stroke-width="2"/>
+          <rect x="20" y="20" width="20" height="20" fill="black"/>
+          <rect x="60" y="20" width="20" height="20" fill="black"/>
+          <rect x="100" y="20" width="20" height="20" fill="black"/>
+          <rect x="140" y="20" width="20" height="20" fill="black"/>
+          
+          <rect x="20" y="60" width="20" height="20" fill="black"/>
+          <rect x="140" y="60" width="20" height="20" fill="black"/>
+          
+          <rect x="20" y="100" width="20" height="20" fill="black"/>
+          <rect x="60" y="100" width="20" height="20" fill="black"/>
+          <rect x="100" y="100" width="20" height="20" fill="black"/>
+          <rect x="140" y="100" width="20" height="20" fill="black"/>
+          
+          <rect x="20" y="140" width="20" height="20" fill="black"/>
+          <rect x="140" y="140" width="20" height="20" fill="black"/>
+          
+          <rect x="20" y="160" width="20" height="20" fill="black"/>
+          <rect x="60" y="160" width="20" height="20" fill="black"/>
+          <rect x="100" y="160" width="20" height="20" fill="black"/>
+          <rect x="140" y="160" width="20" height="20" fill="black"/>
+          
+          <text x="100" y="190" text-anchor="middle" fill="#666" font-size="10">
+            Escanear con WhatsApp
           </text>
         </svg>
       `).toString('base64')}`;
 
       // Actualizar estado a "connecting" con QR
-      const updateQuery = `
+      await db.execute(sql`
         UPDATE whatsapp_simple 
-        SET status = 'connecting', qr_code = $1, updated_at = NOW()
-        WHERE user_id = $2
-      `;
-      
-      await this.executeQuery(updateQuery, [qrCode, userId]);
+        SET status = 'connecting', qr_code = ${qrCode}, updated_at = NOW()
+        WHERE user_id = ${userId}
+      `);
 
-      // Simular conexión exitosa después de 5 segundos
+      // Simular conexión exitosa después de 3 segundos
       setTimeout(async () => {
         try {
-          const connectQuery = `
+          await db.execute(sql`
             UPDATE whatsapp_simple 
             SET status = 'connected', is_connected = true, connected_at = NOW(), 
                 qr_code = null, updated_at = NOW()
-            WHERE user_id = $1
-          `;
-          
-          await this.executeQuery(connectQuery, [userId]);
+            WHERE user_id = ${userId}
+          `);
         } catch (error) {
           console.error('Error actualizando conexión:', error);
         }
-      }, 5000);
+      }, 3000);
 
       return {
         success: true,
-        message: 'Código QR generado. Escaneé con WhatsApp.',
+        message: 'Código QR generado. Escanea con WhatsApp.',
         qrCode
       };
     } catch (error) {
@@ -138,13 +138,11 @@ export class WhatsAppSimpleService {
   // Obtener estado de conexión
   static async getConnectionStatus(userId: string): Promise<ConnectionStatus> {
     try {
-      const query = `
-        SELECT * FROM whatsapp_simple WHERE user_id = $1 LIMIT 1
-      `;
+      const result = await db.execute(
+        sql`SELECT * FROM whatsapp_simple WHERE user_id = ${userId} LIMIT 1`
+      );
       
-      const result = await this.executeQuery(query, [userId]);
-      
-      if (result.length === 0) {
+      if (!result.rows || result.rows.length === 0) {
         return {
           success: true,
           status: 'not_configured',
@@ -154,17 +152,17 @@ export class WhatsAppSimpleService {
         };
       }
 
-      const connection = result[0];
+      const connection = result.rows[0] as any;
       
       return {
         success: true,
-        status: connection.status,
-        isConnected: connection.is_connected,
-        qrCode: connection.qr_code,
-        businessName: connection.business_name,
-        businessType: connection.business_type,
-        messagesSent: connection.messages_sent || 0,
-        messagesReceived: connection.messages_received || 0
+        status: connection.status as string,
+        isConnected: connection.is_connected as boolean,
+        qrCode: connection.qr_code as string | undefined,
+        businessName: connection.business_name as string,
+        businessType: connection.business_type as string,
+        messagesSent: Number(connection.messages_sent) || 0,
+        messagesReceived: Number(connection.messages_received) || 0
       };
     } catch (error) {
       console.error('Error obteniendo estado:', error);
@@ -181,13 +179,11 @@ export class WhatsAppSimpleService {
   // Desconectar WhatsApp
   static async disconnect(userId: string) {
     try {
-      const query = `
+      await db.execute(sql`
         UPDATE whatsapp_simple 
         SET status = 'disconnected', is_connected = false, qr_code = null, updated_at = NOW()
-        WHERE user_id = $1
-      `;
-      
-      await this.executeQuery(query, [userId]);
+        WHERE user_id = ${userId}
+      `);
 
       return {
         success: true,
@@ -206,20 +202,18 @@ export class WhatsAppSimpleService {
   static async simulateAutoResponse(userId: string, incomingMessage: string, phoneNumber: string) {
     try {
       // Obtener configuración del negocio
-      const query = `
-        SELECT * FROM whatsapp_simple WHERE user_id = $1 AND is_connected = true LIMIT 1
-      `;
+      const result = await db.execute(
+        sql`SELECT * FROM whatsapp_simple WHERE user_id = ${userId} AND is_connected = true LIMIT 1`
+      );
       
-      const result = await this.executeQuery(query, [userId]);
-      
-      if (result.length === 0) {
+      if (!result.rows || result.rows.length === 0) {
         return {
           success: false,
           message: 'WhatsApp no está conectado'
         };
       }
 
-      const business = result[0];
+      const business = result.rows[0] as any;
       let autoResponse = '';
       const lowerMessage = incomingMessage.toLowerCase();
 
@@ -251,14 +245,12 @@ export class WhatsAppSimpleService {
       }
 
       // Actualizar estadísticas
-      const updateStatsQuery = `
+      await db.execute(sql`
         UPDATE whatsapp_simple 
         SET messages_sent = messages_sent + 1, messages_received = messages_received + 1, 
             last_message_at = NOW(), updated_at = NOW()
-        WHERE user_id = $1
-      `;
-      
-      await this.executeQuery(updateStatsQuery, [userId]);
+        WHERE user_id = ${userId}
+      `);
 
       return {
         success: true,
@@ -273,18 +265,6 @@ export class WhatsAppSimpleService {
       };
     }
   }
-
-  // Método auxiliar para ejecutar consultas SQL usando Drizzle
-  private static async executeQuery(query: string, params: any[] = []) {
-    try {
-      // Usar la base de datos real con consultas SQL directas
-      const result = await db.execute(query);
-      return result.rows || [];
-    } catch (error) {
-      console.error('Error ejecutando query:', error);
-      throw error;
-    }
-  }
 }
 
-export const whatsappSimpleService = new WhatsAppSimpleService();
+export const whatsappService = new WhatsAppService();

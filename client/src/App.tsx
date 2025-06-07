@@ -23,6 +23,7 @@ import WhatsAppBotConfig from "@/pages/integrations/whatsapp-bot";
 import WhatsAppIntegration from "@/pages/whatsapp";
 import MultiWhatsAppAccounts from "@/pages/whatsapp/multi-accounts";
 import WhatsAppSimpleConnect from "@/pages/whatsapp/simple-connect";
+import WhatsApp from "@/pages/WhatsApp";
 import WhatsAppAIDemo from "@/pages/demo/whatsapp-ai-demo";
 import AIAdvanced from "@/pages/ai-advanced";
 import ConversationControl from "@/pages/ai-advanced/conversation-control";
@@ -195,6 +196,11 @@ function Router() {
           <Route path="/whatsapp/simple">
             <Layout>
               <WhatsAppSimpleConnect />
+            </Layout>
+          </Route>
+          <Route path="/whatsapp/setup">
+            <Layout>
+              <WhatsApp />
             </Layout>
           </Route>
           <Route path="/demo/whatsapp-ai">
