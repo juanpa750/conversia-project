@@ -2032,11 +2032,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/calendar/settings', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.userId;
+      console.log('📅 Updating calendar settings for user:', userId);
+      console.log('📅 Settings data received:', JSON.stringify(req.body, null, 2));
+      
       const settings = await storage.updateCalendarSettings(userId, req.body);
+      console.log('📅 Settings updated successfully:', settings.id);
+      
       res.json(settings);
     } catch (error) {
       console.error('Error updating calendar settings:', error);
-      res.status(500).json({ message: 'Failed to update calendar settings' });
+      res.status(500).json({ message: 'Failed to update calendar settings: ' + error.message });
     }
   });
 

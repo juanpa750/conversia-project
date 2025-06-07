@@ -665,10 +665,11 @@ function AppointmentCard({ appointment, onUpdateStatus }: any) {
         </div>
         
         {onUpdateStatus && appointment.status === 'scheduled' && (
-          <div className="flex gap-1">
+          <div className="flex flex-col sm:flex-row gap-2 mt-3 w-full">
             <Button
               size="sm"
               variant="outline"
+              className="flex-1 min-w-0"
               onClick={() => onUpdateStatus('confirmed')}
             >
               Confirmar
@@ -676,6 +677,7 @@ function AppointmentCard({ appointment, onUpdateStatus }: any) {
             <Button
               size="sm"
               variant="outline"
+              className="flex-1 min-w-0"
               onClick={() => onUpdateStatus('cancelled')}
             >
               Cancelar
@@ -694,7 +696,20 @@ function AppointmentForm({ onSubmit, availableSlots, isLoading }: any) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
-    onSubmit(formData);
+    
+    // Construir el objeto de datos correctamente
+    const appointmentData = {
+      clientName: formData.get('clientName'),
+      clientPhone: formData.get('clientPhone'),
+      clientEmail: formData.get('clientEmail'),
+      service: formData.get('service'),
+      scheduledDate: new Date(`${formData.get('date')}T${formData.get('time')}:00`).toISOString(),
+      duration: parseInt(formData.get('duration') as string),
+      notes: formData.get('notes') || '',
+      status: 'scheduled'
+    };
+    
+    onSubmit(appointmentData);
   };
 
   return (
