@@ -440,6 +440,7 @@ export const calendarSettings = pgTable("calendar_settings", {
   workingHours: jsonb("working_hours").default({ start: '09:00', end: '17:00' }),
   workingDays: jsonb("working_days").default([1, 2, 3, 4, 5]), // Lunes a Viernes
   appointmentDuration: integer("appointment_duration").default(60), // minutos
+  slotDuration: integer("slot_duration").default(60), // duración por defecto de slots
   bufferTime: integer("buffer_time").default(15), // minutos entre citas
   advanceBookingDays: integer("advance_booking_days").default(30),
   timezone: varchar("timezone").default('UTC'),

@@ -1488,31 +1488,63 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
   async getAvailableSlots(userId: string, date: string): Promise<string[]> {
     const settings = await this.getCalendarSettings(userId);
     const workingHours = settings.workingHours;
-    const duration = settings.appointmentDuration;
-    const buffer = settings.bufferTime;
+    const slotDuration = settings.appointmentDuration || 60; // Usar appointmentDuration como slotDuration
+    const buffer = settings.bufferTime || 0;
 
+    // Generar todos los slots posibles
     const slots = [];
     const startHour = parseInt(workingHours.start.split(':')[0]);
+    const startMinute = parseInt(workingHours.start.split(':')[1] || '0');
     const endHour = parseInt(workingHours.end.split(':')[0]);
+    const endMinute = parseInt(workingHours.end.split(':')[1] || '0');
 
-    for (let hour = startHour; hour < endHour; hour++) {
-      slots.push(`${hour.toString().padStart(2, '0')}:00`);
-      if (hour + 1 < endHour) {
-        slots.push(`${hour.toString().padStart(2, '0')}:30`);
-      }
+    // Convertir a minutos para facilitar cálculos
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+
+    // Generar slots cada 30 minutos
+    for (let minutes = startTotalMinutes; minutes < endTotalMinutes; minutes += 30) {
+      const hour = Math.floor(minutes / 60);
+      const minute = minutes % 60;
+      const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      slots.push(timeStr);
     }
 
     // Obtener citas existentes para la fecha
     const existingAppointments = await this.getAppointments(userId, date);
-    const occupiedSlots = existingAppointments.map(appointment => {
+    
+    // Calcular slots ocupados considerando duración y buffer
+    const occupiedSlots = new Set<string>();
+    
+    existingAppointments.forEach(appointment => {
       const appointmentDate = new Date(appointment.scheduledDate);
-      const hours = appointmentDate.getHours().toString().padStart(2, '0');
-      const minutes = appointmentDate.getMinutes().toString().padStart(2, '0');
-      return `${hours}:${minutes}`;
+      const appointmentDuration = appointment.duration || slotDuration;
+      
+      // Agregar buffer antes y después
+      const startTime = new Date(appointmentDate.getTime() - buffer * 60000);
+      const endTime = new Date(appointmentDate.getTime() + (appointmentDuration + buffer) * 60000);
+      
+      // Marcar todos los slots afectados como ocupados
+      slots.forEach(slot => {
+        const [slotHour, slotMinute] = slot.split(':').map(Number);
+        const slotTime = new Date(appointmentDate);
+        slotTime.setHours(slotHour, slotMinute, 0, 0);
+        
+        // Si el slot se superpone con la cita (incluyendo buffer), marcarlo como ocupado
+        if (slotTime >= startTime && slotTime < endTime) {
+          occupiedSlots.add(slot);
+        }
+      });
     });
 
-    console.log('📅 Occupied slots for date', date, ':', occupiedSlots);
-    return slots.filter(slot => !occupiedSlots.includes(slot));
+    const occupiedArray = Array.from(occupiedSlots);
+    console.log('📅 Occupied slots for date', date, ':', occupiedArray);
+    
+    // Filtrar slots ocupados
+    const availableSlots = slots.filter(slot => !occupiedSlots.has(slot));
+    console.log('📅 Available slots after filtering:', availableSlots.length, 'of', slots.length);
+    
+    return availableSlots;
   }
 
   async getCalendarSettings(userId: string): Promise<CalendarSettings> {
