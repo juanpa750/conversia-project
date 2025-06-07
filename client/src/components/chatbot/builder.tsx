@@ -735,38 +735,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                     </CardContent>
                   </Card>
 
-                  {/* Configuración Avanzada */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Configuración Avanzada</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="timeout">Tiempo de Respuesta (segundos)</Label>
-                          <Input 
-                            id="timeout"
-                            type="number"
-                            defaultValue="30"
-                            min="5"
-                            max="300"
-                            placeholder="30"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="max-messages">Máximo de Mensajes por Conversación</Label>
-                          <Input 
-                            id="max-messages"
-                            type="number"
-                            defaultValue="50"
-                            min="10"
-                            max="1000"
-                            placeholder="50"
-                          />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+
                 </div>
               </div>
             </TabsContent>
