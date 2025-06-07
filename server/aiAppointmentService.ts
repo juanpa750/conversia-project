@@ -1,5 +1,6 @@
 import { storage } from './storage';
 import { EmailService } from './emailService';
+import { WhatsAppService } from './whatsappService';
 
 interface AppointmentRequest {
   clientName: string;
@@ -210,10 +211,12 @@ export class AIAppointmentService {
         await EmailService.sendAppointmentConfirmation(appointment, userId);
       }
       
-      // Send WhatsApp confirmation (simulated)
-      console.log(`📱 Enviando confirmación automática por WhatsApp a ${appointment.clientPhone}:`);
-      console.log(`✅ Hola ${appointment.clientName}, tu cita para ${appointment.service} ha sido confirmada automáticamente para el ${appointment.scheduledDate.toLocaleDateString('es-ES')} a las ${appointment.scheduledDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}.`);
-      console.log('---');
+      // Send WhatsApp confirmation if client phone is provided
+      if (appointment.clientPhone) {
+        await WhatsAppService.sendAppointmentConfirmation(appointment, userId);
+        // Schedule automatic WhatsApp reminders
+        await WhatsAppService.scheduleWhatsAppReminders(appointment, userId);
+      }
       
     } catch (error) {
       console.error('Error enviando notificaciones automáticas:', error);

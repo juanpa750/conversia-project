@@ -803,65 +803,250 @@ function AppointmentForm({ onSubmit, availableSlots, isLoading }: any) {
 
 // Calendar Settings Component
 function CalendarSettings({ settings }: any) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState({
+    workingHours: {
+      start: settings?.workingHours?.start || "09:00",
+      end: settings?.workingHours?.end || "17:00"
+    },
+    appointmentDuration: settings?.appointmentDuration || 60,
+    bufferTime: settings?.bufferTime || 15,
+    advanceBookingDays: settings?.advanceBookingDays || 30,
+    workingDays: settings?.workingDays || [1, 2, 3, 4, 5],
+    autoConfirm: settings?.autoConfirm || false,
+    reminderSettings: {
+      enabled: settings?.reminderSettings?.enabled !== false,
+      beforeHours: settings?.reminderSettings?.beforeHours || [24, 2],
+      whatsapp: settings?.reminderSettings?.whatsapp !== false,
+      email: settings?.reminderSettings?.email !== false
+    },
+    emailNotifications: {
+      enabled: settings?.emailNotifications?.enabled !== false,
+      confirmationTemplate: settings?.emailNotifications?.confirmationTemplate || "",
+      reminderTemplate: settings?.emailNotifications?.reminderTemplate || ""
+    },
+    whatsappNotifications: {
+      enabled: settings?.whatsappNotifications?.enabled !== false,
+      confirmationTemplate: settings?.whatsappNotifications?.confirmationTemplate || "",
+      reminderTemplate: settings?.whatsappNotifications?.reminderTemplate || ""
+    }
+  });
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest('PUT', '/api/calendar/settings', data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Configuración guardada",
+        description: "Los cambios han sido guardados exitosamente",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/calendar/settings'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al guardar",
+        description: "No se pudieron guardar los cambios: " + error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleWorkingDayToggle = (dayIndex: number) => {
+    const newWorkingDays = formData.workingDays.includes(dayIndex)
+      ? formData.workingDays.filter(d => d !== dayIndex)
+      : [...formData.workingDays, dayIndex].sort();
+    
+    setFormData(prev => ({
+      ...prev,
+      workingDays: newWorkingDays
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSettingsMutation.mutate(formData);
+  };
+
   return (
-    <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6 max-h-[80vh] overflow-y-auto">
       <div>
-        <h3 className="font-medium mb-2">Horarios de Trabajo</h3>
+        <h3 className="font-medium mb-3">Horarios de Trabajo</h3>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label>Hora de inicio</Label>
             <Input
               type="time"
-              defaultValue={settings?.workingHours?.start || "09:00"}
+              value={formData.workingHours.start}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                workingHours: { ...prev.workingHours, start: e.target.value }
+              }))}
             />
           </div>
           <div>
             <Label>Hora de fin</Label>
             <Input
               type="time"
-              defaultValue={settings?.workingHours?.end || "17:00"}
+              value={formData.workingHours.end}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                workingHours: { ...prev.workingHours, end: e.target.value }
+              }))}
             />
           </div>
         </div>
       </div>
 
-      <div>
-        <Label>Duración de cita por defecto (minutos)</Label>
-        <Input
-          type="number"
-          defaultValue={settings?.appointmentDuration || 60}
-        />
-      </div>
-
-      <div>
-        <Label>Tiempo de buffer entre citas (minutos)</Label>
-        <Input
-          type="number"
-          defaultValue={settings?.bufferTime || 15}
-        />
-      </div>
-
       <div className="space-y-2">
-        <Label>Notificaciones por Email</Label>
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <input type="checkbox" defaultChecked />
-            <label className="text-sm">Confirmación de cita</label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <input type="checkbox" defaultChecked />
-            <label className="text-sm">Recordatorio 24h antes</label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <input type="checkbox" defaultChecked />
-            <label className="text-sm">Recordatorio 2h antes</label>
-          </div>
+        <Label>Días laborables</Label>
+        <div className="flex gap-2">
+          {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day, index) => (
+            <Button
+              key={day}
+              type="button"
+              variant={formData.workingDays.includes(index + 1) ? 'default' : 'outline'}
+              size="sm"
+              className="w-8 h-8 p-0"
+              onClick={() => handleWorkingDayToggle(index + 1)}
+            >
+              {day}
+            </Button>
+          ))}
         </div>
       </div>
 
-      <Button className="w-full">
-        Guardar Configuración
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Duración por defecto (min)</Label>
+          <Input
+            type="number"
+            value={formData.appointmentDuration}
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              appointmentDuration: parseInt(e.target.value) || 60
+            }))}
+            min="15"
+            step="15"
+          />
+        </div>
+        <div>
+          <Label>Buffer entre citas (min)</Label>
+          <Input
+            type="number"
+            value={formData.bufferTime}
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              bufferTime: parseInt(e.target.value) || 15
+            }))}
+            min="0"
+            step="5"
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="autoConfirm"
+          checked={formData.autoConfirm}
+          onChange={(e) => setFormData(prev => ({
+            ...prev,
+            autoConfirm: e.target.checked
+          }))}
+        />
+        <Label htmlFor="autoConfirm">Confirmar citas automáticamente</Label>
+      </div>
+
+      <div className="space-y-3">
+        <Label className="text-sm font-medium">Recordatorios Automáticos</Label>
+        
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="remindersEnabled"
+            checked={formData.reminderSettings.enabled}
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              reminderSettings: { ...prev.reminderSettings, enabled: e.target.checked }
+            }))}
+          />
+          <Label htmlFor="remindersEnabled">Activar recordatorios automáticos</Label>
+        </div>
+
+        {formData.reminderSettings.enabled && (
+          <div className="ml-6 space-y-2">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="whatsappReminders"
+                checked={formData.reminderSettings.whatsapp}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  reminderSettings: { ...prev.reminderSettings, whatsapp: e.target.checked }
+                }))}
+              />
+              <Label htmlFor="whatsappReminders">📱 Recordatorios por WhatsApp</Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="emailReminders"
+                checked={formData.reminderSettings.email}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  reminderSettings: { ...prev.reminderSettings, email: e.target.checked }
+                }))}
+              />
+              <Label htmlFor="emailReminders">📧 Recordatorios por email</Label>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        <Label className="text-sm font-medium">Notificaciones por Email</Label>
+        
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="emailNotifications"
+            checked={formData.emailNotifications.enabled}
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              emailNotifications: { ...prev.emailNotifications, enabled: e.target.checked }
+            }))}
+          />
+          <Label htmlFor="emailNotifications">Activar notificaciones por email</Label>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <Label className="text-sm font-medium">Notificaciones por WhatsApp</Label>
+        
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="whatsappNotifications"
+            checked={formData.whatsappNotifications.enabled}
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              whatsappNotifications: { ...prev.whatsappNotifications, enabled: e.target.checked }
+            }))}
+          />
+          <Label htmlFor="whatsappNotifications">Activar notificaciones por WhatsApp</Label>
+        </div>
+      </div>
+
+      <Button 
+        type="submit" 
+        className="w-full" 
+        disabled={updateSettingsMutation.isPending}
+      >
+        {updateSettingsMutation.isPending ? "Guardando..." : "Guardar Configuración"}
       </Button>
-    </div>
+    </form>
   );
 }

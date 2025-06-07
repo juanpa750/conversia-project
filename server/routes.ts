@@ -5,6 +5,7 @@ import { hashPassword, comparePassword, generateToken, isAuthenticated, isAdmin 
 import { setupStripe } from "./stripe";
 import { AIAppointmentService } from "./aiAppointmentService";
 import { EmailService } from "./emailService";
+import { WhatsAppService } from "./whatsappService";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
@@ -2122,15 +2123,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const appointment = await storage.createAppointment(appointmentData);
       await AIAppointmentService.scheduleSmartReminders(appointment, userId);
       
-      // Send email notification if business email is configured
+      // Send notifications
       if (appointmentData.clientEmail) {
         await EmailService.sendAppointmentConfirmation(appointment, userId);
+      }
+      
+      if (appointmentData.clientPhone) {
+        await WhatsAppService.sendAppointmentConfirmation(appointment, userId);
+        await WhatsAppService.scheduleWhatsAppReminders(appointment, userId);
       }
       
       res.json({
         success: true,
         appointment,
-        message: 'Cita creada exitosamente con recordatorios automáticos programados'
+        message: 'Cita creada exitosamente con recordatorios automáticos por email y WhatsApp programados'
       });
     } catch (error: any) {
       console.error('Smart appointment creation error:', error);
