@@ -1485,7 +1485,7 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
     console.log('📅 Updated confirmation status for appointment:', id, 'to:', confirmed);
   }
 
-  async getAvailableSlots(userId: string, date: string): Promise<string[]> {
+  async getAvailableSlots(userId: string, date: string): Promise<any[]> {
     const settings = await this.getCalendarSettings(userId);
     const workingHours = settings.workingHours;
     const slotDuration = settings.appointmentDuration || 60; // Usar appointmentDuration como slotDuration
@@ -1581,11 +1581,18 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
     const occupiedArray = Array.from(occupiedSlots);
     console.log('📅 Occupied slots for date', date, ':', occupiedArray);
     
-    // Filtrar slots ocupados
-    const availableSlots = slots.filter(slot => !occupiedSlots.has(slot));
-    console.log('📅 Available slots after filtering:', availableSlots.length, 'of', slots.length);
+    // Devolver todos los slots con información de estado
+    const slotsWithStatus = slots.map(slot => ({
+      time: slot,
+      available: !occupiedSlots.has(slot),
+      occupied: occupiedSlots.has(slot)
+    }));
     
-    return availableSlots;
+    console.log('📅 Returning', slotsWithStatus.length, 'slots with status information');
+    console.log('📅 Available slots:', slotsWithStatus.filter(s => s.available).length);
+    console.log('📅 Occupied slots:', slotsWithStatus.filter(s => s.occupied).length);
+    
+    return slotsWithStatus;
   }
 
   async getCalendarSettings(userId: string): Promise<CalendarSettings> {

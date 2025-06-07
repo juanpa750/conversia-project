@@ -706,11 +706,25 @@ function AppointmentForm({ onSubmit, availableSlots, isLoading, selectedDate, de
                 <SelectValue placeholder="Seleccionar" />
               </SelectTrigger>
               <SelectContent>
-                {Array.isArray(availableSlots) && availableSlots.map((slot: string) => (
-                  <SelectItem key={slot} value={slot}>
-                    {slot}
-                  </SelectItem>
-                ))}
+                {Array.isArray(availableSlots) && availableSlots.map((slot: any) => {
+                  // Manejar ambos formatos: string (anterior) y objeto (nuevo)
+                  const time = typeof slot === 'string' ? slot : slot.time;
+                  const isOccupied = typeof slot === 'object' && slot.occupied;
+                  const isAvailable = typeof slot === 'string' || slot.available;
+                  
+                  return (
+                    <SelectItem 
+                      key={time} 
+                      value={time}
+                      disabled={isOccupied}
+                      className={isOccupied ? "text-red-500 bg-red-50" : ""}
+                    >
+                      <span className={isOccupied ? "text-red-500" : ""}>
+                        {time} {isOccupied ? "(Ocupado)" : ""}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
