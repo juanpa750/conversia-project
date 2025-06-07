@@ -1,5 +1,5 @@
 import type { Express } from "express";
-import { whatsappWebService } from "./whatsappWebService";
+import { whatsappSimpleService } from "./whatsappSimpleService";
 import { isAuthenticated } from "./auth";
 import { storage } from "./storage";
 
@@ -11,7 +11,7 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
       const userId = req.userId!;
       
       // Inicializar sesión
-      await whatsappWebService.initializeSession(userId);
+      await whatsappSimpleService.initializeSession(userId);
       
       res.json({ 
         success: true, 

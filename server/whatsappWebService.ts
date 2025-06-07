@@ -4,18 +4,15 @@ import { EventEmitter } from 'events';
 import path from 'path';
 import fs from 'fs';
 
-// Simple WhatsApp Web simulation for demo purposes
-// In production, you would use the actual whatsapp-web.js library
-
 interface WhatsAppWebSession {
   userId: string;
-  client: Client;
   status: 'disconnected' | 'qr_pending' | 'authenticating' | 'connected' | 'error';
   qrCode?: string;
   lastError?: string;
   connectedAt?: Date;
   phoneNumber?: string;
   profileName?: string;
+  simulatedClient?: any;
 }
 
 class WhatsAppWebService extends EventEmitter {
