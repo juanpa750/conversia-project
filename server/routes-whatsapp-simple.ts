@@ -284,4 +284,32 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
       });
     }
   });
+
+  // Endpoint para enviar mensaje de prueba
+  app.post('/api/whatsapp-simple/send-test-message', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.userId!;
+      const { fromNumber, message } = req.body;
+      
+      if (!fromNumber || !message) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Número y mensaje son requeridos' 
+        });
+      }
+      
+      await whatsappSimpleService.sendTestMessage(userId, fromNumber, message);
+      
+      res.json({ 
+        success: true, 
+        message: 'Mensaje de prueba enviado exitosamente' 
+      });
+    } catch (error) {
+      console.error('Error sending test message:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error al enviar mensaje de prueba' 
+      });
+    }
+  });
 }

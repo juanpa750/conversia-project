@@ -1,5 +1,6 @@
 import QRCode from 'qrcode';
 import { EventEmitter } from 'events';
+import { freeAIService } from './freeAIService';
 
 interface WhatsAppSimpleSession {
   userId: string;
@@ -89,6 +90,15 @@ class WhatsAppSimpleService extends EventEmitter {
       phoneNumber: session.phoneNumber,
       profileName: session.profileName
     });
+
+    // Simular mensajes entrantes para demostración
+    setTimeout(() => {
+      this.simulateIncomingMessage(session.userId, '+1234567891', 'Hola, ¿tienen productos disponibles?');
+    }, 10000); // Después de 10 segundos
+
+    setTimeout(() => {
+      this.simulateIncomingMessage(session.userId, '+1234567892', 'Buenos días, quisiera información sobre precios');
+    }, 25000); // Después de 25 segundos
   }
 
   async sendMessage(userId: string, to: string, message: string): Promise<boolean> {
@@ -123,6 +133,43 @@ class WhatsAppSimpleService extends EventEmitter {
   async restartSession(userId: string): Promise<void> {
     await this.disconnectSession(userId);
     await this.initializeSession(userId);
+  }
+
+  // Simular mensajes entrantes para demostración
+  private async simulateIncomingMessage(userId: string, fromNumber: string, message: string): Promise<void> {
+    const session = this.sessions.get(userId);
+    if (!session || session.status !== 'connected') {
+      return;
+    }
+
+    console.log(`📱 Mensaje entrante para ${userId} de ${fromNumber}: ${message}`);
+
+    // Generar respuesta automática usando IA gratuita
+    const aiResponse = await freeAIService.generateResponse({
+      userMessage: message,
+      conversationHistory: [],
+      businessType: 'general',
+      language: 'es'
+    });
+
+    // Simular respuesta automática después de 2-3 segundos
+    setTimeout(() => {
+      console.log(`🤖 Respuesta automática enviada a ${fromNumber}: ${aiResponse.message}`);
+      
+      // Emitir evento para notificar a la aplicación
+      this.emit('message_received', {
+        userId,
+        fromNumber,
+        message,
+        autoResponse: aiResponse.message,
+        timestamp: new Date()
+      });
+    }, 2000 + Math.random() * 1000);
+  }
+
+  // Método para enviar mensaje de prueba manual
+  async sendTestMessage(userId: string, fromNumber: string, message: string): Promise<void> {
+    await this.simulateIncomingMessage(userId, fromNumber, message);
   }
 }
 
