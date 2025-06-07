@@ -151,6 +151,7 @@ export interface IStorage {
   updateAppointment(id: number, data: any): Promise<any>;
   deleteAppointment(id: number): Promise<void>;
   getAvailableSlots(userId: string, date: string): Promise<string[]>;
+  getAvailableSlotsWithTimezone(userId: string, date: string, timezone: string): Promise<any[]>;
   getCalendarSettings(userId: string): Promise<any>;
   updateCalendarSettings(userId: string, settings: any): Promise<any>;
 }
@@ -1416,7 +1417,95 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
     return dates;
   }
 
-  // Calendar and appointments operations implementation
+  // Calendar and appointments operations implementation with timezone support
+  async getAvailableSlotsWithTimezone(userId: string, date: string, timezone: string): Promise<any[]> {
+    const settings = await this.getCalendarSettings(userId);
+    const workingHours = settings.workingHours;
+    const slotDuration = settings.appointmentDuration || 60;
+    const buffer = settings.bufferTime || 0;
+
+    // Generar todos los slots posibles
+    const slots = [];
+    const startHour = parseInt(workingHours.start.split(':')[0]);
+    const startMinute = parseInt(workingHours.start.split(':')[1] || '0');
+    const endHour = parseInt(workingHours.end.split(':')[0]);
+    const endMinute = parseInt(workingHours.end.split(':')[1] || '0');
+
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+
+    for (let minutes = startTotalMinutes; minutes < endTotalMinutes; minutes += 30) {
+      const hour = Math.floor(minutes / 60);
+      const minute = minutes % 60;
+      const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      slots.push(timeStr);
+    }
+
+    // Obtener citas existentes para la fecha
+    const existingAppointments = await this.getAppointments(userId, date);
+    console.log('📅 DEBUG - Processing appointments with timezone:', timezone);
+    console.log('📅 DEBUG - Found appointments:', existingAppointments.length);
+    
+    const occupiedSlots = new Set<string>();
+    
+    existingAppointments.forEach((appointment, index) => {
+      if (appointment.status === 'cancelled') {
+        return;
+      }
+      
+      // Convertir fecha UTC a zona horaria local del usuario
+      const appointmentDateUTC = new Date(appointment.scheduledDate);
+      
+      // Calcular offset de zona horaria manualmente para Bogotá (UTC-5)
+      let timezoneOffset = 0;
+      if (timezone === 'America/Bogota' || timezone === 'America/Lima') {
+        timezoneOffset = -5; // UTC-5
+      } else if (timezone === 'America/Mexico_City') {
+        timezoneOffset = -6; // UTC-6
+      } else if (timezone === 'America/Buenos_Aires' || timezone === 'America/Santiago') {
+        timezoneOffset = -3; // UTC-3
+      } else if (timezone === 'Europe/Madrid') {
+        timezoneOffset = 1; // UTC+1
+      }
+      
+      // Aplicar offset de zona horaria
+      const localTime = new Date(appointmentDateUTC.getTime() + (timezoneOffset * 60 * 60 * 1000));
+      
+      console.log(`📅 DEBUG - Appointment ${index}:`, {
+        scheduledDateUTC: appointment.scheduledDate,
+        timezone: timezone,
+        offset: timezoneOffset,
+        localTime: localTime.toISOString(),
+        clientName: appointment.clientName
+      });
+      
+      // Extraer hora local
+      const localHour = localTime.getUTCHours(); // Usar getUTCHours porque ya aplicamos el offset
+      const localMinute = localTime.getUTCMinutes();
+      const localTimeStr = `${localHour.toString().padStart(2, '0')}:${localMinute.toString().padStart(2, '0')}`;
+      
+      console.log(`📅 DEBUG - Appointment ${index} local time:`, localTimeStr);
+      
+      occupiedSlots.add(localTimeStr);
+      console.log(`📅 DEBUG - Added occupied slot:`, localTimeStr);
+    });
+
+    const occupiedArray = Array.from(occupiedSlots);
+    console.log('📅 Occupied slots for date', date, 'in timezone', timezone, ':', occupiedArray);
+    
+    const slotsWithStatus = slots.map(slot => ({
+      time: slot,
+      available: !occupiedSlots.has(slot),
+      occupied: occupiedSlots.has(slot)
+    }));
+    
+    console.log('📅 Returning', slotsWithStatus.length, 'slots with status information');
+    console.log('📅 Available slots:', slotsWithStatus.filter(s => s.available).length);
+    console.log('📅 Occupied slots:', slotsWithStatus.filter(s => s.occupied).length);
+    
+    return slotsWithStatus;
+  }
+
   async getAppointments(userId: string, date?: string): Promise<Appointment[]> {
     console.log('📅 DEBUG - getAppointments called with userId:', userId, 'date filter:', date);
     
