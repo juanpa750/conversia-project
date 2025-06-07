@@ -18,6 +18,7 @@ import {
   RiSendPlaneLine,
   RiSettingsLine,
   RiChat1Line,
+
   RiRobotLine
 } from 'react-icons/ri';
 
@@ -461,7 +462,7 @@ export default function WhatsAppSimpleConnect() {
                 </p>
               </div>
               <div>
-                <RiChatLine className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                <RiChat1Line className="w-8 h-8 text-blue-500 mx-auto mb-2" />
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                   3. Comienza Ya
                 </h3>
