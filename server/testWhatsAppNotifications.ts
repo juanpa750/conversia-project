@@ -24,17 +24,29 @@ async function testWhatsAppNotifications() {
     
     // Simular envío de confirmación automática
     console.log('\n📱 Enviando confirmación automática de WhatsApp...');
-    await WhatsAppService.sendAppointmentConfirmation(
+    const confirmationSent = await WhatsAppService.sendAppointmentConfirmation(
       testAppointment.userId,
       testAppointment
     );
     
+    if (confirmationSent) {
+      console.log('✅ Confirmación enviada exitosamente');
+    } else {
+      console.log('⚠️  Error al enviar confirmación (simulado)');
+    }
+    
     // Simular envío de recordatorio
     console.log('\n🔔 Enviando recordatorio automático de WhatsApp...');
-    await WhatsAppService.sendAppointmentReminder(
+    const reminderSent = await WhatsAppService.sendAppointmentReminder(
       testAppointment.userId,
       testAppointment
     );
+    
+    if (reminderSent) {
+      console.log('✅ Recordatorio enviado exitosamente');
+    } else {
+      console.log('⚠️  Error al enviar recordatorio (simulado)');
+    }
     
     console.log('\n✅ Prueba de notificaciones WhatsApp completada exitosamente');
     console.log('\n📋 Resumen de funcionalidades probadas:');
