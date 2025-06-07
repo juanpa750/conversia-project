@@ -1461,18 +1461,19 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
     return appointment;
   }
 
-  async updateAppointment(id: number, data: any): Promise<any> {
-    const updatedAppointment = {
-      id,
-      ...data,
-      updatedAt: new Date()
-    };
+  async updateAppointment(id: number, data: Partial<Appointment>): Promise<Appointment> {
+    const [appointment] = await db
+      .update(appointments)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(appointments.id, id))
+      .returning();
 
-    console.log('📅 Updated appointment:', updatedAppointment);
-    return updatedAppointment;
+    console.log('📅 Updated appointment:', appointment);
+    return appointment;
   }
 
   async deleteAppointment(id: number): Promise<void> {
+    await db.delete(appointments).where(eq(appointments.id, id));
     console.log('📅 Deleted appointment:', id);
   }
 
