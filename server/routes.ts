@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { hashPassword, comparePassword, generateToken, isAuthenticated, isAdmin } from "./auth";
 import { setupStripe } from "./stripe";
+import { AIAppointmentService } from "./aiAppointmentService";
+import { EmailService } from "./emailService";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
@@ -2034,6 +2036,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating calendar settings:', error);
       res.status(500).json({ message: 'Failed to update calendar settings' });
+    }
+  });
+
+  // Profile management endpoints
+  app.put('/api/auth/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const updatedUser = await storage.updateUser(userId, req.body);
+      
+      // Remove password from response
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      res.status(500).json({ message: 'Failed to update profile', error: error.message });
+    }
+  });
+
+  // AI-powered appointment verification and assignment
+  app.post('/api/appointments/ai-verify', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const appointmentRequest = req.body;
+      
+      const result = await AIAppointmentService.verifyAndAssignAppointment(userId, appointmentRequest);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          appointment: result.appointment,
+          message: result.message
+        });
+      } else {
+        res.json({
+          success: false,
+          message: result.message,
+          suggestions: result.suggestions
+        });
+      }
+    } catch (error: any) {
+      console.error('AI appointment verification error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error en la verificación automática de cita' 
+      });
+    }
+  });
+
+  // AI conflict detection for appointments
+  app.post('/api/appointments/check-conflicts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const appointmentData = req.body;
+      
+      const conflictCheck = await AIAppointmentService.detectAndResolveConflicts(userId, appointmentData);
+      res.json(conflictCheck);
+    } catch (error: any) {
+      console.error('Conflict detection error:', error);
+      res.status(500).json({ 
+        hasConflict: false,
+        message: 'Error checking for conflicts' 
+      });
+    }
+  });
+
+  // Enhanced appointment creation with AI verification
+  app.post('/api/appointments/smart-create', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const appointmentData = { ...req.body, userId };
+      
+      // First check for conflicts
+      const conflictCheck = await AIAppointmentService.detectAndResolveConflicts(userId, appointmentData);
+      
+      if (conflictCheck.hasConflict) {
+        return res.json({
+          success: false,
+          message: conflictCheck.resolution,
+          suggestions: conflictCheck.suggestions
+        });
+      }
+      
+      // Create appointment and schedule smart reminders
+      const appointment = await storage.createAppointment(appointmentData);
+      await AIAppointmentService.scheduleSmartReminders(appointment, userId);
+      
+      // Send email notification if business email is configured
+      if (appointmentData.clientEmail) {
+        await EmailService.sendAppointmentConfirmation(appointment, userId);
+      }
+      
+      res.json({
+        success: true,
+        appointment,
+        message: 'Cita creada exitosamente con recordatorios automáticos programados'
+      });
+    } catch (error: any) {
+      console.error('Smart appointment creation error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Error creating appointment' 
+      });
     }
   });
 
