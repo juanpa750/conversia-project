@@ -1542,56 +1542,10 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
       
       console.log(`📅 DEBUG - Appointment ${index} time:`, appointmentTimeStr);
       
-      // Agregar el slot exacto de la cita
+      // Para la visualización del calendario, solo marcar el slot exacto de la cita
+      // La duración y buffer se aplicarán al crear nuevas citas, no en la visualización
       occupiedSlots.add(appointmentTimeStr);
       console.log(`📅 DEBUG - Added occupied slot:`, appointmentTimeStr);
-      
-      // Calcular cuántos slots adicionales ocupa la cita
-      const slotsNeeded = Math.ceil(appointmentDuration / 30);
-      
-      // Marcar slots adicionales basado en la duración
-      for (let i = 1; i < slotsNeeded; i++) {
-        const nextSlotMinutes = (appointmentHour * 60 + appointmentMinute) + (i * 30);
-        const nextHour = Math.floor(nextSlotMinutes / 60);
-        const nextMinute = nextSlotMinutes % 60;
-        const nextSlotTime = `${nextHour.toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}`;
-        
-        if (slots.includes(nextSlotTime)) {
-          occupiedSlots.add(nextSlotTime);
-        }
-      }
-      
-      // Agregar buffer antes y después si está configurado
-      if (buffer > 0) {
-        const bufferSlotsBefore = Math.ceil(buffer / 30);
-        const bufferSlotsAfter = Math.ceil(buffer / 30);
-        
-        // Buffer antes
-        for (let i = 1; i <= bufferSlotsBefore; i++) {
-          const prevSlotMinutes = (appointmentHour * 60 + appointmentMinute) - (i * 30);
-          if (prevSlotMinutes >= 0) {
-            const prevHour = Math.floor(prevSlotMinutes / 60);
-            const prevMinute = prevSlotMinutes % 60;
-            const prevSlotTime = `${prevHour.toString().padStart(2, '0')}:${prevMinute.toString().padStart(2, '0')}`;
-            
-            if (slots.includes(prevSlotTime)) {
-              occupiedSlots.add(prevSlotTime);
-            }
-          }
-        }
-        
-        // Buffer después
-        for (let i = 1; i <= bufferSlotsAfter; i++) {
-          const nextSlotMinutes = (appointmentHour * 60 + appointmentMinute) + (appointmentDuration) + (i * 30);
-          const nextHour = Math.floor(nextSlotMinutes / 60);
-          const nextMinute = nextSlotMinutes % 60;
-          const nextSlotTime = `${nextHour.toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}`;
-          
-          if (slots.includes(nextSlotTime)) {
-            occupiedSlots.add(nextSlotTime);
-          }
-        }
-      }
     });
 
     const occupiedArray = Array.from(occupiedSlots);
