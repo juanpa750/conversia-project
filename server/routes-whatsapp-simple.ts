@@ -31,19 +31,19 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
   app.get('/api/whatsapp-simple/qr', isAuthenticated, async (req, res) => {
     try {
       const userId = req.userId!;
-      const status = whatsappWebService.getSessionStatus(userId);
+      const status = whatsappSimpleService.getSessionStatus(userId);
       
-      if (status.status === 'qr_pending' && status.qrCode) {
+      if (status && status.status === 'qr_pending' && status.qrCodeImage) {
         res.json({
           success: true,
-          qrCode: status.qrCode,
+          qrCode: status.qrCodeImage,
           status: status.status
         });
       } else {
         res.json({
           success: false,
           message: 'Código QR no disponible',
-          status: status.status
+          status: status ? status.status : 'disconnected'
         });
       }
     } catch (error: any) {
@@ -60,11 +60,13 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
   app.get('/api/whatsapp-simple/status', isAuthenticated, async (req, res) => {
     try {
       const userId = req.userId!;
-      const status = whatsappWebService.getSessionStatus(userId);
+      const status = whatsappSimpleService.getSessionStatus(userId);
       
       res.json({
         success: true,
-        ...status
+        status: status ? status.status : 'disconnected',
+        phoneNumber: status ? status.phoneNumber : null,
+        qrCodeImage: status ? status.qrCodeImage : null
       });
     } catch (error: any) {
       console.error('Error obteniendo estado:', error);
