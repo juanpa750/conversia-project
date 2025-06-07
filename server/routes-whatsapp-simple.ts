@@ -91,7 +91,7 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
         });
       }
 
-      const sent = await whatsappWebService.sendMessage(userId, to, message);
+      const sent = await whatsappSimpleService.sendMessage(userId, to, message);
       
       if (sent) {
         res.json({
@@ -118,7 +118,7 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
   app.post('/api/whatsapp-simple/disconnect', isAuthenticated, async (req, res) => {
     try {
       const userId = req.userId!;
-      await whatsappWebService.disconnectSession(userId);
+      await whatsappSimpleService.disconnectSession(userId);
       
       res.json({
         success: true,
@@ -138,7 +138,7 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
   app.post('/api/whatsapp-simple/restart', isAuthenticated, async (req, res) => {
     try {
       const userId = req.userId!;
-      await whatsappWebService.restartSession(userId);
+      await whatsappSimpleService.restartSession(userId);
       
       res.json({
         success: true,
