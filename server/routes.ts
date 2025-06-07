@@ -1948,6 +1948,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Calendar and appointments routes
+  app.get('/api/appointments', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const date = req.query.date as string;
+      const appointments = await storage.getAppointments(userId, date);
+      res.json(appointments);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      res.status(500).json({ message: 'Failed to fetch appointments' });
+    }
+  });
+
+  app.post('/api/appointments', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const appointmentData = {
+        ...req.body,
+        userId
+      };
+      const appointment = await storage.createAppointment(appointmentData);
+      res.json(appointment);
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      res.status(500).json({ message: 'Failed to create appointment' });
+    }
+  });
+
+  app.put('/api/appointments/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const appointmentId = parseInt(req.params.id);
+      const appointment = await storage.updateAppointment(appointmentId, req.body);
+      res.json(appointment);
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+      res.status(500).json({ message: 'Failed to update appointment' });
+    }
+  });
+
+  app.delete('/api/appointments/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const appointmentId = parseInt(req.params.id);
+      await storage.deleteAppointment(appointmentId);
+      res.json({ message: 'Appointment deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+      res.status(500).json({ message: 'Failed to delete appointment' });
+    }
+  });
+
+  app.get('/api/calendar/available-slots', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const date = req.query.date as string;
+      
+      if (!date) {
+        return res.status(400).json({ message: 'Date parameter is required' });
+      }
+
+      const slots = await storage.getAvailableSlots(userId, date);
+      res.json(slots);
+    } catch (error) {
+      console.error('Error fetching available slots:', error);
+      res.status(500).json({ message: 'Failed to fetch available slots' });
+    }
+  });
+
+  app.get('/api/calendar/settings', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const settings = await storage.getCalendarSettings(userId);
+      res.json(settings);
+    } catch (error) {
+      console.error('Error fetching calendar settings:', error);
+      res.status(500).json({ message: 'Failed to fetch calendar settings' });
+    }
+  });
+
+  app.put('/api/calendar/settings', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const settings = await storage.updateCalendarSettings(userId, req.body);
+      res.json(settings);
+    } catch (error) {
+      console.error('Error updating calendar settings:', error);
+      res.status(500).json({ message: 'Failed to update calendar settings' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

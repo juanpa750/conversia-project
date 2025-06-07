@@ -138,6 +138,15 @@ export interface IStorage {
   createProductVariant(variant: InsertProductVariant): Promise<ProductVariant>;
   updateProductVariant(id: number, data: Partial<ProductVariant>): Promise<ProductVariant>;
   deleteProductVariant(id: number): Promise<void>;
+
+  // Calendar and appointments operations
+  getAppointments(userId: string, date?: string): Promise<any[]>;
+  createAppointment(appointment: any): Promise<any>;
+  updateAppointment(id: number, data: any): Promise<any>;
+  deleteAppointment(id: number): Promise<void>;
+  getAvailableSlots(userId: string, date: string): Promise<string[]>;
+  getCalendarSettings(userId: string): Promise<any>;
+  updateCalendarSettings(userId: string, settings: any): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1399,6 +1408,137 @@ ${hasVariants ? '\n📸 Imágenes de precios disponibles para cada opción' : ''
       }
     }
     return dates;
+  }
+
+  // Calendar and appointments operations implementation
+  async getAppointments(userId: string, date?: string): Promise<any[]> {
+    // Por ahora simular datos hasta que se actualice la DB
+    const mockAppointments = [
+      {
+        id: 1,
+        title: 'Consulta inicial',
+        scheduledDate: new Date('2025-06-08T10:00:00'),
+        contactName: 'Juan Pérez',
+        contactPhone: '+1234567890',
+        status: 'confirmed',
+        duration: 60
+      },
+      {
+        id: 2,
+        title: 'Seguimiento',
+        scheduledDate: new Date('2025-06-08T14:00:00'),
+        contactName: 'María González',
+        contactPhone: '+0987654321',
+        status: 'scheduled',
+        duration: 30
+      }
+    ];
+
+    if (date) {
+      const filterDate = new Date(date).toDateString();
+      return mockAppointments.filter(apt => 
+        new Date(apt.scheduledDate).toDateString() === filterDate
+      );
+    }
+
+    return mockAppointments;
+  }
+
+  async createAppointment(appointmentData: any): Promise<any> {
+    const newAppointment = {
+      id: Date.now(),
+      ...appointmentData,
+      status: 'scheduled',
+      reminderSent: false,
+      confirmationSent: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    console.log('📅 Created appointment:', newAppointment);
+
+    // Enviar confirmación por WhatsApp (simulado)
+    this.sendAppointmentConfirmation(newAppointment);
+
+    return newAppointment;
+  }
+
+  async updateAppointment(id: number, data: any): Promise<any> {
+    const updatedAppointment = {
+      id,
+      ...data,
+      updatedAt: new Date()
+    };
+
+    console.log('📅 Updated appointment:', updatedAppointment);
+    return updatedAppointment;
+  }
+
+  async deleteAppointment(id: number): Promise<void> {
+    console.log('📅 Deleted appointment:', id);
+  }
+
+  async getAvailableSlots(userId: string, date: string): Promise<string[]> {
+    const settings = await this.getCalendarSettings(userId);
+    const workingHours = settings.workingHours;
+    const duration = settings.appointmentDuration;
+    const buffer = settings.bufferTime;
+
+    const slots = [];
+    const startHour = parseInt(workingHours.start.split(':')[0]);
+    const endHour = parseInt(workingHours.end.split(':')[0]);
+
+    for (let hour = startHour; hour < endHour; hour++) {
+      slots.push(`${hour.toString().padStart(2, '0')}:00`);
+      if (hour + 1 < endHour) {
+        slots.push(`${hour.toString().padStart(2, '0')}:30`);
+      }
+    }
+
+    // Filtrar slots ocupados (simulado)
+    const occupiedSlots = ['10:00', '14:00'];
+    return slots.filter(slot => !occupiedSlots.includes(slot));
+  }
+
+  async getCalendarSettings(userId: string): Promise<any> {
+    return {
+      workingHours: { start: '09:00', end: '17:00' },
+      workingDays: [1, 2, 3, 4, 5],
+      appointmentDuration: 60,
+      bufferTime: 15,
+      advanceBookingDays: 30,
+      timezone: 'America/Mexico_City',
+      autoConfirm: false,
+      reminderSettings: {
+        enabled: true,
+        beforeHours: [24, 2],
+        whatsapp: true,
+        email: false
+      }
+    };
+  }
+
+  async updateCalendarSettings(userId: string, settings: any): Promise<any> {
+    console.log('📅 Updated calendar settings for user:', userId, settings);
+    return { ...settings, updatedAt: new Date() };
+  }
+
+  private async sendAppointmentConfirmation(appointment: any) {
+    const message = `
+🗓️ *Cita Confirmada*
+
+📅 Fecha: ${new Date(appointment.scheduledDate).toLocaleDateString()}
+🕐 Hora: ${new Date(appointment.scheduledDate).toLocaleTimeString()}
+👤 Cliente: ${appointment.contactName}
+📞 Teléfono: ${appointment.contactPhone}
+⏱️ Duración: ${appointment.duration} minutos
+
+¡Tu cita ha sido confirmada exitosamente!
+
+_Te enviaremos un recordatorio 24 horas antes._
+    `.trim();
+
+    console.log('📱 WhatsApp confirmation sent:', message);
   }
 
   // Generate complete AIDA conversation flows for product chatbots
