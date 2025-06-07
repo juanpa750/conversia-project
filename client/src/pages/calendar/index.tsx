@@ -8,28 +8,29 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Calendar, Clock, Settings, Plus, User, Phone, Mail, ChevronLeft, ChevronRight, Grid, List, CalendarDays } from "lucide-react";
+import { Calendar, Clock, Settings, Plus, User, Phone, Mail, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [currentView, setCurrentView] = useState<'month' | 'week' | 'day'>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch appointments for selected date
   const { data: appointments = [], isLoading: appointmentsLoading } = useQuery({
-    queryKey: [`/api/appointments?date=${selectedDate}`],
+    queryKey: ['/api/appointments', selectedDate],
+    refetchInterval: 30000,
   });
 
-  // Fetch available slots
+  // Fetch available slots for selected date
   const { data: availableSlots = [] } = useQuery({
-    queryKey: [`/api/calendar/available-slots?date=${selectedDate}`],
+    queryKey: ['/api/calendar/available-slots', selectedDate],
+    refetchInterval: 30000,
   });
 
   // Fetch calendar settings
@@ -41,18 +42,18 @@ export default function CalendarPage() {
   const createAppointmentMutation = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/appointments', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/appointments`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/calendar/available-slots`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/calendar/available-slots'] });
       setIsFormOpen(false);
       toast({
         title: "Cita creada",
         description: "La cita ha sido programada exitosamente",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "No se pudo crear la cita",
+        description: error.message || "Error al crear la cita",
         variant: "destructive",
       });
     },
@@ -60,31 +61,36 @@ export default function CalendarPage() {
 
   // Update appointment mutation
   const updateAppointmentMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => 
-      apiRequest('PUT', `/api/appointments/${id}`, data),
+    mutationFn: ({ id, ...data }: any) => apiRequest('PUT', `/api/appointments/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/appointments`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/appointments'] });
       toast({
         title: "Cita actualizada",
         description: "El estado de la cita ha sido actualizado",
       });
     },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Error al actualizar la cita",
+        variant: "destructive",
+      });
+    },
   });
 
-  // Calendar navigation functions
-  const navigateCalendar = (direction: 'prev' | 'next') => {
+  // Handle appointment status updates
+  const handleUpdateStatus = (appointmentId: number, status: string) => {
+    updateAppointmentMutation.mutate({ 
+      id: appointmentId, 
+      status 
+    });
+  };
+
+  // Calendar navigation
+  const navigateMonth = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
-    
-    if (currentView === 'month') {
-      newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
-    } else if (currentView === 'week') {
-      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
-    } else if (currentView === 'day') {
-      newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
-    }
-    
+    newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
     setCurrentDate(newDate);
-    setSelectedDate(newDate.toISOString().split('T')[0]);
   };
 
   const goToToday = () => {
@@ -93,95 +99,30 @@ export default function CalendarPage() {
     setSelectedDate(today.toISOString().split('T')[0]);
   };
 
-  // Generate calendar data based on current view
-  const getCalendarData = () => {
-    const today = new Date(currentDate);
-    
-    if (currentView === 'month') {
-      return generateMonthView(today);
-    } else if (currentView === 'week') {
-      return generateWeekView(today);
-    } else {
-      return generateDayView(today);
-    }
-  };
-
-  const generateMonthView = (date: Date) => {
-    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-    const startOfWeek = new Date(startOfMonth);
-    startOfWeek.setDate(startOfMonth.getDate() - startOfMonth.getDay());
-    
-    const days = [];
-    const currentDay = new Date(startOfWeek);
-    
-    for (let i = 0; i < 42; i++) {
-      days.push(new Date(currentDay));
-      currentDay.setDate(currentDay.getDate() + 1);
-    }
-    
-    return days;
-  };
-
-  const generateWeekView = (date: Date) => {
-    const startOfWeek = new Date(date);
-    startOfWeek.setDate(date.getDate() - date.getDay());
-    
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(startOfWeek);
-      day.setDate(startOfWeek.getDate() + i);
-      days.push(day);
-    }
-    
-    return days;
-  };
-
-  const generateDayView = (date: Date) => {
-    return [new Date(date)];
-  };
-
-  const formatDateHeader = () => {
-    const options: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'long'
-    };
-    
-    if (currentView === 'week') {
-      const weekDays = generateWeekView(currentDate);
-      const start = weekDays[0];
-      const end = weekDays[6];
-      return `${start.getDate()} - ${end.getDate()} ${end.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}`;
-    } else if (currentView === 'day') {
-      return currentDate.toLocaleDateString('es-ES', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      });
-    }
-    
-    return currentDate.toLocaleDateString('es-ES', options);
-  };
-
-  const isToday = (date: Date) => {
-    const today = new Date();
-    return date.toDateString() === today.toDateString();
-  };
-
-  const isCurrentMonth = (date: Date) => {
-    return date.getMonth() === currentDate.getMonth();
-  };
-
+  // Handle form submission
   const handleCreateAppointment = (formData: FormData) => {
+    const date = formData.get('date') as string;
+    const time = formData.get('time') as string;
+    
+    if (!date || !time) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona fecha y hora",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const scheduledDate = new Date(`${date}T${time}`);
+    
     const appointmentData = {
       clientName: formData.get('clientName'),
-      clientEmail: formData.get('clientEmail'),
       clientPhone: formData.get('clientPhone'),
+      clientEmail: formData.get('clientEmail'),
       service: formData.get('service'),
-      date: formData.get('date'),
-      time: formData.get('time'),
       duration: parseInt(formData.get('duration') as string) || 60,
+      scheduledDate: scheduledDate.toISOString(),
+      description: formData.get('description'),
       notes: formData.get('notes'),
       status: 'scheduled'
     };
@@ -189,153 +130,158 @@ export default function CalendarPage() {
     createAppointmentMutation.mutate(appointmentData);
   };
 
-  const calendarDays = getCalendarData();
+  // Generate calendar month view
+  const generateCalendarDays = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const days = [];
+    for (let i = 0; i < 42; i++) {
+      const currentDay = new Date(startDate);
+      currentDay.setDate(startDate.getDate() + i);
+      days.push(currentDay);
+    }
+    
+    return days;
+  };
+
+  const calendarDays = generateCalendarDays();
+  const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Calendario de Citas</h1>
-          <p className="text-muted-foreground">
-            Gestiona tus citas y horarios disponibles
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {/* View selector */}
-          <div className="flex items-center border rounded-lg p-1">
-            <Button
-              variant={currentView === 'month' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setCurrentView('month')}
-            >
-              <Grid className="h-4 w-4" />
-              Mes
-            </Button>
-            <Button
-              variant={currentView === 'week' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setCurrentView('week')}
-            >
-              <List className="h-4 w-4" />
-              Semana
-            </Button>
-            <Button
-              variant={currentView === 'day' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setCurrentView('day')}
-            >
-              <CalendarDays className="h-4 w-4" />
-              Día
-            </Button>
+    <div className="min-h-screen bg-gray-50 p-4">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Calendario de Citas</h1>
+            <p className="text-gray-600 mt-1">
+              Gestiona tus citas y horarios disponibles
+            </p>
           </div>
-
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Nueva Cita
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Programar Nueva Cita</DialogTitle>
-              </DialogHeader>
-              <AppointmentForm 
-                onSubmit={handleCreateAppointment}
-                availableSlots={Array.isArray(availableSlots) ? availableSlots : []}
-                isLoading={createAppointmentMutation.isPending}
-              />
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Configuración del Calendario</DialogTitle>
-              </DialogHeader>
-              <CalendarSettings settings={settings} />
-            </DialogContent>
-          </Dialog>
+          
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full sm:w-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nueva Cita
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Programar Nueva Cita</DialogTitle>
+                </DialogHeader>
+                <AppointmentForm 
+                  onSubmit={handleCreateAppointment}
+                  availableSlots={availableSlots}
+                  isLoading={createAppointmentMutation.isPending}
+                  selectedDate={selectedDate}
+                />
+              </DialogContent>
+            </Dialog>
+            
+            <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-auto">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Configuración
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Configuración del Calendario</DialogTitle>
+                </DialogHeader>
+                <CalendarSettings settings={settings} />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Calendar View */}
+        {/* Main Calendar */}
         <div className="lg:col-span-3">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigateCalendar('prev')}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => navigateMonth('prev')}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <h2 className="text-lg sm:text-xl font-semibold min-w-0">
+                    {currentDate.toLocaleDateString('es-ES', { 
+                      month: 'long', 
+                      year: 'numeric' 
+                    })}
+                  </h2>
+                  <Button variant="outline" size="sm" onClick={() => navigateMonth('next')}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
                 
-                <h2 className="text-xl font-semibold min-w-[200px] text-center">
-                  {formatDateHeader()}
-                </h2>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigateCalendar('next')}
-                >
-                  <ChevronRight className="h-4 w-4" />
+                <Button variant="outline" size="sm" onClick={goToToday}>
+                  Hoy
                 </Button>
               </div>
-              
-              <Button variant="outline" onClick={goToToday}>
-                Hoy
-              </Button>
             </CardHeader>
-            
             <CardContent>
-              {currentView === 'month' && (
-                <MonthView 
-                  days={calendarDays}
-                  currentDate={currentDate}
-                  selectedDate={selectedDate}
-                  onDateSelect={setSelectedDate}
-                  appointments={Array.isArray(appointments) ? appointments : []}
-                />
-              )}
+              {/* Week headers */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {weekDays.map(day => (
+                  <div key={day} className="p-2 text-center text-xs sm:text-sm font-medium text-gray-500">
+                    {day}
+                  </div>
+                ))}
+              </div>
               
-              {currentView === 'week' && (
-                <WeekView 
-                  days={calendarDays}
-                  selectedDate={selectedDate}
-                  onDateSelect={setSelectedDate}
-                  appointments={Array.isArray(appointments) ? appointments : []}
-                />
-              )}
-              
-              {currentView === 'day' && (
-                <DayView 
-                  date={currentDate}
-                  appointments={Array.isArray(appointments) ? appointments : []}
-                  availableSlots={Array.isArray(availableSlots) ? availableSlots : []}
-                />
-              )}
+              {/* Calendar grid */}
+              <div className="grid grid-cols-7 gap-1">
+                {calendarDays.map((day, index) => {
+                  const dayStr = day.toISOString().split('T')[0];
+                  const isSelected = dayStr === selectedDate;
+                  const isToday = day.toDateString() === new Date().toDateString();
+                  const isCurrentMonth = day.getMonth() === currentDate.getMonth();
+                  const hasAppointments = Array.isArray(appointments) && 
+                    appointments.some((apt: any) => apt.scheduledDate?.startsWith(dayStr));
+                  
+                  return (
+                    <Button
+                      key={index}
+                      variant={isSelected ? 'default' : 'ghost'}
+                      className={`
+                        h-10 sm:h-12 p-1 relative text-xs sm:text-sm
+                        ${isToday ? 'ring-2 ring-blue-500' : ''}
+                        ${!isCurrentMonth ? 'text-gray-400' : ''}
+                        ${hasAppointments ? 'bg-blue-50 hover:bg-blue-100' : ''}
+                        ${isSelected ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
+                      `}
+                      onClick={() => setSelectedDate(dayStr)}
+                    >
+                      <span>{day.getDate()}</span>
+                      {hasAppointments && (
+                        <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full" />
+                      )}
+                    </Button>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Date picker */}
+          {/* Date selector */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Seleccionar Fecha</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Fecha Seleccionada</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <Input
                 type="date"
                 value={selectedDate}
@@ -343,62 +289,50 @@ export default function CalendarPage() {
                 className="w-full"
               />
               
-              {/* Available slots preview */}
-              <div className="mt-4">
-                <h4 className="font-medium mb-2">Horarios Disponibles</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {Array.isArray(availableSlots) && availableSlots.map((slot: string) => (
-                    <Badge key={slot} variant="outline" className="justify-center">
-                      {slot}
-                    </Badge>
-                  ))}
+              <div>
+                <h4 className="font-medium text-sm mb-2">Horarios Disponibles</h4>
+                <div className="grid grid-cols-2 gap-1">
+                  {Array.isArray(availableSlots) && availableSlots.length > 0 ? (
+                    availableSlots.map((slot: string) => (
+                      <Badge key={slot} variant="outline" className="justify-center text-xs py-1">
+                        {slot}
+                      </Badge>
+                    ))
+                  ) : (
+                    <p className="text-xs text-gray-500 col-span-2">
+                      No hay horarios disponibles
+                    </p>
+                  )}
                 </div>
-                {(!Array.isArray(availableSlots) || availableSlots.length === 0) && (
-                  <p className="text-sm text-muted-foreground">
-                    No hay horarios disponibles
-                  </p>
-                )}
               </div>
             </CardContent>
           </Card>
 
           {/* Today's appointments */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Citas de Hoy</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Citas del Día</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {appointmentsLoading ? (
-                  <div className="space-y-4">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-20 bg-gray-100 rounded animate-pulse" />
-                    ))}
-                  </div>
-                ) : !Array.isArray(appointments) || appointments.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <p className="text-muted-foreground">
-                      No hay citas programadas para esta fecha
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {Array.isArray(appointments) && appointments.map((appointment: any) => (
-                      <AppointmentCard 
-                        key={appointment.id} 
-                        appointment={appointment}
-                        onUpdateStatus={(status: string) => 
-                          updateAppointmentMutation.mutate({ 
-                            id: appointment.id, 
-                            data: { status } 
-                          })
-                        }
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+              {appointmentsLoading ? (
+                <div className="flex items-center justify-center p-4">
+                  <div className="animate-spin w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full" />
+                </div>
+              ) : !Array.isArray(appointments) || appointments.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  No hay citas programadas
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {appointments.map((appointment: any) => (
+                    <AppointmentCard 
+                      key={appointment.id} 
+                      appointment={appointment}
+                      onUpdateStatus={handleUpdateStatus}
+                    />
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -407,290 +341,149 @@ export default function CalendarPage() {
   );
 }
 
-// Month View Component
-function MonthView({ days, currentDate, selectedDate, onDateSelect, appointments }: any) {
-  const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  
-  return (
-    <div className="grid grid-cols-7 gap-1">
-      {/* Week headers */}
-      {weekDays.map(day => (
-        <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground">
-          {day}
-        </div>
-      ))}
-      
-      {/* Calendar days */}
-      {days.map((day: Date, index: number) => {
-        const dateStr = day.toISOString().split('T')[0];
-        const dayAppointments = appointments.filter((apt: any) => apt.date === dateStr);
-        const isSelected = selectedDate === dateStr;
-        const isToday = day.toDateString() === new Date().toDateString();
-        const isCurrentMonth = day.getMonth() === currentDate.getMonth();
-        
-        return (
-          <div
-            key={index}
-            className={`
-              p-2 min-h-[80px] border rounded cursor-pointer hover:bg-gray-50
-              ${isSelected ? 'bg-primary text-primary-foreground' : ''}
-              ${isToday ? 'ring-2 ring-primary' : ''}
-              ${!isCurrentMonth ? 'text-muted-foreground' : ''}
-            `}
-            onClick={() => onDateSelect(dateStr)}
-          >
-            <div className="font-medium">{day.getDate()}</div>
-            <div className="space-y-1 mt-1">
-              {dayAppointments.slice(0, 2).map((apt: any) => (
-                <div
-                  key={apt.id}
-                  className="text-xs bg-blue-100 text-blue-800 rounded px-1 py-0.5 truncate"
-                >
-                  {apt.time} - {apt.clientName}
-                </div>
-              ))}
-              {dayAppointments.length > 2 && (
-                <div className="text-xs text-muted-foreground">
-                  +{dayAppointments.length - 2} más
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// Week View Component
-function WeekView({ days, selectedDate, onDateSelect, appointments }: any) {
-  const hours = Array.from({ length: 12 }, (_, i) => i + 8); // 8 AM to 7 PM
-  
-  return (
-    <div className="space-y-4">
-      {/* Week header */}
-      <div className="grid grid-cols-8 gap-2">
-        <div></div> {/* Empty cell for time column */}
-        {days.map((day: Date) => {
-          const dateStr = day.toISOString().split('T')[0];
-          const isSelected = selectedDate === dateStr;
-          const isToday = day.toDateString() === new Date().toDateString();
-          
-          return (
-            <div
-              key={dateStr}
-              className={`
-                p-2 text-center cursor-pointer rounded
-                ${isSelected ? 'bg-primary text-primary-foreground' : ''}
-                ${isToday ? 'ring-2 ring-primary' : ''}
-              `}
-              onClick={() => onDateSelect(dateStr)}
-            >
-              <div className="text-sm font-medium">
-                {day.toLocaleDateString('es-ES', { weekday: 'short' })}
-              </div>
-              <div className="text-lg font-bold">{day.getDate()}</div>
-            </div>
-          );
-        })}
-      </div>
-      
-      {/* Time grid */}
-      <div className="grid grid-cols-8 gap-2">
-        <div className="space-y-2">
-          {hours.map(hour => (
-            <div key={hour} className="h-16 text-sm text-muted-foreground p-2">
-              {hour}:00
-            </div>
-          ))}
-        </div>
-        
-        {days.map((day: Date) => {
-          const dateStr = day.toISOString().split('T')[0];
-          const dayAppointments = appointments.filter((apt: any) => apt.date === dateStr);
-          
-          return (
-            <div key={dateStr} className="space-y-2">
-              {hours.map(hour => {
-                const hourAppointments = dayAppointments.filter((apt: any) => 
-                  parseInt(apt.time.split(':')[0]) === hour
-                );
-                
-                return (
-                  <div key={hour} className="h-16 border rounded p-1">
-                    {hourAppointments.map((apt: any) => (
-                      <div
-                        key={apt.id}
-                        className="text-xs bg-blue-100 text-blue-800 rounded px-1 py-0.5 mb-1"
-                      >
-                        {apt.time} - {apt.clientName}
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// Day View Component
-function DayView({ date, appointments, availableSlots }: any) {
-  const hours = Array.from({ length: 12 }, (_, i) => i + 8);
-  const dateStr = date.toISOString().split('T')[0];
-  const dayAppointments = appointments.filter((apt: any) => apt.date === dateStr);
-  
-  return (
-    <div className="space-y-4">
-      <div className="text-center p-4 bg-gray-50 rounded">
-        <h3 className="text-lg font-semibold">
-          {date.toLocaleDateString('es-ES', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}
-        </h3>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-4">
-        {/* Time slots */}
-        <div className="space-y-2">
-          <h4 className="font-medium">Horarios</h4>
-          {hours.map(hour => {
-            const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
-            const appointment = dayAppointments.find((apt: any) => apt.time === timeSlot);
-            const isAvailable = availableSlots.includes(timeSlot);
-            
-            return (
-              <div
-                key={hour}
-                className={`
-                  p-3 border rounded
-                  ${appointment ? 'bg-blue-100 border-blue-300' : ''}
-                  ${isAvailable && !appointment ? 'bg-green-50 border-green-300' : ''}
-                  ${!isAvailable && !appointment ? 'bg-gray-100 border-gray-300' : ''}
-                `}
-              >
-                <div className="font-medium">{timeSlot}</div>
-                {appointment ? (
-                  <div className="text-sm">
-                    <div className="font-medium">{appointment.clientName}</div>
-                    <div className="text-muted-foreground">{appointment.service}</div>
-                  </div>
-                ) : isAvailable ? (
-                  <div className="text-sm text-green-600">Disponible</div>
-                ) : (
-                  <div className="text-sm text-gray-500">No disponible</div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        
-        {/* Appointments list */}
-        <div className="space-y-2">
-          <h4 className="font-medium">Citas del Día</h4>
-          {dayAppointments.length === 0 ? (
-            <p className="text-muted-foreground">No hay citas programadas</p>
-          ) : (
-            <div className="space-y-3">
-              {dayAppointments.map((appointment: any) => (
-                <AppointmentCard key={appointment.id} appointment={appointment} />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Appointment Card Component
+// Appointment Card Component - MOBILE OPTIMIZED
 function AppointmentCard({ appointment, onUpdateStatus }: any) {
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return {
+      date: date.toLocaleDateString('es-ES', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      }),
+      time: date.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    };
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-yellow-100 text-yellow-800';
+      case 'confirmed': return 'bg-green-100 text-green-800 border-green-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'no_show': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case 'scheduled': return 'Programada';
       case 'confirmed': return 'Confirmada';
       case 'cancelled': return 'Cancelada';
       case 'completed': return 'Completada';
-      default: return 'Programada';
+      case 'no_show': return 'No asistió';
+      default: return status;
     }
   };
 
+  const { date, time } = formatDateTime(appointment.scheduledDate);
+
   return (
-    <Card className="p-4">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{appointment.time}</span>
-            <Badge className={getStatusColor(appointment.status)}>
-              {getStatusText(appointment.status)}
-            </Badge>
+    <Card className="border-l-4 border-l-blue-500">
+      <CardContent className="p-3 space-y-3">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <User className="h-3 w-3 text-gray-500 flex-shrink-0" />
+            <span className="font-medium text-sm truncate">{appointment.clientName}</span>
           </div>
-          
-          <div className="space-y-1 text-sm">
-            <div className="flex items-center gap-2">
-              <User className="h-3 w-3" />
-              <span>{appointment.clientName}</span>
+          <Badge className={`text-xs ${getStatusColor(appointment.status)}`}>
+            {getStatusText(appointment.status)}
+          </Badge>
+        </div>
+        
+        {/* Date and Time */}
+        <div className="bg-blue-50 rounded-lg p-2">
+          <div className="flex items-center justify-center gap-3 text-center">
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3 w-3 text-blue-600" />
+              <span className="text-xs font-medium text-blue-900">{date}</span>
             </div>
-            {appointment.clientPhone && (
-              <div className="flex items-center gap-2">
-                <Phone className="h-3 w-3" />
-                <span>{appointment.clientPhone}</span>
-              </div>
-            )}
-            {appointment.clientEmail && (
-              <div className="flex items-center gap-2">
-                <Mail className="h-3 w-3" />
-                <span>{appointment.clientEmail}</span>
-              </div>
-            )}
-            <div className="text-muted-foreground">
-              {appointment.service} • {appointment.duration} min
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3 text-blue-600" />
+              <span className="text-sm font-bold text-blue-900">{time}</span>
             </div>
           </div>
         </div>
         
-        {onUpdateStatus && appointment.status === 'scheduled' && (
-          <div className="flex gap-1">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onUpdateStatus('confirmed')}
-            >
-              Confirmar
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onUpdateStatus('cancelled')}
-            >
-              Cancelar
-            </Button>
+        {/* Contact details */}
+        <div className="space-y-1">
+          {appointment.clientPhone && (
+            <div className="flex items-center gap-2">
+              <Phone className="h-3 w-3 text-gray-400" />
+              <span className="text-xs text-gray-600">{appointment.clientPhone}</span>
+            </div>
+          )}
+          {appointment.clientEmail && (
+            <div className="flex items-center gap-2">
+              <Mail className="h-3 w-3 text-gray-400" />
+              <span className="text-xs text-gray-600 truncate">{appointment.clientEmail}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="text-xs">🔧</span>
+            <span className="text-xs font-medium">{appointment.service || 'Consulta General'}</span>
+            <span className="text-xs text-gray-400">•</span>
+            <span className="text-xs text-gray-600">{appointment.duration || 60} min</span>
+          </div>
+        </div>
+        
+        {/* Action buttons - MOBILE OPTIMIZED */}
+        {onUpdateStatus && (
+          <div className="pt-2 border-t border-gray-100">
+            {appointment.status === 'scheduled' && (
+              <div className="space-y-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full h-7 text-xs bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                  onClick={() => onUpdateStatus(appointment.id, 'confirmed')}
+                >
+                  ✅ Confirmar Cita
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full h-7 text-xs bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                  onClick={() => onUpdateStatus(appointment.id, 'cancelled')}
+                >
+                  ❌ Cancelar Cita
+                </Button>
+              </div>
+            )}
+            
+            {appointment.status === 'confirmed' && (
+              <div className="space-y-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full h-7 text-xs bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                  onClick={() => onUpdateStatus(appointment.id, 'completed')}
+                >
+                  ✅ Marcar Completada
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full h-7 text-xs bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                  onClick={() => onUpdateStatus(appointment.id, 'no_show')}
+                >
+                  ❌ No Asistió
+                </Button>
+              </div>
+            )}
           </div>
         )}
-      </div>
+      </CardContent>
     </Card>
   );
 }
 
 // Appointment Form Component
-function AppointmentForm({ onSubmit, availableSlots, isLoading }: any) {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-
+function AppointmentForm({ onSubmit, availableSlots, isLoading, selectedDate }: any) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
@@ -699,103 +492,109 @@ function AppointmentForm({ onSubmit, availableSlots, isLoading }: any) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <div>
-          <Label htmlFor="clientName">Nombre del Cliente</Label>
+          <Label htmlFor="clientName" className="text-sm font-medium">Nombre del Cliente *</Label>
           <Input
             id="clientName"
             name="clientName"
             placeholder="Nombre completo"
             required
+            className="mt-1"
           />
         </div>
+        
         <div>
-          <Label htmlFor="clientPhone">Teléfono</Label>
+          <Label htmlFor="clientPhone" className="text-sm font-medium">Teléfono *</Label>
           <Input
             id="clientPhone"
             name="clientPhone"
-            placeholder="+1234567890"
+            placeholder="+57 300 123 4567"
             required
+            className="mt-1"
           />
         </div>
-      </div>
 
-      <div>
-        <Label htmlFor="clientEmail">Email</Label>
-        <Input
-          id="clientEmail"
-          name="clientEmail"
-          type="email"
-          placeholder="cliente@email.com"
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="service">Servicio</Label>
-        <Input
-          id="service"
-          name="service"
-          placeholder="Tipo de servicio"
-          required
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="date">Fecha</Label>
+          <Label htmlFor="clientEmail" className="text-sm font-medium">Email</Label>
           <Input
-            id="date"
-            name="date"
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            required
+            id="clientEmail"
+            name="clientEmail"
+            type="email"
+            placeholder="cliente@email.com"
+            className="mt-1"
           />
         </div>
-        <div>
-          <Label htmlFor="time">Hora</Label>
-          <Select name="time" required>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccionar hora" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableSlots.map((slot: string) => (
-                <SelectItem key={slot} value={slot}>
-                  {slot}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="date" className="text-sm font-medium">Fecha *</Label>
+            <Input
+              id="date"
+              name="date"
+              type="date"
+              defaultValue={selectedDate}
+              required
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="time" className="text-sm font-medium">Hora *</Label>
+            <Select name="time" required>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Seleccionar" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.isArray(availableSlots) && availableSlots.map((slot: string) => (
+                  <SelectItem key={slot} value={slot}>
+                    {slot}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
 
-      <div>
-        <Label htmlFor="duration">Duración (minutos)</Label>
-        <Select name="duration" defaultValue="60">
-          <SelectTrigger>
-            <SelectValue placeholder="Duración" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="30">30 minutos</SelectItem>
-            <SelectItem value="60">1 hora</SelectItem>
-            <SelectItem value="90">1.5 horas</SelectItem>
-            <SelectItem value="120">2 horas</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="service" className="text-sm font-medium">Servicio</Label>
+            <Input
+              id="service"
+              name="service"
+              placeholder="Tipo de servicio"
+              defaultValue="Consulta General"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="duration" className="text-sm font-medium">Duración (min)</Label>
+            <Input
+              id="duration"
+              name="duration"
+              type="number"
+              placeholder="60"
+              defaultValue="60"
+              min="15"
+              step="15"
+              className="mt-1"
+            />
+          </div>
+        </div>
 
-      <div>
-        <Label htmlFor="notes">Notas adicionales</Label>
-        <Textarea
-          id="notes"
-          name="notes"
-          placeholder="Información adicional sobre la cita..."
-          rows={3}
-        />
+        <div>
+          <Label htmlFor="description" className="text-sm font-medium">Descripción</Label>
+          <Textarea
+            id="description"
+            name="description"
+            placeholder="Detalles adicionales sobre la cita"
+            rows={3}
+            className="mt-1"
+          />
+        </div>
       </div>
 
       <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? "Creando..." : "Programar Cita"}
+        {isLoading ? "Creando..." : "Crear Cita"}
       </Button>
     </form>
   );
@@ -806,59 +605,27 @@ function CalendarSettings({ settings }: any) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="font-medium mb-2">Horarios de Trabajo</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label>Hora de inicio</Label>
-            <Input
-              type="time"
-              defaultValue={settings?.workingHours?.start || "09:00"}
-            />
-          </div>
-          <div>
-            <Label>Hora de fin</Label>
-            <Input
-              type="time"
-              defaultValue={settings?.workingHours?.end || "17:00"}
-            />
+        <h3 className="font-medium mb-2">Configuración Básica</h3>
+        <p className="text-sm text-gray-600">
+          Personaliza las opciones de tu calendario.
+        </p>
+      </div>
+      
+      <div className="space-y-3">
+        <div>
+          <Label className="text-sm font-medium">Horario de Trabajo</Label>
+          <div className="grid grid-cols-2 gap-2 mt-1">
+            <Input type="time" defaultValue="09:00" />
+            <Input type="time" defaultValue="18:00" />
           </div>
         </div>
-      </div>
-
-      <div>
-        <Label>Duración de cita por defecto (minutos)</Label>
-        <Input
-          type="number"
-          defaultValue={settings?.appointmentDuration || 60}
-        />
-      </div>
-
-      <div>
-        <Label>Tiempo de buffer entre citas (minutos)</Label>
-        <Input
-          type="number"
-          defaultValue={settings?.bufferTime || 15}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Notificaciones por Email</Label>
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <input type="checkbox" defaultChecked />
-            <label className="text-sm">Confirmación de cita</label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <input type="checkbox" defaultChecked />
-            <label className="text-sm">Recordatorio 24h antes</label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <input type="checkbox" defaultChecked />
-            <label className="text-sm">Recordatorio 2h antes</label>
-          </div>
+        
+        <div>
+          <Label className="text-sm font-medium">Duración por defecto (minutos)</Label>
+          <Input type="number" defaultValue="60" min="15" step="15" className="mt-1" />
         </div>
       </div>
-
+      
       <Button className="w-full">
         Guardar Configuración
       </Button>
