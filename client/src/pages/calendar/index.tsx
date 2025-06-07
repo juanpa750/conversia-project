@@ -192,6 +192,7 @@ export default function CalendarPage() {
                   availableSlots={availableSlots}
                   isLoading={createAppointmentMutation.isPending}
                   selectedDate={selectedDate}
+                  defaultDuration={settings?.slotDuration || 60}
                 />
               </DialogContent>
             </Dialog>
@@ -643,7 +644,7 @@ function AppointmentCard({ appointment, onUpdateStatus }: any) {
 }
 
 // Appointment Form Component
-function AppointmentForm({ onSubmit, availableSlots, isLoading, selectedDate }: any) {
+function AppointmentForm({ onSubmit, availableSlots, isLoading, selectedDate, defaultDuration }: any) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
@@ -732,8 +733,8 @@ function AppointmentForm({ onSubmit, availableSlots, isLoading, selectedDate }: 
               id="duration"
               name="duration"
               type="number"
-              placeholder="60"
-              defaultValue="60"
+              placeholder={defaultDuration?.toString() || "60"}
+              defaultValue={defaultDuration?.toString() || "60"}
               min="15"
               step="15"
               className="mt-1"
