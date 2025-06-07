@@ -411,6 +411,10 @@ export default function CalendarPage() {
 function MonthView({ days, currentDate, selectedDate, onDateSelect, appointments }: any) {
   const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
   
+  // Debug logging
+  console.log('📅 MonthView - Total appointments:', appointments?.length || 0);
+  console.log('📅 MonthView - Appointments data:', appointments);
+  
   return (
     <div className="grid grid-cols-7 gap-1">
       {/* Week headers */}
@@ -426,8 +430,21 @@ function MonthView({ days, currentDate, selectedDate, onDateSelect, appointments
         const dayAppointments = appointments.filter((apt: any) => {
           if (!apt.scheduledDate) return false;
           const appointmentDate = new Date(apt.scheduledDate).toISOString().split('T')[0];
-          return appointmentDate === dateStr;
+          const matches = appointmentDate === dateStr;
+          
+          // Debug specific date matches
+          if (matches) {
+            console.log(`📅 Found appointment for ${dateStr}:`, apt);
+          }
+          
+          return matches;
         });
+        
+        // Debug for days with appointments
+        if (dayAppointments.length > 0) {
+          console.log(`📅 Day ${dateStr} has ${dayAppointments.length} appointments:`, dayAppointments);
+        }
+        
         const isSelected = selectedDate === dateStr;
         const isToday = day.toDateString() === new Date().toDateString();
         const isCurrentMonth = day.getMonth() === currentDate.getMonth();
@@ -603,7 +620,16 @@ function DayView({ date, appointments, availableSlots }: any) {
           ) : (
             <div className="space-y-3">
               {dayAppointments.map((appointment: any) => (
-                <AppointmentCard key={appointment.id} appointment={appointment} />
+                <AppointmentCard 
+                  key={appointment.id} 
+                  appointment={appointment}
+                  onUpdateStatus={(status: string) => 
+                    updateAppointmentMutation.mutate({ 
+                      id: appointment.id, 
+                      data: { status } 
+                    })
+                  }
+                />
               ))}
             </div>
           )}
