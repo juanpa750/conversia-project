@@ -14,7 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Calendar, Clock, Settings, Plus, User, Phone, Mail, ChevronLeft, ChevronRight, Grid, List, CalendarDays } from "lucide-react";
 
 export default function CalendarPage() {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState('2025-06-07');
   const [currentView, setCurrentView] = useState<'month' | 'week' | 'day'>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -23,10 +23,16 @@ export default function CalendarPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch appointments for selected date
-  const { data: appointments = [], isLoading: appointmentsLoading } = useQuery({
-    queryKey: ['/api/appointments', selectedDate],
+  // Fetch all appointments
+  const { data: allAppointments = [], isLoading: appointmentsLoading } = useQuery({
+    queryKey: ['/api/appointments'],
     refetchInterval: 30000,
+  });
+
+  // Filter appointments for selected date
+  const appointments = allAppointments.filter((apt: any) => {
+    const aptDate = new Date(apt.scheduled_date).toISOString().split('T')[0];
+    return aptDate === selectedDate;
   });
 
   // Fetch available slots for selected date
@@ -284,7 +290,11 @@ export default function CalendarPage() {
                       const isToday = day.toDateString() === new Date().toDateString();
                       const isCurrentMonth = day.getMonth() === currentDate.getMonth();
                       const hasAppointments = Array.isArray(appointments) && 
-                        appointments.some((apt: any) => apt.scheduledDate?.startsWith(dayStr));
+                        appointments.some((apt: any) => {
+                          if (!apt.scheduled_date) return false;
+                          const aptDate = new Date(apt.scheduled_date).toISOString().split('T')[0];
+                          return aptDate === dayStr;
+                        });
                       
                       return (
                         <Button
@@ -434,8 +444,8 @@ function WeekView({ currentDate, appointments, onDateSelect }: any) {
           const dayStr = `${year}-${month}-${dayNum}`;
           
           const dayAppointments = appointments.filter((apt: any) => {
-            if (!apt.scheduledDate) return false;
-            const aptDate = new Date(apt.scheduledDate);
+            if (!apt.scheduled_date) return false;
+            const aptDate = new Date(apt.scheduled_date);
             const aptYear = aptDate.getFullYear();
             const aptMonth = String(aptDate.getMonth() + 1).padStart(2, '0');
             const aptDay = String(aptDate.getDate()).padStart(2, '0');
