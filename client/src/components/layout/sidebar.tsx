@@ -84,7 +84,7 @@ export function Sidebar() {
           icon={<RiWhatsappLine />} 
           active={location.startsWith("/whatsapp")}
         >
-          WhatsApp Simple
+          WhatsApp Chatbot
         </NavItem>
         
         <NavItem 
