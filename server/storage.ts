@@ -98,7 +98,7 @@ export class SimpleStorage implements ISimpleStorage {
   async getAppointments(userId: string): Promise<any[]> {
     try {
       const result = await db.execute(
-        sql`SELECT * FROM appointments WHERE user_id = ${userId} ORDER BY appointment_date DESC`
+        sql`SELECT * FROM appointments WHERE user_id = ${userId} ORDER BY scheduled_date DESC`
       );
       return result.rows || [];
     } catch (error) {

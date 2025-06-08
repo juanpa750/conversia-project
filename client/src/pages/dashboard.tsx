@@ -27,57 +27,73 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Opción Principal - WhatsApp Simple */}
-        <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 shadow-lg">
-          <CardHeader className="text-center pb-4">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <RiWhatsappLine className="w-12 h-12 text-green-500" />
-              <Badge className="bg-green-500 text-white px-4 py-1 text-sm">
-                ¡RECOMENDADO!
-              </Badge>
-            </div>
-            <CardTitle className="text-2xl text-gray-900 dark:text-white">
-              WhatsApp Simple - Conexión Instantánea
-            </CardTitle>
-            <CardDescription className="text-lg text-gray-600 dark:text-gray-300">
-              La forma más rápida de conectar tu WhatsApp. Sin APIs complicadas, solo escanea un código QR.
+        {/* Resumen de Actividad */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
+            <CardHeader className="text-center">
+              <RiRobotLine className="w-10 h-10 text-blue-500 mx-auto mb-2" />
+              <CardTitle className="text-xl text-gray-900 dark:text-white">Chatbots Activos</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">3</div>
+              <p className="text-gray-600 dark:text-gray-300">bots funcionando</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+            <CardHeader className="text-center">
+              <RiWhatsappLine className="w-10 h-10 text-green-500 mx-auto mb-2" />
+              <CardTitle className="text-xl text-gray-900 dark:text-white">WhatsApp</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <div className="text-lg font-semibold text-green-600 dark:text-green-400">Listo para usar</div>
+              <p className="text-gray-600 dark:text-gray-300">3 pasos simples</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20">
+            <CardHeader className="text-center">
+              <RiSparklingLine className="w-10 h-10 text-purple-500 mx-auto mb-2" />
+              <CardTitle className="text-xl text-gray-900 dark:text-white">Citas Programadas</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">3</div>
+              <p className="text-gray-600 dark:text-gray-300">próximas citas</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Acceso Rápido */}
+        <Card className="border-gray-200 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-xl text-gray-900 dark:text-white">Acceso Rápido</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-300">
+              Accede directamente a las funciones principales de BotMaster
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid md:grid-cols-3 gap-4 text-center">
-              <div className="space-y-2">
-                <RiQrCodeLine className="w-8 h-8 text-green-500 mx-auto" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">1. Escanea QR</h3>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="space-y-2 text-center p-4 rounded-lg bg-green-50 dark:bg-green-900/20">
+                <RiWhatsappLine className="w-8 h-8 text-green-500 mx-auto" />
+                <h3 className="font-semibold text-gray-900 dark:text-white">WhatsApp Chatbot</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Solo abre WhatsApp y escanea el código que aparece
+                  Conecta en 3 pasos simples
                 </p>
               </div>
-              <div className="space-y-2">
-                <RiRobotLine className="w-8 h-8 text-green-500 mx-auto" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">2. Configura IA</h3>
+              <div className="space-y-2 text-center p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                <RiRobotLine className="w-8 h-8 text-blue-500 mx-auto" />
+                <h3 className="font-semibold text-gray-900 dark:text-white">Gestionar Chatbots</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Personaliza las respuestas automáticas de tu asistente
+                  Ver y configurar tus bots
                 </p>
               </div>
-              <div className="space-y-2">
-                <RiSparklingLine className="w-8 h-8 text-green-500 mx-auto" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">3. ¡Listo!</h3>
+              <div className="space-y-2 text-center p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                <RiSparklingLine className="w-8 h-8 text-purple-500 mx-auto" />
+                <h3 className="font-semibold text-gray-900 dark:text-white">Calendario</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Tu chatbot ya está funcionando y respondiendo mensajes
+                  Revisar citas programadas
                 </p>
               </div>
-            </div>
-            
-            <div className="text-center">
-              <Button 
-                size="lg" 
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg"
-                onClick={() => window.location.href = '/whatsapp/simple'}
-              >
-                <RiQrCodeLine className="w-5 h-5 mr-2" />
-                Comenzar Ahora - WhatsApp Simple
-                <RiArrowRightLine className="w-5 h-5 ml-2" />
-              </Button>
             </div>
           </CardContent>
         </Card>
