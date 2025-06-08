@@ -1,6 +1,7 @@
 import { users, whatsappConnections, type User, type WhatsappConnection } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 export interface ISimpleStorage {
   // User operations
@@ -12,6 +13,11 @@ export interface ISimpleStorage {
   getWhatsappConnection(userId: string): Promise<WhatsappConnection | undefined>;
   createWhatsappConnection(connection: any): Promise<WhatsappConnection>;
   updateWhatsappConnection(userId: string, updates: any): Promise<WhatsappConnection>;
+  
+  // Data operations
+  getChatbots(userId: string): Promise<any[]>;
+  getProducts(userId: string): Promise<any[]>;
+  getAppointments(userId: string): Promise<any[]>;
 }
 
 export class SimpleStorage implements ISimpleStorage {
@@ -63,6 +69,42 @@ export class SimpleStorage implements ISimpleStorage {
       .where(eq(whatsappConnections.userId, userId))
       .returning();
     return connection;
+  }
+
+  async getChatbots(userId: string): Promise<any[]> {
+    try {
+      const result = await db.execute(
+        sql`SELECT * FROM chatbots WHERE user_id = ${userId} ORDER BY created_at DESC`
+      );
+      return result.rows || [];
+    } catch (error) {
+      console.error('Error fetching chatbots:', error);
+      return [];
+    }
+  }
+
+  async getProducts(userId: string): Promise<any[]> {
+    try {
+      const result = await db.execute(
+        sql`SELECT * FROM products WHERE user_id = ${userId} ORDER BY created_at DESC`
+      );
+      return result.rows || [];
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      return [];
+    }
+  }
+
+  async getAppointments(userId: string): Promise<any[]> {
+    try {
+      const result = await db.execute(
+        sql`SELECT * FROM appointments WHERE user_id = ${userId} ORDER BY appointment_date DESC`
+      );
+      return result.rows || [];
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      return [];
+    }
   }
 }
 

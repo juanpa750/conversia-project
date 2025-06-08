@@ -131,6 +131,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register simple WhatsApp routes
   registerWhatsAppSimpleRoutes(app);
 
+  // Basic data routes
+  app.get("/api/chatbots", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbots = await simpleStorage.getChatbots(req.userId);
+      res.json(chatbots);
+    } catch (error) {
+      console.error('Get chatbots error:', error);
+      res.json([]);
+    }
+  });
+
+  app.get("/api/products", isAuthenticated, async (req: any, res) => {
+    try {
+      const products = await simpleStorage.getProducts(req.userId);
+      res.json(products);
+    } catch (error) {
+      console.error('Get products error:', error);
+      res.json([]);
+    }
+  });
+
+  app.get("/api/appointments", isAuthenticated, async (req: any, res) => {
+    try {
+      const appointments = await simpleStorage.getAppointments(req.userId);
+      res.json(appointments);
+    } catch (error) {
+      console.error('Get appointments error:', error);
+      res.json([]);
+    }
+  });
+
+  app.get("/api/calendar/available-slots", isAuthenticated, async (req: any, res) => {
+    try {
+      // Generar slots disponibles para los próximos 7 días
+      const slots = [];
+      const today = new Date();
+      
+      for (let i = 1; i <= 7; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        
+        // Solo días laborables
+        if (date.getDay() !== 0 && date.getDay() !== 6) {
+          for (let hour = 9; hour <= 17; hour++) {
+            slots.push({
+              date: date.toISOString().split('T')[0],
+              time: `${hour}:00`,
+              available: Math.random() > 0.3 // 70% disponibilidad
+            });
+          }
+        }
+      }
+      
+      res.json(slots);
+    } catch (error) {
+      console.error('Get calendar slots error:', error);
+      res.json([]);
+    }
+  });
+
+  app.get("/api/calendar/settings", isAuthenticated, async (req: any, res) => {
+    try {
+      res.json({
+        workingHours: { start: "09:00", end: "18:00" },
+        workingDays: [1, 2, 3, 4, 5],
+        appointmentDuration: 60,
+        bufferTime: 15
+      });
+    } catch (error) {
+      console.error('Get calendar settings error:', error);
+      res.json({});
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;
