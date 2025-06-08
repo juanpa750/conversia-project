@@ -35,19 +35,19 @@ export default function Dashboard() {
               <CardTitle className="text-xl text-gray-900 dark:text-white">Chatbots Activos</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">3</div>
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">8</div>
               <p className="text-gray-600 dark:text-gray-300">bots funcionando</p>
             </CardContent>
           </Card>
 
           <Card className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
             <CardHeader className="text-center">
-              <RiWhatsappLine className="w-10 h-10 text-green-500 mx-auto mb-2" />
-              <CardTitle className="text-xl text-gray-900 dark:text-white">WhatsApp</CardTitle>
+              <RiLightbulbLine className="w-10 h-10 text-green-500 mx-auto mb-2" />
+              <CardTitle className="text-xl text-gray-900 dark:text-white">Productos</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="text-lg font-semibold text-green-600 dark:text-green-400">Listo para usar</div>
-              <p className="text-gray-600 dark:text-gray-300">3 pasos simples</p>
+              <div className="text-3xl font-bold text-green-600 dark:text-green-400">5</div>
+              <p className="text-gray-600 dark:text-gray-300">productos activos</p>
             </CardContent>
           </Card>
 
@@ -57,8 +57,8 @@ export default function Dashboard() {
               <CardTitle className="text-xl text-gray-900 dark:text-white">Citas Programadas</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">3</div>
-              <p className="text-gray-600 dark:text-gray-300">próximas citas</p>
+              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">9</div>
+              <p className="text-gray-600 dark:text-gray-300">citas registradas</p>
             </CardContent>
           </Card>
         </div>
