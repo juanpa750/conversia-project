@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { isAuthenticated, generateToken, hashPassword, comparePassword } from "./auth";
 import { simpleStorage } from "./storage";
-import { registerSimpleRoutes } from "./routes-simple";
+import { registerWhatsAppSimpleRoutes } from "./routes-whatsapp-simple";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Simple authentication route
@@ -129,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Register simple WhatsApp routes
-  registerSimpleRoutes(app);
+  registerWhatsAppSimpleRoutes(app);
 
   // Create HTTP server
   const httpServer = createServer(app);

@@ -1,5 +1,6 @@
 import type { Express } from "express";
-import { simpleStorage } from "./storage";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 import { isAuthenticated } from "./auth";
 
 export function registerSimpleRoutes(app: Express) {
@@ -15,28 +16,32 @@ export function registerSimpleRoutes(app: Express) {
         });
       }
 
-      // Crear o actualizar conexión WhatsApp
-      const existing = await simpleStorage.getWhatsappConnection(req.userId);
+      const welcomeMessage = `¡Hola! Bienvenido a ${businessName}. ¿En qué puedo ayudarte?`;
       
-      if (existing) {
-        await simpleStorage.updateWhatsappConnection(req.userId, {
-          businessName,
-          businessType,
-          businessDescription,
-          status: 'configured'
-        });
+      // Verificar si ya existe configuración
+      const existing = await db.execute(
+        sql`SELECT * FROM whatsapp_simple WHERE user_id = ${req.userId} LIMIT 1`
+      );
+      
+      if (existing.rows && existing.rows.length > 0) {
+        // Actualizar existente
+        await db.execute(sql`
+          UPDATE whatsapp_simple 
+          SET business_name = ${businessName}, 
+              business_type = ${businessType}, 
+              business_description = ${businessDescription}, 
+              welcome_message = ${welcomeMessage}, 
+              updated_at = NOW()
+          WHERE user_id = ${req.userId}
+        `);
       } else {
-        await simpleStorage.createWhatsappConnection({
-          userId: req.userId,
-          businessName,
-          businessType,
-          businessDescription,
-          status: 'configured',
-          isConnected: false,
-          aiEnabled: true,
-          autoRespond: true,
-          welcomeMessage: `¡Hola! Bienvenido a ${businessName}. ¿En qué puedo ayudarte?`
-        });
+        // Crear nuevo
+        await db.execute(sql`
+          INSERT INTO whatsapp_simple 
+          (user_id, business_name, business_type, business_description, welcome_message, status)
+          VALUES (${req.userId}, ${businessName}, ${businessType}, 
+                  ${businessDescription}, ${welcomeMessage}, 'configured')
+        `);
       }
 
       res.json({ 
@@ -55,23 +60,55 @@ export function registerSimpleRoutes(app: Express) {
   // Conectar WhatsApp - Paso 2
   app.post('/api/simple/connect-whatsapp', isAuthenticated, async (req: any, res) => {
     try {
-      // Simular proceso de conexión
-      await simpleStorage.updateWhatsappConnection(req.userId, {
-        status: 'connecting',
-        qrCode: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
-      });
+      // Generar QR code SVG
+      const qrCode = `data:image/svg+xml;base64,${Buffer.from(`
+        <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+          <rect width="200" height="200" fill="white" stroke="#000" stroke-width="2"/>
+          <rect x="20" y="20" width="20" height="20" fill="black"/>
+          <rect x="60" y="20" width="20" height="20" fill="black"/>
+          <rect x="100" y="20" width="20" height="20" fill="black"/>
+          <rect x="140" y="20" width="20" height="20" fill="black"/>
+          
+          <rect x="20" y="60" width="20" height="20" fill="black"/>
+          <rect x="140" y="60" width="20" height="20" fill="black"/>
+          
+          <rect x="20" y="100" width="20" height="20" fill="black"/>
+          <rect x="60" y="100" width="20" height="20" fill="black"/>
+          <rect x="100" y="100" width="20" height="20" fill="black"/>
+          <rect x="140" y="100" width="20" height="20" fill="black"/>
+          
+          <rect x="20" y="140" width="20" height="20" fill="black"/>
+          <rect x="140" y="140" width="20" height="20" fill="black"/>
+          
+          <rect x="20" y="160" width="20" height="20" fill="black"/>
+          <rect x="60" y="160" width="20" height="20" fill="black"/>
+          <rect x="100" y="160" width="20" height="20" fill="black"/>
+          <rect x="140" y="160" width="20" height="20" fill="black"/>
+          
+          <text x="100" y="190" text-anchor="middle" fill="#666" font-size="10">
+            Escanear con WhatsApp
+          </text>
+        </svg>
+      `).toString('base64')}`;
+
+      // Actualizar estado a "connecting" con QR
+      await db.execute(sql`
+        UPDATE whatsapp_simple 
+        SET status = 'connecting', qr_code = ${qrCode}, updated_at = NOW()
+        WHERE user_id = ${req.userId}
+      `);
 
       // Simular conexión exitosa después de 3 segundos
       setTimeout(async () => {
         try {
-          await simpleStorage.updateWhatsappConnection(req.userId, {
-            status: 'connected',
-            isConnected: true,
-            connectedAt: new Date(),
-            qrCode: null
-          });
+          await db.execute(sql`
+            UPDATE whatsapp_simple 
+            SET status = 'connected', is_connected = true, connected_at = NOW(), 
+                qr_code = null, updated_at = NOW()
+            WHERE user_id = ${req.userId}
+          `);
         } catch (error) {
-          console.error('Error actualizando estado:', error);
+          console.error('Error actualizando conexión:', error);
         }
       }, 3000);
 
@@ -88,28 +125,34 @@ export function registerSimpleRoutes(app: Express) {
     }
   });
 
-  // Obtener estado de conexión
+  // Obtener estado de conexión usando la tabla whatsapp_simple
   app.get('/api/simple/status', isAuthenticated, async (req: any, res) => {
     try {
-      const connection = await simpleStorage.getWhatsappConnection(req.userId);
+      const result = await db.execute(
+        sql`SELECT * FROM whatsapp_simple WHERE user_id = ${req.userId} LIMIT 1`
+      );
       
-      if (!connection) {
+      if (!result.rows || result.rows.length === 0) {
         return res.json({ 
           success: true,
           status: 'not_configured',
-          message: 'Configure su negocio primero'
+          isConnected: false,
+          messagesSent: 0,
+          messagesReceived: 0
         });
       }
 
+      const connection = result.rows[0] as any;
+      
       res.json({ 
         success: true,
         status: connection.status,
-        isConnected: connection.isConnected,
-        qrCode: connection.qrCode,
-        businessName: connection.businessName,
-        businessType: connection.businessType,
-        messagesSent: connection.messagesSent || 0,
-        messagesReceived: connection.messagesReceived || 0
+        isConnected: connection.is_connected,
+        qrCode: connection.qr_code,
+        businessName: connection.business_name,
+        businessType: connection.business_type,
+        messagesSent: Number(connection.messages_sent) || 0,
+        messagesReceived: Number(connection.messages_received) || 0
       });
     } catch (error: any) {
       console.error('Error obteniendo estado:', error);
