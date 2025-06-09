@@ -217,6 +217,8 @@ export class IntelligentAIService {
   private detectIntent(message: string): string {
     let maxScore = 0;
     let detectedIntent = 'general';
+    
+    console.log('🔍 Detectando intención para:', message.substring(0, 50));
 
     Object.entries(this.intentPatterns).forEach(([intent, keywords]) => {
       const score = keywords.reduce((acc, keyword) => {
@@ -375,6 +377,13 @@ export class IntelligentAIService {
       responseMessage = this.generateGeneralResponse(analysis);
       suggestedActions.push('Identificar necesidad', 'Ofrecer información');
       nextQuestions.push('¿En qué puedo ayudarte específicamente?');
+    }
+
+    // Verificar que hay respuesta válida
+    if (!responseMessage || responseMessage.trim() === '') {
+      responseMessage = businessType === 'services' 
+        ? 'Gracias por contactarnos. Ofrecemos servicios profesionales de calidad. ¿Te gustaría agendar una consulta?'
+        : 'Gracias por tu interés en nuestros productos. Tenemos una gran variedad disponible. ¿En qué puedo ayudarte?';
     }
 
     // Adaptación según sentimiento
