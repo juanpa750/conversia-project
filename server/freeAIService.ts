@@ -98,6 +98,8 @@ export class FreeAIService {
           businessType
         );
 
+        console.log('✅ Respuesta inteligente obtenida:', intelligentResponse.message.substring(0, 50) + '...');
+        
         return {
           message: intelligentResponse.message,
           confidence: intelligentResponse.confidence,
