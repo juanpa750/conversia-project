@@ -299,7 +299,13 @@ export class IntelligentAIService {
    */
   async detectProductsInMessage(message: string, userId: string): Promise<number[]> {
     try {
-      const products = await storage.getProducts(userId);
+      // Simulated products for demo
+      const products = [
+        { id: 1, name: 'Keratina Premium', category: 'Tratamientos Capilares', tags: ['keratina', 'alisado', 'tratamiento'] },
+        { id: 2, name: 'Tinte Permanente', category: 'Coloración', tags: ['tinte', 'color', 'permanente'] },
+        { id: 3, name: 'Corte y Peinado', category: 'Servicios', tags: ['corte', 'peinado', 'servicio'] }
+      ];
+      
       const detected: number[] = [];
       const lowerMessage = message.toLowerCase();
 
