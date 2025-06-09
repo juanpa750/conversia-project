@@ -105,7 +105,7 @@ export class SimpleStorage implements ISimpleStorage {
           ${chatbotData.name}, 
           ${chatbotData.description}, 
           ${chatbotData.productId || null},
-          ${triggerKeywordsArray},
+          ${JSON.stringify(triggerKeywordsArray)}::text[],
           ${chatbotData.aiInstructions || ''},
           ${chatbotData.aiPersonality || ''},
           ${chatbotData.conversationObjective || ''},
