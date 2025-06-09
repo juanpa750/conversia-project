@@ -167,9 +167,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const chatbot = await simpleStorage.createChatbot(chatbotData);
       res.status(201).json(chatbot);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Create chatbot error:', error);
-      res.status(500).json({ message: 'Failed to create chatbot', error: error.message });
+      res.status(500).json({ message: 'Failed to create chatbot', error: error?.message || 'Unknown error' });
     }
   });
 
