@@ -87,13 +87,7 @@ export function Sidebar() {
           WhatsApp Chatbot
         </NavItem>
         
-        <NavItem 
-          href="/multimedia" 
-          icon={<RiGalleryLine />} 
-          active={location.startsWith("/multimedia")}
-        >
-          Multimedia
-        </NavItem>
+
         
         <NavItem 
           href="/ai-advanced" 
