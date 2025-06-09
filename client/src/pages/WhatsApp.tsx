@@ -112,10 +112,13 @@ export default function WhatsApp() {
   // Simular mensaje
   const testMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/simple/simulate-message", data);
+      console.log('Enviando mensaje:', data);
+      const response = await apiRequest("POST", "/api/simple/simulate-message", data);
+      console.log('Respuesta del servidor:', response);
+      return response;
     },
     onSuccess: (data: any) => {
-      console.log('Respuesta recibida:', data);
+      console.log('onSuccess ejecutado con data:', data);
       
       // Agregar el mensaje del usuario
       const userMessage = {
@@ -128,18 +131,25 @@ export default function WhatsApp() {
       // Agregar la respuesta de la IA
       const aiResponse = {
         id: Date.now() + 1,
-        message: data.response || "La IA está procesando tu mensaje...",
+        message: data.response || data.message || "Error: respuesta vacía",
         timestamp: new Date(),
         isUser: false
       };
       
       console.log('Agregando mensajes al chat:', { userMessage, aiResponse });
-      setChatMessages(prev => [...prev, userMessage, aiResponse]);
+      console.log('Estado actual de chatMessages:', chatMessages);
+      
+      setChatMessages(prev => {
+        const newMessages = [...prev, userMessage, aiResponse];
+        console.log('Nuevos mensajes a establecer:', newMessages);
+        return newMessages;
+      });
+      
       setTestMessage(""); // Limpiar el campo de entrada
       
       toast({
         title: "Respuesta de IA generada",
-        description: "La IA ha respondido usando análisis inteligente",
+        description: data.response ? `IA: ${data.response.substring(0, 50)}...` : "Respuesta procesada",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/simple/status"] });
     },
