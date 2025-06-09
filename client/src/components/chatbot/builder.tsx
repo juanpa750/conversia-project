@@ -407,7 +407,6 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                 <TabsTrigger value="flow">Flujo</TabsTrigger>
                 <TabsTrigger value="instruction">Instrucción</TabsTrigger>
                 <TabsTrigger value="objective">Objetivo</TabsTrigger>
-                <TabsTrigger value="settings">Configuración</TabsTrigger>
                 <TabsTrigger value="integrations">Integraciones</TabsTrigger>
               </TabsList>
             </div>
@@ -440,6 +439,43 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                     <RiBrainLine className="h-5 w-5" />
                     <h3 className="text-lg font-medium">Configuración de IA</h3>
                   </div>
+
+                  {/* Configuración Básica del Chatbot */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>⚙️ Configuración Básica</CardTitle>
+                      <p className="text-sm text-gray-600">Configuración esencial del chatbot</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="chatbot-name">Nombre del Chatbot</Label>
+                          <Input
+                            id="chatbot-name"
+                            value={chatbotName}
+                            onChange={(e) => {
+                              setChatbotName(e.target.value);
+                              handleSaveField('name', e.target.value);
+                            }}
+                            placeholder="Mi Chatbot de Ventas"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="language">Idioma</Label>
+                          <Select defaultValue="es">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar idioma" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="es">Español</SelectItem>
+                              <SelectItem value="en">English</SelectItem>
+                              <SelectItem value="pt">Português</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 
                   {/* Selección de Producto */}
                   <Card>
@@ -860,79 +896,127 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                 <div className="space-y-6 pb-96">
                   <div className="flex items-center gap-2">
                     <RiWhatsappLine className="h-5 w-5" />
-                    <h3 className="text-lg font-medium">Integraciones</h3>
+                    <h3 className="text-lg font-medium">Conexión WhatsApp</h3>
                   </div>
                 
-                  {/* WhatsApp Integration */}
+                  {/* WhatsApp Connection Status */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>WhatsApp Business</CardTitle>
-                      <p className="text-sm text-gray-600">Conecta con la API oficial de WhatsApp</p>
+                      <CardTitle>📱 Estado de WhatsApp</CardTitle>
+                      <p className="text-sm text-gray-600">Gestiona la conexión de WhatsApp para este chatbot</p>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                            <span className="text-white font-bold">W</span>
+                          <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                            <RiWhatsappLine className="h-6 w-6 text-white" />
                           </div>
                           <div>
-                            <h4 className="font-medium">WhatsApp Business API</h4>
-                            <p className="text-sm text-gray-600">Estado de conexión</p>
+                            <h4 className="font-medium">WhatsApp Business</h4>
+                            <p className="text-sm text-gray-600">Conexión principal del negocio</p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-green-600">● Conectado</span>
+                        <div className="text-right">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-green-600">Conectado</span>
+                          </div>
+                          <p className="text-xs text-gray-500">+52 XXX XXX XXXX</p>
                         </div>
                       </div>
-                      
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <Button variant="outline" className="w-full">
+                          <RiSettings3Line className="mr-2 h-4 w-4" />
+                          Configurar
+                        </Button>
+                        <Button variant="outline" className="w-full">
+                          <RiTestTubeLine className="mr-2 h-4 w-4" />
+                          Probar Conexión
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Auto-activation Configuration */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>⚡ Activación Automática</CardTitle>
+                      <p className="text-sm text-gray-600">Configura cuándo este chatbot debe activarse automáticamente</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                       <div className="space-y-3">
-                        <div>
-                          <Label htmlFor="phone-number">Número de teléfono</Label>
-                          <Input id="phone-number" placeholder="+1234567890" defaultValue="+573001234567" />
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <div>
+                            <h4 className="font-medium">Activar por palabras clave</h4>
+                            <p className="text-sm text-gray-600">Se activa cuando detecta las palabras configuradas</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <input type="checkbox" defaultChecked className="rounded" />
+                          </div>
                         </div>
-                        <div>
-                          <Label htmlFor="business-name">Nombre del negocio</Label>
-                          <Input id="business-name" placeholder="Mi Empresa" />
+                        
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <div>
+                            <h4 className="font-medium">Respuesta automática</h4>
+                            <p className="text-sm text-gray-600">Responde automáticamente sin intervención humana</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <input type="checkbox" defaultChecked className="rounded" />
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <div>
+                            <h4 className="font-medium">Transferir a humano</h4>
+                            <p className="text-sm text-gray-600">Transfiere conversación si no puede resolver</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <input type="checkbox" className="rounded" />
+                          </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Otras Integraciones */}
+                  {/* Priority and Rules */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Otras Integraciones</CardTitle>
+                      <CardTitle>🎯 Reglas de Prioridad</CardTitle>
+                      <p className="text-sm text-gray-600">Define la prioridad de este chatbot respecto a otros</p>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
-                              <span className="text-white text-sm font-bold">CRM</span>
-                            </div>
-                            <div>
-                              <p className="font-medium">Sistema CRM</p>
-                              <p className="text-sm text-gray-600">Integración con CRM externo</p>
-                            </div>
-                          </div>
-                          <Button variant="outline" size="sm">Configurar</Button>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="priority">Nivel de Prioridad</Label>
+                          <Select defaultValue="medium">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar prioridad" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="high">Alta - Se activa primero</SelectItem>
+                              <SelectItem value="medium">Media - Prioridad normal</SelectItem>
+                              <SelectItem value="low">Baja - Se activa último</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
-                        
-                        <div className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-purple-500 rounded flex items-center justify-center">
-                              <span className="text-white text-sm font-bold">AI</span>
-                            </div>
-                            <div>
-                              <p className="font-medium">IA Personalizada</p>
-                              <p className="text-sm text-gray-600">Configuración avanzada de IA</p>
-                            </div>
-                          </div>
-                          <Button variant="outline" size="sm">Configurar</Button>
+                        <div>
+                          <Label htmlFor="conflict-resolution">Resolución de Conflictos</Label>
+                          <Select defaultValue="priority">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar método" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="priority">Por prioridad</SelectItem>
+                              <SelectItem value="keywords">Por cantidad de keywords</SelectItem>
+                              <SelectItem value="specificity">Por especificidad</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
+
                 </div>
               </div>
             </TabsContent>
