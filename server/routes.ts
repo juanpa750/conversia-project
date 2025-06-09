@@ -144,6 +144,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/chatbots", isAuthenticated, async (req: any, res) => {
+    try {
+      const { name, description, type = 'sales', status = 'draft', objective, aiInstructions } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ message: 'Chatbot name is required' });
+      }
+
+      const chatbotData = {
+        userId: req.userId,
+        name,
+        description: description || '',
+        type,
+        status,
+        objective: objective || 'sales',
+        aiInstructions: aiInstructions || '',
+        flow: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const chatbot = await simpleStorage.createChatbot(chatbotData);
+      res.status(201).json(chatbot);
+    } catch (error) {
+      console.error('Create chatbot error:', error);
+      res.status(500).json({ message: 'Failed to create chatbot', error: error.message });
+    }
+  });
+
+  app.get("/api/chatbots/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbotId = parseInt(req.params.id);
+      const chatbot = await simpleStorage.getChatbot(chatbotId);
+      
+      if (!chatbot || chatbot.userId !== req.userId) {
+        return res.status(404).json({ message: 'Chatbot not found' });
+      }
+      
+      res.json(chatbot);
+    } catch (error) {
+      console.error('Get chatbot error:', error);
+      res.status(500).json({ message: 'Failed to get chatbot' });
+    }
+  });
+
+  app.put("/api/chatbots/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbotId = parseInt(req.params.id);
+      const updateData = req.body;
+      
+      // Check if chatbot exists and belongs to user
+      const existing = await simpleStorage.getChatbot(chatbotId);
+      if (!existing || existing.userId !== req.userId) {
+        return res.status(404).json({ message: 'Chatbot not found' });
+      }
+
+      const updatedChatbot = await simpleStorage.updateChatbot(chatbotId, updateData);
+      res.json(updatedChatbot);
+    } catch (error) {
+      console.error('Update chatbot error:', error);
+      res.status(500).json({ message: 'Failed to update chatbot' });
+    }
+  });
+
+  app.delete("/api/chatbots/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbotId = parseInt(req.params.id);
+      
+      // Check if chatbot exists and belongs to user
+      const existing = await simpleStorage.getChatbot(chatbotId);
+      if (!existing || existing.userId !== req.userId) {
+        return res.status(404).json({ message: 'Chatbot not found' });
+      }
+
+      await simpleStorage.deleteChatbot(chatbotId);
+      res.json({ message: 'Chatbot deleted successfully' });
+    } catch (error) {
+      console.error('Delete chatbot error:', error);
+      res.status(500).json({ message: 'Failed to delete chatbot' });
+    }
+  });
+
   app.get("/api/products", isAuthenticated, async (req: any, res) => {
     try {
       const products = await simpleStorage.getProducts(req.userId);

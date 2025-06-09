@@ -16,6 +16,10 @@ export interface ISimpleStorage {
   
   // Data operations
   getChatbots(userId: string): Promise<any[]>;
+  createChatbot(chatbot: any): Promise<any>;
+  getChatbot(id: number): Promise<any>;
+  updateChatbot(id: number, updates: any): Promise<any>;
+  deleteChatbot(id: number): Promise<void>;
   getProducts(userId: string): Promise<any[]>;
   getAppointments(userId: string): Promise<any[]>;
 }
@@ -80,6 +84,70 @@ export class SimpleStorage implements ISimpleStorage {
     } catch (error) {
       console.error('Error fetching chatbots:', error);
       return [];
+    }
+  }
+
+  async createChatbot(chatbotData: any): Promise<any> {
+    try {
+      const result = await db.execute(sql`
+        INSERT INTO chatbots (
+          user_id, name, description, type, status, 
+          objective, ai_instructions, flow, created_at, updated_at
+        ) VALUES (
+          ${chatbotData.userId}, ${chatbotData.name}, ${chatbotData.description}, 
+          ${chatbotData.type}, ${chatbotData.status}, ${chatbotData.objective}, 
+          ${chatbotData.aiInstructions}, ${chatbotData.flow}, NOW(), NOW()
+        ) RETURNING *
+      `);
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error creating chatbot:', error);
+      throw error;
+    }
+  }
+
+  async getChatbot(id: number): Promise<any> {
+    try {
+      const result = await db.execute(
+        sql`SELECT * FROM chatbots WHERE id = ${id}`
+      );
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error fetching chatbot:', error);
+      return null;
+    }
+  }
+
+  async updateChatbot(id: number, updates: any): Promise<any> {
+    try {
+      const result = await db.execute(sql`
+        UPDATE chatbots 
+        SET 
+          name = COALESCE(${updates.name}, name),
+          description = COALESCE(${updates.description}, description),
+          type = COALESCE(${updates.type}, type),
+          status = COALESCE(${updates.status}, status),
+          flow = COALESCE(${updates.flow ? (typeof updates.flow === 'string' ? updates.flow : JSON.stringify(updates.flow)) : null}, flow),
+          ai_instructions = COALESCE(${updates.aiInstructions}, ai_instructions),
+          ai_personality = COALESCE(${updates.aiPersonality}, ai_personality),
+          conversation_objective = COALESCE(${updates.conversationObjective}, conversation_objective),
+          updated_at = NOW()
+        WHERE id = ${id}
+        RETURNING *
+      `);
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error updating chatbot:', error);
+      throw error;
+    }
+  }
+
+  async deleteChatbot(id: number): Promise<void> {
+    try {
+      await db.execute(sql`DELETE FROM chatbots WHERE id = ${id}`);
+    } catch (error) {
+      console.error('Error deleting chatbot:', error);
+      throw error;
     }
   }
 
