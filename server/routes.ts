@@ -32,6 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.cookie('token', token, { httpOnly: true, secure: false });
       res.json({ 
         success: true,
+        token: token,
         user: { 
           id: user.id, 
           email: user.email, 
