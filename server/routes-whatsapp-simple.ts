@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import { storage } from "./storage";
 import { isAuthenticated } from "./auth";
 
 export function registerWhatsAppSimpleRoutes(app: Express) {
@@ -204,31 +205,31 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
       const business = result.rows[0] as any;
       let autoResponse = '';
       
+      // Por ahora usamos datos simulados para demostrar la detección de productos
+      console.log('🔍 Verificando detección de productos en mensaje:', message);
+
       // Usar IA inteligente para generar respuesta
       try {
-        const { freeAIService } = await import('./freeAIService');
-        
-        const context = {
-          userMessage: message,
-          conversationHistory: [], // En implementación real obtener del historial
-          businessType: business.business_type,
-          language: 'spanish',
-          userId: req.userId
-        };
+        const { intelligentAI } = await import('./intelligentAIService');
 
         console.log('🧠 Generando respuesta inteligente para:', {
-          message: message.substring(0, 50) + '...',
+          message: message.substring(0, 30) + '...',
           businessType: business.business_type,
           businessName: business.business_name
         });
 
-        const aiResponse = await freeAIService.generateResponse(context);
+        const aiResponse = await intelligentAI.generateIntelligentResponse(
+          message,
+          [],
+          req.userId,
+          business.business_type || 'products'
+        );
         
         console.log('🎯 Respuesta IA generada:', {
           confidence: aiResponse.confidence,
           detectedProducts: aiResponse.detectedProducts?.length || 0,
-          sentiment: aiResponse.sentimentAnalysis?.sentiment,
-          hasActions: aiResponse.recommendedActions?.length || 0
+          sentiment: aiResponse.analysis?.sentiment || 'neutral',
+          hasActions: aiResponse.suggestedActions?.length || 0
         });
 
         autoResponse = aiResponse.message;
