@@ -583,7 +583,7 @@ function AppointmentCard({ appointment, onUpdateStatus }: any) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <User className="h-3 w-3 text-gray-500 flex-shrink-0" />
-            <span className="font-medium text-sm truncate">{appointment.clientName}</span>
+            <span className="font-medium text-sm truncate">{appointment.client_name}</span>
           </div>
           <Badge className={`text-xs ${getStatusColor(appointment.status)}`}>
             {getStatusText(appointment.status)}
@@ -606,16 +606,16 @@ function AppointmentCard({ appointment, onUpdateStatus }: any) {
         
         {/* Contact details */}
         <div className="space-y-1">
-          {appointment.clientPhone && (
+          {appointment.client_phone && (
             <div className="flex items-center gap-2">
               <Phone className="h-3 w-3 text-gray-400" />
-              <span className="text-xs text-gray-600">{appointment.clientPhone}</span>
+              <span className="text-xs text-gray-600">{appointment.client_phone}</span>
             </div>
           )}
-          {appointment.clientEmail && (
+          {appointment.client_email && (
             <div className="flex items-center gap-2">
               <Mail className="h-3 w-3 text-gray-400" />
-              <span className="text-xs text-gray-600 truncate">{appointment.clientEmail}</span>
+              <span className="text-xs text-gray-600 truncate">{appointment.client_email}</span>
             </div>
           )}
           <div className="flex items-center gap-2">

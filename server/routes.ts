@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { isAuthenticated, generateToken, hashPassword, comparePassword } from "./auth";
 import { simpleStorage } from "./storage";
 import { registerWhatsAppSimpleRoutes } from "./routes-whatsapp-simple";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Simple authentication route
@@ -167,6 +169,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.userId;
       const date = req.query.date as string || new Date().toISOString().split('T')[0];
       
+      console.log('📅 Getting available slots for user:', userId, 'date:', date);
+      
       // Generar todos los slots posibles para el día
       const slots = [];
       const startHour = 9;
@@ -180,23 +184,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      console.log('📅 Generated', slots.length, 'slots');
+      
       // Obtener citas existentes para la fecha específica
-      const existingAppointments = await db.execute(
-        sql`SELECT * FROM appointments WHERE user_id = ${userId} ORDER BY scheduled_date DESC`
-      );
-      const dateAppointments = existingAppointments.rows.filter((apt: any) => {
+      const existingAppointments = await simpleStorage.getAppointments(userId);
+      console.log('📅 Found', existingAppointments.length, 'total appointments');
+      
+      const dateAppointments = existingAppointments.filter((apt: any) => {
         if (!apt.scheduled_date) return false;
         const aptDate = new Date(apt.scheduled_date).toISOString().split('T')[0];
         return aptDate === date;
       });
       
+      console.log('📅 Found', dateAppointments.length, 'appointments for date', date);
+      
       // Marcar slots ocupados basado en citas reales
       const occupiedTimes = new Set();
-      dateAppointments.forEach(apt => {
+      dateAppointments.forEach((apt: any) => {
         if (apt.status !== 'cancelled' && apt.scheduled_date) {
           const aptDate = new Date(apt.scheduled_date);
           const timeStr = `${aptDate.getHours().toString().padStart(2, '0')}:${aptDate.getMinutes().toString().padStart(2, '0')}`;
           occupiedTimes.add(timeStr);
+          console.log('📅 Occupied slot:', timeStr, 'by appointment:', apt.client_name);
         }
       });
       
@@ -206,6 +215,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         available: !occupiedTimes.has(slot),
         occupied: occupiedTimes.has(slot)
       }));
+      
+      const availableSlots = slotsWithStatus.filter(s => s.available).length;
+      const occupiedSlots = slotsWithStatus.filter(s => s.occupied).length;
+      
+      console.log('📅 Returning', slotsWithStatus.length, 'slots:', availableSlots, 'available,', occupiedSlots, 'occupied');
       
       res.json(slotsWithStatus);
     } catch (error) {
