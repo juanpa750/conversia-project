@@ -6,6 +6,8 @@ import { z } from "zod";
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'canceled', 'past_due', 'unpaid', 'trial']);
 export const appointmentStatusEnum = pgEnum('appointment_status', ['scheduled', 'confirmed', 'cancelled', 'completed', 'no_show']);
+export const chatbotStatusEnum = pgEnum('chatbot_status', ['draft', 'active', 'paused', 'archived']);
+export const chatbotTypeEnum = pgEnum('chatbot_type', ['sales', 'support', 'appointment', 'general']);
 
 // Users table
 export const users = pgTable("users", {
@@ -80,6 +82,24 @@ export const whatsappConnections = pgTable("whatsapp_connections", {
   messagesSent: integer("messages_sent").default(0),
   messagesReceived: integer("messages_received").default(0),
   
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Chatbots table
+export const chatbots = pgTable("chatbots", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  status: chatbotStatusEnum("status").default('draft'),
+  type: chatbotTypeEnum("type").default('support'),
+  flow: jsonb("flow"),
+  triggerKeywords: text("trigger_keywords").array(),
+  aiInstructions: text("ai_instructions"),
+  aiPersonality: text("ai_personality"),
+  objective: varchar("objective").default('sales'),
+  conversationObjective: varchar("conversation_objective").default('sales'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -168,6 +188,7 @@ export const whatsappMessages = pgTable("whatsapp_messages", {
 
 // Esquemas de validación
 export const insertWhatsappConnectionSchema = createInsertSchema(whatsappConnections);
+export const insertChatbotSchema = createInsertSchema(chatbots);
 export const insertBusinessProductSchema = createInsertSchema(businessProducts);
 export const insertBusinessServiceSchema = createInsertSchema(businessServices);
 export const insertAppointmentSchema = createInsertSchema(appointments);
@@ -178,6 +199,8 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type WhatsappConnection = typeof whatsappConnections.$inferSelect;
 export type InsertWhatsappConnection = z.infer<typeof insertWhatsappConnectionSchema>;
+export type Chatbot = typeof chatbots.$inferSelect;
+export type InsertChatbot = z.infer<typeof insertChatbotSchema>;
 export type BusinessProduct = typeof businessProducts.$inferSelect;
 export type InsertBusinessProduct = z.infer<typeof insertBusinessProductSchema>;
 export type BusinessService = typeof businessServices.$inferSelect;
