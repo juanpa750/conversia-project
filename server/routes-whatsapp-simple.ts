@@ -208,27 +208,27 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
       // Por ahora usamos datos simulados para demostrar la detección de productos
       console.log('🔍 Verificando detección de productos en mensaje:', message);
 
-      // Usar IA mejorada con configuración por producto
+      // Usar IA integrada que combina chatbot + producto
       try {
-        const { enhancedAI } = await import('./enhancedAIService');
+        const { chatbotProductAI } = await import('./chatbotProductAIService');
 
-        console.log('🧠 Generando respuesta basada en productos para:', {
+        console.log('🧠 Generando respuesta inteligente combinando chatbot + producto:', {
           message: message.substring(0, 30) + '...',
           businessType: business.business_type,
           businessName: business.business_name
         });
 
-        // Generar respuesta con detección automática de productos
-        const aiResponse = await enhancedAI.generateResponse(
+        // Generar respuesta inteligente que combina chatbot + producto
+        const aiResponse = await chatbotProductAI.generateIntelligentResponse(
           message,
           req.userId,
           business.business_name || 'Tu Negocio',
           [] // Historial de conversación (en implementación real viene de BD)
         );
         
-        console.log('🎯 Respuesta con IA mejorada:', {
+        console.log('🎯 Respuesta inteligente generada:', {
           confidence: aiResponse.confidence,
-          detectedProductId: aiResponse.detectedProductId || 'ninguno',
+          detectedChatbotId: aiResponse.detectedChatbotId || 'ninguno',
           aidaStage: aiResponse.aidaStage,
           requiresHuman: aiResponse.requiresHuman
         });
@@ -236,11 +236,11 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
         autoResponse = aiResponse.message;
         console.log('📝 Respuesta final:', autoResponse);
 
-        // Log para análisis de productos detectados
-        if (aiResponse.detectedProductId) {
-          console.log('🎯 Producto específico detectado:', aiResponse.detectedProductId);
+        // Log para análisis de chatbot detectado
+        if (aiResponse.detectedChatbotId) {
+          console.log('🎯 Chatbot específico activado:', aiResponse.detectedChatbotId);
         } else {
-          console.log('🔍 No se detectó producto específico - mostrando lista general');
+          console.log('🔍 No se detectó chatbot específico - respuesta general');
         }
 
         // Respuesta de fallback si la IA no es confiable
