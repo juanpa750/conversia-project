@@ -32,6 +32,13 @@ export default function WhatsApp() {
     businessDescription: "",
   });
   const [testMessage, setTestMessage] = useState("");
+  const [chatMessages, setChatMessages] = useState<Array<{
+    id: number;
+    message: string;
+    response?: string;
+    timestamp: Date;
+    isUser: boolean;
+  }>>([]);
 
   // Obtener estado de conexión
   const { data: status, isLoading } = useQuery<ConnectionStatus>({
@@ -108,9 +115,28 @@ export default function WhatsApp() {
       return await apiRequest("POST", "/api/simple/simulate-message", data);
     },
     onSuccess: (data: any) => {
+      // Agregar el mensaje del usuario
+      const userMessage = {
+        id: Date.now(),
+        message: testMessage,
+        timestamp: new Date(),
+        isUser: true
+      };
+      
+      // Agregar la respuesta de la IA
+      const aiResponse = {
+        id: Date.now() + 1,
+        message: data.response,
+        timestamp: new Date(),
+        isUser: false
+      };
+      
+      setChatMessages(prev => [...prev, userMessage, aiResponse]);
+      setTestMessage(""); // Limpiar el campo de entrada
+      
       toast({
-        title: "Respuesta generada",
-        description: data.response,
+        title: "Respuesta de IA generada",
+        description: "La IA ha respondido usando análisis inteligente",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/simple/status"] });
     },
@@ -376,6 +402,45 @@ export default function WhatsApp() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Chat Interface */}
+            {chatMessages.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4" />
+                  Conversación con IA
+                </h3>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 max-h-96 overflow-y-auto space-y-3">
+                  {chatMessages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-lg p-3 ${
+                          msg.isUser
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white dark:bg-gray-700 border'
+                        }`}
+                      >
+                        <p className="text-sm">{msg.message}</p>
+                        <span className="text-xs opacity-70">
+                          {msg.timestamp.toLocaleTimeString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setChatMessages([])}
+                  className="mt-2"
+                >
+                  Limpiar chat
+                </Button>
+              </div>
+            )}
+
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <Label htmlFor="testMessage">Mensaje de prueba</Label>
