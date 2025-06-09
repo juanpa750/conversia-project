@@ -29,6 +29,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   RiWhatsappLine, 
   RiGlobalLine,
@@ -205,6 +207,29 @@ export default function IntegrationsPage() {
   const [showAddWebhookDialog, setShowAddWebhookDialog] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // WhatsApp Business configuration mutation
+  const whatsappConfigMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/simple/setup-business", data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "WhatsApp Business configurado",
+        description: "Tu cuenta de WhatsApp Business ha sido configurada exitosamente.",
+      });
+      setShowConnectPlatformDialog(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/simple/status"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error de configuración",
+        description: error.message || "Error configurando WhatsApp Business",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Handler for connecting a platform
   const handleConnectPlatform = (platformId: string) => {
@@ -214,11 +239,35 @@ export default function IntegrationsPage() {
 
   // Handler for saving platform connection
   const handleSavePlatformConnection = () => {
-    setShowConnectPlatformDialog(false);
-    toast({
-      title: "Plataforma conectada",
-      description: "La plataforma ha sido conectada exitosamente.",
-    });
+    if (selectedPlatform === "whatsapp") {
+      // Get form values
+      const businessName = (document.getElementById("whatsapp-business-name") as HTMLInputElement)?.value;
+      const businessType = (document.getElementById("whatsapp-business-type") as HTMLSelectElement)?.value;
+      const phoneNumber = (document.getElementById("whatsapp-phone") as HTMLInputElement)?.value;
+      const businessDescription = (document.getElementById("whatsapp-description") as HTMLTextAreaElement)?.value;
+
+      if (!businessName || !businessType || !phoneNumber || !businessDescription) {
+        toast({
+          title: "Campos requeridos",
+          description: "Por favor completa todos los campos requeridos.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      whatsappConfigMutation.mutate({
+        businessName,
+        businessType,
+        businessDescription,
+        adminPhoneNumber: phoneNumber,
+      });
+    } else {
+      setShowConnectPlatformDialog(false);
+      toast({
+        title: "Plataforma conectada",
+        description: "La plataforma ha sido conectada exitosamente.",
+      });
+    }
   };
 
   // Handler for saving webhook
@@ -417,6 +466,49 @@ export default function IntegrationsPage() {
                     <div className="space-y-2">
                       <Label htmlFor="telegram-name">Nombre del Bot</Label>
                       <Input id="telegram-name" placeholder="Mi Empresa Bot" />
+                    </div>
+                  </>
+                )}
+
+                {selectedPlatform === "whatsapp" && (
+                  <>
+                    <div className="rounded-md bg-green-50 p-4 mb-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <RiWhatsappLine className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-green-800">WhatsApp Business API</h3>
+                          <div className="mt-2 text-sm text-green-700">
+                            <p>
+                              Configura tu cuenta de WhatsApp Business para enviar y recibir mensajes automáticos.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="whatsapp-business-name">Nombre del negocio</Label>
+                      <Input id="whatsapp-business-name" placeholder="Mi Empresa S.A." />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="whatsapp-business-type">Tipo de negocio</Label>
+                      <select id="whatsapp-business-type" className="w-full border border-gray-300 rounded-md h-9 px-3">
+                        <option value="products">Productos</option>
+                        <option value="services">Servicios</option>
+                        <option value="both">Productos y Servicios</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="whatsapp-phone">Número de WhatsApp Business</Label>
+                      <Input id="whatsapp-phone" placeholder="+34612345678" />
+                      <p className="text-xs text-gray-500">
+                        Debe ser un número verificado con WhatsApp Business
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="whatsapp-description">Descripción del negocio</Label>
+                      <Textarea id="whatsapp-description" placeholder="Describe brevemente tu negocio y servicios..." />
                     </div>
                   </>
                 )}
