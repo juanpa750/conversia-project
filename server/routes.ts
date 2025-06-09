@@ -347,7 +347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/[^\w\s]/g, ' ')
           .split(/\s+/)
           .filter(word => word.length > 2);
-        return [...new Set(words)].slice(0, 10);
+        return Array.from(new Set(words)).slice(0, 10);
       };
 
       const nameKeywords = extractKeywords(product.name);

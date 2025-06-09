@@ -92,14 +92,27 @@ export class SimpleStorage implements ISimpleStorage {
 
   async createChatbot(chatbotData: any): Promise<any> {
     try {
+      const triggerKeywordsArray = chatbotData.triggerKeywords ? 
+        chatbotData.triggerKeywords.split(',').map((k: string) => k.trim()) : [];
+      
       const result = await db.execute(sql`
         INSERT INTO chatbots (
-          user_id, name, description, type, status, 
-          objective, ai_instructions, flow, created_at, updated_at
+          user_id, name, description, product_id, trigger_keywords,
+          ai_instructions, ai_personality, conversation_objective, 
+          status, type, created_at, updated_at
         ) VALUES (
-          ${chatbotData.userId}, ${chatbotData.name}, ${chatbotData.description}, 
-          ${chatbotData.type}, ${chatbotData.status}, ${chatbotData.objective}, 
-          ${chatbotData.aiInstructions}, ${chatbotData.flow}, NOW(), NOW()
+          ${chatbotData.userId}, 
+          ${chatbotData.name}, 
+          ${chatbotData.description}, 
+          ${chatbotData.productId || null},
+          ${triggerKeywordsArray},
+          ${chatbotData.aiInstructions || ''},
+          ${chatbotData.aiPersonality || ''},
+          ${chatbotData.conversationObjective || ''},
+          'active',
+          'sales',
+          NOW(), 
+          NOW()
         ) RETURNING *
       `);
       return result.rows[0];
