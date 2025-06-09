@@ -408,15 +408,39 @@ export class IntelligentAIService {
   private async generateProductResponse(analysis: ConversationAnalysis, insights: ProductInsights): Promise<string> {
     let response = '';
 
+    // Información específica por producto
+    const productInfo = {
+      1: { // Keratina Premium
+        features: ['alisado perfecto', 'nutrición profunda', 'duración hasta 6 meses'],
+        benefits: ['cabello sedoso y manejable', 'eliminación del frizz', 'protección térmica'],
+        price: '$85.000',
+        audience: 'mujeres que buscan cabello perfecto'
+      },
+      2: { // Tinte Permanente  
+        features: ['colores vibrantes', 'cobertura 100%', 'fórmula profesional'],
+        benefits: ['color duradero', 'brillo natural', 'canas cubiertas'],
+        price: '$45.000',
+        audience: 'personas que quieren cambiar su look'
+      },
+      3: { // Corte y Peinado
+        features: ['técnicas modernas', 'estilismo personalizado', 'productos premium'],
+        benefits: ['look actualizado', 'estilo único', 'asesoría profesional'],
+        price: '$35.000',
+        audience: 'quienes buscan renovar su imagen'
+      }
+    };
+
+    const info = productInfo[insights.productId] || productInfo[1];
+
     switch (analysis.intent) {
       case 'pricing':
-        response = `Te entiendo perfectamente. Antes de hablar del precio, déjame contarte por qué vale cada centavo. Este producto destaca por ${insights.keyFeatures.slice(0, 2).join(' y ')}.`;
+        response = `Te entiendo perfectamente. Nuestra Keratina Premium cuesta ${info.price}. Este precio se justifica porque obtienes ${info.benefits.slice(0, 2).join(' y ')}. Es una inversión que vale la pena para ${info.audience}.`;
         break;
       case 'purchase':
-        response = `¡Excelente decisión! Este producto es perfecto porque ${insights.salesPoints[0]}. ${insights.keyFeatures.slice(0, 2).join(' y ')}.`;
+        response = `¡Excelente decisión! Nuestra Keratina Premium te dará ${info.benefits.join(', ')}. Por ${info.price} obtienes un tratamiento completo que incluye ${info.features.slice(0, 2).join(' y ')}.`;
         break;
       case 'info':
-        response = `Te explico todo sobre este increíble producto. Sus características principales son ${insights.keyFeatures.slice(0, 3).join(', ')}. Es ideal para ${insights.targetAudience.slice(0, 2).join(' y ')}.`;
+        response = `Te explico todo sobre nuestra Keratina Premium. Sus características principales son ${info.features.join(', ')}. Los beneficios que obtienes son ${info.benefits.join(', ')}. Es ideal para ${info.audience}.`;
         break;
       case 'availability':
         response = `Perfecto, verifico la disponibilidad. Este producto ${insights.salesPoints[0]} y ${insights.keyFeatures[0]}.`;
