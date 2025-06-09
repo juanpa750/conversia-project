@@ -80,59 +80,11 @@ export function Sidebar() {
         </NavItem>
         
         <NavItem 
-          href="/whatsapp/setup" 
-          icon={<RiWhatsappLine />} 
-          active={location.startsWith("/whatsapp")}
-        >
-          WhatsApp Chatbot
-        </NavItem>
-        
-        <NavItem 
-          href="/chatbot-config" 
-          icon={<RiRobotLine />} 
-          active={location.startsWith("/chatbot-config")}
-        >
-          Configurar IA
-        </NavItem>
-        
-        <NavItem 
-          href="/ai-advanced" 
-          icon={<RiBrainLine />} 
-          active={location.startsWith("/ai-advanced")}
-        >
-          IA Avanzada
-        </NavItem>
-        
-        <NavItem 
           href="/store" 
           icon={<RiStore2Line />} 
           active={location.startsWith("/store")}
         >
           Tienda
-        </NavItem>
-        
-        <NavItem 
-          href="/campaigns" 
-          icon={<RiAdvertisementLine />} 
-          active={location.startsWith("/campaigns")}
-        >
-          Campañas
-        </NavItem>
-        
-        <NavItem 
-          href="/crm" 
-          icon={<RiTeamLine />} 
-          active={location.startsWith("/crm")}
-        >
-          CRM Avanzado
-        </NavItem>
-        
-        <NavItem 
-          href="/calendar" 
-          icon={<RiCalendarLine />} 
-          active={location.startsWith("/calendar")}
-        >
-          Calendario
         </NavItem>
         
         <NavItem 
@@ -143,34 +95,12 @@ export function Sidebar() {
           Clientes
         </NavItem>
         
-
-        
         <NavItem 
           href="/analytics" 
           icon={<RiBarChart2Line />} 
           active={location.startsWith("/analytics")}
         >
           Analytics
-        </NavItem>
-        
-        <div className="mb-3 mt-6 px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
-          Avanzado
-        </div>
-        
-        <NavItem 
-          href="/integrations" 
-          icon={<RiApps2Line />} 
-          active={location.startsWith("/integrations")}
-        >
-          Integraciones
-        </NavItem>
-        
-        <NavItem 
-          href="/templates" 
-          icon={<RiGalleryLine />} 
-          active={location.startsWith("/templates")}
-        >
-          Templates
         </NavItem>
         
         <div className="mb-3 mt-6 px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
