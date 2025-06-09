@@ -33,13 +33,38 @@ export default function CalendarPage() {
   const appointments = Array.isArray(allAppointments) ? allAppointments.filter((apt: any) => {
     if (!apt.scheduled_date) return false;
     try {
-      const aptDate = new Date(apt.scheduled_date).toISOString().split('T')[0];
-      return aptDate === selectedDate;
+      // Comparar fechas de manera más robusta
+      const aptDateTime = new Date(apt.scheduled_date);
+      const selectedDateTime = new Date(selectedDate);
+      
+      const aptDateStr = aptDateTime.getFullYear() + '-' + 
+                        String(aptDateTime.getMonth() + 1).padStart(2, '0') + '-' + 
+                        String(aptDateTime.getDate()).padStart(2, '0');
+      
+      const selectedDateStr = selectedDateTime.getFullYear() + '-' + 
+                             String(selectedDateTime.getMonth() + 1).padStart(2, '0') + '-' + 
+                             String(selectedDateTime.getDate()).padStart(2, '0');
+      
+      const matches = aptDateStr === selectedDateStr;
+      
+      console.log('📅 Comparing:', {
+        aptOriginal: apt.scheduled_date,
+        aptFormatted: aptDateStr,
+        selectedDate: selectedDateStr,
+        matches: matches,
+        clientName: apt.client_name
+      });
+      
+      return matches;
     } catch (error) {
-      console.error('Error parsing appointment date:', apt.scheduled_date);
+      console.error('Error parsing appointment date:', apt.scheduled_date, error);
       return false;
     }
   }) : [];
+
+  console.log('📅 Frontend: Selected date:', selectedDate);
+  console.log('📅 Frontend: All appointments:', Array.isArray(allAppointments) ? allAppointments.length : 0);
+  console.log('📅 Frontend: Filtered appointments:', appointments.length);
 
   // Fetch available slots for selected date
   const { data: availableSlots = [] } = useQuery({
@@ -404,9 +429,11 @@ export default function CalendarPage() {
                   <div className="animate-spin w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full" />
                 </div>
               ) : !Array.isArray(appointments) || appointments.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  No hay citas programadas
-                </p>
+                <div className="text-sm text-gray-500 text-center py-4">
+                  <p>No hay citas programadas para {selectedDate}</p>
+                  <p className="text-xs mt-1">Total citas: {allAppointments?.length || 0}</p>
+                  <p className="text-xs">Filtradas: {appointments.length}</p>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {appointments.map((appointment: any) => (
