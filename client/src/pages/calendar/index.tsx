@@ -33,29 +33,19 @@ export default function CalendarPage() {
   const appointments = Array.isArray(allAppointments) ? allAppointments.filter((apt: any) => {
     if (!apt.scheduled_date) return false;
     try {
-      // Comparar fechas de manera más robusta
-      const aptDateTime = new Date(apt.scheduled_date);
-      const selectedDateTime = new Date(selectedDate);
+      // Usar método más directo para comparar fechas
+      const aptDate = new Date(apt.scheduled_date);
+      const aptDateStr = aptDate.toISOString().split('T')[0];
       
-      const aptDateStr = aptDateTime.getFullYear() + '-' + 
-                        String(aptDateTime.getMonth() + 1).padStart(2, '0') + '-' + 
-                        String(aptDateTime.getDate()).padStart(2, '0');
-      
-      const selectedDateStr = selectedDateTime.getFullYear() + '-' + 
-                             String(selectedDateTime.getMonth() + 1).padStart(2, '0') + '-' + 
-                             String(selectedDateTime.getDate()).padStart(2, '0');
-      
-      const matches = aptDateStr === selectedDateStr;
-      
-      console.log('📅 Comparing:', {
-        aptOriginal: apt.scheduled_date,
-        aptFormatted: aptDateStr,
-        selectedDate: selectedDateStr,
-        matches: matches,
-        clientName: apt.client_name
+      console.log('📅 Filtering:', {
+        appointment: apt.client_name,
+        originalDate: apt.scheduled_date,
+        parsedDate: aptDateStr,
+        selectedDate: selectedDate,
+        matches: aptDateStr === selectedDate
       });
       
-      return matches;
+      return aptDateStr === selectedDate;
     } catch (error) {
       console.error('Error parsing appointment date:', apt.scheduled_date, error);
       return false;
@@ -320,31 +310,50 @@ export default function CalendarPage() {
                       const isSelected = dayStr === selectedDate;
                       const isToday = day.toDateString() === new Date().toDateString();
                       const isCurrentMonth = day.getMonth() === currentDate.getMonth();
-                      const hasAppointments = Array.isArray(appointments) && 
-                        appointments.some((apt: any) => {
+                      const hasAppointments = Array.isArray(allAppointments) && 
+                        allAppointments.some((apt: any) => {
                           if (!apt.scheduled_date) return false;
                           const aptDate = new Date(apt.scheduled_date).toISOString().split('T')[0];
                           return aptDate === dayStr;
                         });
                       
+                      const dayAppointments = Array.isArray(allAppointments) ? allAppointments.filter((apt: any) => {
+                        if (!apt.scheduled_date) return false;
+                        const aptDate = new Date(apt.scheduled_date).toISOString().split('T')[0];
+                        return aptDate === dayStr;
+                      }) : [];
+
                       return (
-                        <Button
+                        <div
                           key={index}
-                          variant={isSelected ? 'default' : 'ghost'}
                           className={`
-                            h-10 sm:h-12 p-1 relative text-xs sm:text-sm
+                            relative min-h-24 p-1 border rounded cursor-pointer
                             ${isToday ? 'ring-2 ring-blue-500' : ''}
-                            ${!isCurrentMonth ? 'text-gray-400' : ''}
-                            ${hasAppointments ? 'bg-blue-50 hover:bg-blue-100' : ''}
-                            ${isSelected ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
+                            ${!isCurrentMonth ? 'text-gray-400 bg-gray-50' : 'bg-white'}
+                            ${hasAppointments ? 'bg-blue-50' : ''}
+                            ${isSelected ? 'bg-blue-100 ring-2 ring-blue-300' : ''}
+                            hover:bg-blue-50
                           `}
                           onClick={() => setSelectedDate(dayStr)}
                         >
-                          <span>{day.getDate()}</span>
-                          {hasAppointments && (
-                            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full" />
-                          )}
-                        </Button>
+                          <div className="text-xs font-medium mb-1">{day.getDate()}</div>
+                          <div className="space-y-1">
+                            {dayAppointments.slice(0, 2).map((apt: any) => (
+                              <div
+                                key={apt.id}
+                                className="text-xs p-1 bg-blue-600 text-white rounded truncate"
+                                title={`${apt.client_name} - ${new Date(apt.scheduled_date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`}
+                              >
+                                {apt.client_name}
+                              </div>
+                            ))}
+                            {dayAppointments.length > 2 && (
+                              <div className="text-xs text-blue-600 font-medium">
+                                +{dayAppointments.length - 2} más
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
