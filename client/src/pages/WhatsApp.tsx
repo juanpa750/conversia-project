@@ -115,6 +115,8 @@ export default function WhatsApp() {
       return await apiRequest("POST", "/api/simple/simulate-message", data);
     },
     onSuccess: (data: any) => {
+      console.log('Respuesta recibida:', data);
+      
       // Agregar el mensaje del usuario
       const userMessage = {
         id: Date.now(),
@@ -126,11 +128,12 @@ export default function WhatsApp() {
       // Agregar la respuesta de la IA
       const aiResponse = {
         id: Date.now() + 1,
-        message: data.response,
+        message: data.response || "La IA está procesando tu mensaje...",
         timestamp: new Date(),
         isUser: false
       };
       
+      console.log('Agregando mensajes al chat:', { userMessage, aiResponse });
       setChatMessages(prev => [...prev, userMessage, aiResponse]);
       setTestMessage(""); // Limpiar el campo de entrada
       
