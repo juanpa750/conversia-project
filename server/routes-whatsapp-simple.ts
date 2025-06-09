@@ -208,66 +208,39 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
       // Por ahora usamos datos simulados para demostrar la detección de productos
       console.log('🔍 Verificando detección de productos en mensaje:', message);
 
-      // Usar IA inteligente para generar respuesta
+      // Usar IA mejorada con configuración por producto
       try {
-        const { intelligentAI } = await import('./intelligentAIService');
+        const { enhancedAI } = await import('./enhancedAIService');
 
-        console.log('🧠 Generando respuesta inteligente para:', {
+        console.log('🧠 Generando respuesta basada en productos para:', {
           message: message.substring(0, 30) + '...',
           businessType: business.business_type,
           businessName: business.business_name
         });
 
-        // Configuración del chatbot con instrucciones personalizadas
-        const objective: 'sales' | 'appointment' | 'support' | 'information' = 
-          business.business_type === 'services' ? 'appointment' : 'sales';
-        
-        const chatbotConfig = {
-          id: req.userId,
-          customInstructions: business.business_name ? 
-            `Hola! Soy especialista de ${business.business_name}.` :
-            'Hola! Soy tu asistente especializado.',
-          conversationObjective: objective,
-          aiPersonality: 'amigable',
-          businessType: business.business_type || 'general'
-        };
-
-        const businessType = business.business_type === 'services' ? 'services' : 'products';
-        
-        const aiResponse = await intelligentAI.generateIntelligentResponse(
+        // Generar respuesta con detección automática de productos
+        const aiResponse = await enhancedAI.generateResponse(
           message,
-          [],
           req.userId,
-          businessType,
-          chatbotConfig
+          business.business_name || 'Tu Negocio',
+          [] // Historial de conversación (en implementación real viene de BD)
         );
         
-        console.log('🎯 Respuesta AIDA generada:', {
+        console.log('🎯 Respuesta con IA mejorada:', {
           confidence: aiResponse.confidence,
-          detectedProducts: aiResponse.detectedProducts?.length || 0,
+          detectedProductId: aiResponse.detectedProductId || 'ninguno',
           aidaStage: aiResponse.aidaStage,
-          objectiveCompleted: aiResponse.objectiveCompleted,
-          sentiment: aiResponse.analysis?.sentiment || 'neutral',
-          hasActions: aiResponse.suggestedActions?.length || 0
+          requiresHuman: aiResponse.requiresHuman
         });
 
         autoResponse = aiResponse.message;
-        console.log('📝 Respuesta asignada:', autoResponse);
-        
-        // Personalizar con nombre del negocio si no está incluido
-        if (!autoResponse.includes(business.business_name)) {
-          if (autoResponse.startsWith('¡') || autoResponse.startsWith('Hola')) {
-            autoResponse = autoResponse.replace(/^(¡[^!]+!|Hola[^.]*\.)/, `$1 Soy ${business.business_name}.`);
-          } else {
-            autoResponse = `En ${business.business_name}, ${autoResponse.charAt(0).toLowerCase() + autoResponse.slice(1)}`;
-          }
-        }
-        
         console.log('📝 Respuesta final:', autoResponse);
 
-        // Log para debugging de productos detectados
-        if (aiResponse.detectedProducts && aiResponse.detectedProducts.length > 0) {
-          console.log('🎯 Productos detectados en mensaje:', aiResponse.detectedProducts);
+        // Log para análisis de productos detectados
+        if (aiResponse.detectedProductId) {
+          console.log('🎯 Producto específico detectado:', aiResponse.detectedProductId);
+        } else {
+          console.log('🔍 No se detectó producto específico - mostrando lista general');
         }
 
         // Respuesta de fallback si la IA no es confiable
