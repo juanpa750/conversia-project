@@ -84,7 +84,7 @@ export class SimpleStorage implements ISimpleStorage {
         sql`SELECT * FROM chatbots WHERE user_id = ${userId} ORDER BY created_at DESC`
       );
       
-      console.log('🗄️ Raw database result:', JSON.stringify(result.rows?.[0], null, 2));
+      console.log('🗄️ Raw database result for getChatbots:', JSON.stringify(result.rows?.[0], null, 2));
       
       // Map snake_case columns to camelCase for JavaScript compatibility
       return (result.rows || []).map((row: any) => ({
@@ -154,9 +154,36 @@ export class SimpleStorage implements ISimpleStorage {
   async getChatbot(id: number): Promise<any> {
     try {
       const result = await db.execute(
-        sql`SELECT * FROM chatbots WHERE id = ${id}`
+        sql`SELECT c.*, p.name as product_name, p.description as product_description 
+            FROM chatbots c 
+            LEFT JOIN products p ON c.product_id = p.id 
+            WHERE c.id = ${id}`
       );
-      return result.rows[0];
+      
+      if (!result.rows || result.rows.length === 0) {
+        return null;
+      }
+      
+      const row = result.rows[0];
+      return {
+        id: row.id,
+        userId: row.user_id,
+        name: row.name,
+        description: row.description,
+        productId: row.product_id,
+        triggerKeywords: row.trigger_keywords,
+        aiInstructions: row.ai_instructions,
+        aiPersonality: row.ai_personality,
+        conversationObjective: row.conversation_objective,
+        status: row.status,
+        type: row.type,
+        flow: row.flow,
+        objective: row.objective,
+        productName: row.product_name,
+        productDescription: row.product_description,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      };
     } catch (error) {
       console.error('Error fetching chatbot:', error);
       return null;
@@ -199,9 +226,40 @@ export class SimpleStorage implements ISimpleStorage {
   async getProducts(userId: string): Promise<any[]> {
     try {
       const result = await db.execute(
-        sql`SELECT * FROM products WHERE user_id = ${userId} ORDER BY created_at DESC`
+        sql`SELECT p.*, c.id as chatbot_id, c.name as chatbot_name 
+            FROM products p 
+            LEFT JOIN chatbots c ON p.id = c.product_id 
+            WHERE p.user_id = ${userId} 
+            ORDER BY p.created_at DESC`
       );
-      return result.rows || [];
+      
+      return (result.rows || []).map((row: any) => ({
+        id: row.id,
+        userId: row.user_id,
+        name: row.name,
+        description: row.description,
+        price: row.price,
+        currency: row.currency,
+        category: row.category,
+        productImage: row.product_image,
+        images: row.images,
+        features: row.features,
+        specifications: row.specifications,
+        availability: row.availability,
+        stock: row.stock,
+        sku: row.sku,
+        tags: row.tags,
+        freeShipping: row.free_shipping,
+        cashOnDelivery: row.cash_on_delivery,
+        aiInstructions: row.ai_instructions,
+        conversationObjective: row.conversation_objective,
+        aiPersonality: row.ai_personality,
+        triggerKeywords: row.trigger_keywords,
+        chatbotId: row.chatbot_id,
+        chatbotName: row.chatbot_name,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      }));
     } catch (error) {
       console.error('Error fetching products:', error);
       return [];

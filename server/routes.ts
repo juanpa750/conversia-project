@@ -179,6 +179,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chatbotId = parseInt(req.params.id);
       const chatbot = await simpleStorage.getChatbot(chatbotId);
       
+      console.log('Chatbot found:', chatbot?.id, 'User match:', chatbot?.userId === req.userId);
+      
       if (!chatbot || chatbot.userId !== req.userId) {
         return res.status(404).json({ message: 'Chatbot not found' });
       }
