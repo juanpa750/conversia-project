@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-
 import { 
   RiWhatsappLine, 
   RiCheckLine,
@@ -120,20 +119,21 @@ export default function WhatsAppIntegrationPage() {
     },
   });
 
-  // Link existing WhatsApp integration
+  // Link existing WhatsApp integration to chatbot
   const linkIntegrationMutation = useMutation({
-    mutationFn: async ({ integrationId, chatbotId }: { integrationId: string; chatbotId: string }) => {
-      return await apiRequest("POST", `/api/whatsapp/integrations/${integrationId}/link-chatbot`, {
-        chatbotId: parseInt(chatbotId),
+    mutationFn: async (data: { integrationId: string; chatbotId: string }) => {
+      return await apiRequest("PUT", `/api/whatsapp/integrations/${data.integrationId}/link`, {
+        chatbotId: data.chatbotId,
       });
     },
     onSuccess: () => {
       toast({
         title: "WhatsApp vinculado",
-        description: "El chatbot ha sido vinculado a la integración de WhatsApp existente.",
+        description: "El chatbot ha sido vinculado exitosamente a la integración de WhatsApp.",
       });
       setShowConfigDialog(false);
       queryClient.invalidateQueries({ queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/integrations"] });
     },
     onError: (error: any) => {
       toast({
@@ -152,43 +152,42 @@ export default function WhatsAppIntegrationPage() {
     onSuccess: () => {
       toast({
         title: "WhatsApp desconectado",
-        description: "La integración de WhatsApp ha sido desconectada.",
+        description: "La integración de WhatsApp ha sido desconectada exitosamente.",
       });
       queryClient.invalidateQueries({ queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/integrations"] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: "Error de desconexión",
         description: error.message || "Error desconectando WhatsApp",
         variant: "destructive",
       });
     },
   });
 
-  const handleConfigureWhatsApp = () => {
-    setShowConfigDialog(true);
-  };
+  const availableIntegrations = existingIntegrations.filter(
+    integration => integration.chatbotId !== parseInt(chatbotId || "0")
+  );
 
-  const handleSaveConfiguration = () => {
+  const handleSaveConfiguration = async () => {
     if (useExistingConfig && selectedExistingId) {
-      // Link to existing integration
       linkIntegrationMutation.mutate({
         integrationId: selectedExistingId,
         chatbotId: chatbotId!,
       });
     } else {
-      // Create new integration
-      const phoneNumber = (document.getElementById("whatsapp-phone") as HTMLInputElement)?.value;
-      const displayName = (document.getElementById("whatsapp-display-name") as HTMLInputElement)?.value;
-      const businessDescription = (document.getElementById("whatsapp-description") as HTMLTextAreaElement)?.value;
-      const businessType = (document.getElementById("whatsapp-business-type") as HTMLSelectElement)?.value;
-      const autoRespond = (document.getElementById("whatsapp-auto-respond") as HTMLInputElement)?.checked;
+      // Get form values
+      const phoneNumber = (document.getElementById('whatsapp-phone') as HTMLInputElement)?.value;
+      const displayName = (document.getElementById('whatsapp-display-name') as HTMLInputElement)?.value;
+      const businessDescription = (document.getElementById('whatsapp-business-description') as HTMLTextAreaElement)?.value;
+      const businessType = (document.getElementById('whatsapp-business-type') as HTMLSelectElement)?.value;
+      const autoRespond = (document.getElementById('whatsapp-auto-respond') as HTMLInputElement)?.checked;
 
       if (!phoneNumber || !displayName || !businessDescription) {
         toast({
           title: "Campos requeridos",
-          description: "Por favor completa todos los campos requeridos.",
+          description: "Por favor completa todos los campos obligatorios.",
           variant: "destructive",
         });
         return;
@@ -198,15 +197,15 @@ export default function WhatsAppIntegrationPage() {
         phoneNumber,
         displayName,
         businessDescription,
-        businessType: businessType || "products",
-        autoRespond: autoRespond ?? true,
+        businessType: businessType || "retail",
+        autoRespond: autoRespond || true,
+        chatbotId: chatbotId!,
+        productId: chatbot?.productId,
         operatingHours: {
           enabled: false,
           timezone: "America/Mexico_City",
-          schedule: {}
+          schedule: {},
         },
-        chatbotId: chatbotId!,
-        productId: (chatbot as any)?.productId,
       });
     }
   };
@@ -219,162 +218,150 @@ export default function WhatsAppIntegrationPage() {
 
   if (!chatbotId) {
     return (
-      <Layout>
-        <div className="text-center py-12">
-          <p className="text-gray-500">No se especificó el chatbot</p>
-          <Button onClick={() => setLocation("/chatbots")} className="mt-4">
-            Volver a Chatbots
-          </Button>
-        </div>
-      </Layout>
+      <div className="text-center py-12">
+        <p className="text-gray-500">No se especificó el chatbot</p>
+        <Button onClick={() => setLocation("/chatbots")} className="mt-4">
+          Volver a Chatbots
+        </Button>
+      </div>
     );
   }
 
   return (
-    <Layout>
+    <div>
       <div className="mb-6">
         <div className="flex items-center space-x-4 mb-4">
           <Button 
             variant="ghost" 
             size="sm"
             onClick={() => setLocation("/chatbots")}
+            className="flex items-center space-x-2"
           >
-            <RiArrowLeftSLine className="mr-2" />
-            Volver
+            <RiArrowLeftSLine />
+            <span>Volver</span>
           </Button>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">Integración WhatsApp</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Configura WhatsApp para: {(chatbot as any)?.name || `Chatbot ${chatbotId}`}
-        </p>
+
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Configuración de WhatsApp</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Configura WhatsApp para el chatbot: <span className="font-medium">{chatbot?.name}</span>
+          </p>
+        </div>
       </div>
 
-      <div className="max-w-4xl space-y-6">
-        {/* Current Integration Status */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <RiWhatsappLine className="h-6 w-6 text-green-600" />
+      {/* Current Integration Status */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <RiWhatsappLine className="text-green-600" />
+            <span>Estado de la Integración</span>
+          </CardTitle>
+          <CardDescription>
+            Estado actual de WhatsApp para este chatbot
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {currentIntegration ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <div>
+                    <p className="font-medium text-green-800">Conectado</p>
+                    <p className="text-sm text-green-600">WhatsApp está configurado y activo</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
+                  {currentIntegration.status}
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Número</Label>
+                  <p className="mt-1 text-sm text-gray-900">{currentIntegration.phoneNumber}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Nombre</Label>
+                  <p className="mt-1 text-sm text-gray-900">{currentIntegration.displayName}</p>
+                </div>
+              </div>
+
               <div>
-                <CardTitle>Estado de WhatsApp</CardTitle>
-                <CardDescription>
-                  Configuración actual de WhatsApp para este chatbot
-                </CardDescription>
+                <Label className="text-sm font-medium text-gray-700">Descripción</Label>
+                <p className="mt-1 text-sm text-gray-900">{currentIntegration.businessDescription}</p>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Respuesta automática</p>
+                  <p className="text-sm text-gray-500">
+                    {currentIntegration.autoRespond ? "Activada" : "Desactivada"}
+                  </p>
+                </div>
+                <Badge variant={currentIntegration.autoRespond ? "default" : "secondary"}>
+                  {currentIntegration.autoRespond ? "ON" : "OFF"}
+                </Badge>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            {currentIntegration ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-green-100 text-green-800">
-                    <RiCheckLine className="mr-1 h-3 w-3" />
-                    Conectado
-                  </Badge>
-                  <span className="text-sm text-gray-500">
-                    {currentIntegration.status === 'connected' ? 'Funcionando' : 'Pendiente'}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-700">Número:</span>
-                    <p className="text-gray-600">{currentIntegration.phoneNumber}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Nombre:</span>
-                    <p className="text-gray-600">{currentIntegration.displayName}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="font-medium text-gray-700">Descripción:</span>
-                    <p className="text-gray-600">{currentIntegration.businessDescription}</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <RiWhatsappLine className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  WhatsApp no configurado
-                </h3>
-                <p className="text-gray-500 mb-4">
-                  Este chatbot no tiene una integración de WhatsApp configurada
-                </p>
-              </div>
-            )}
-          </CardContent>
-          <CardFooter className="flex justify-end gap-2">
-            {currentIntegration ? (
-              <>
-                <Button variant="outline" onClick={handleConfigureWhatsApp}>
-                  <RiSettings3Line className="mr-2 h-4 w-4" />
-                  Reconfigurar
-                </Button>
-                <Button 
-                  variant="destructive" 
-                  onClick={handleDisconnect}
-                  disabled={disconnectMutation.isPending}
-                >
-                  {disconnectMutation.isPending ? "Desconectando..." : "Desconectar"}
-                </Button>
-              </>
-            ) : (
-              <Button onClick={handleConfigureWhatsApp}>
-                <RiAddLine className="mr-2 h-4 w-4" />
-                Configurar WhatsApp
+          ) : (
+            <div className="text-center py-8">
+              <RiWhatsappLine className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">Sin configurar</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Este chatbot no tiene WhatsApp configurado
+              </p>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          {currentIntegration ? (
+            <>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowConfigDialog(true)}
+                className="flex items-center space-x-2"
+              >
+                <RiSettings3Line />
+                <span>Reconfigurar</span>
               </Button>
-            )}
-          </CardFooter>
-        </Card>
-
-        {/* Existing Integrations Summary */}
-        {existingIntegrations.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Otras integraciones de WhatsApp</CardTitle>
-              <CardDescription>
-                Integraciones existentes que puedes reutilizar
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {existingIntegrations.map((integration) => (
-                  <div 
-                    key={integration.id} 
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
-                    <div>
-                      <p className="font-medium">{integration.displayName}</p>
-                      <p className="text-sm text-gray-500">{integration.phoneNumber}</p>
-                    </div>
-                    <Badge 
-                      className={integration.status === 'connected' 
-                        ? "bg-green-100 text-green-800" 
-                        : "bg-yellow-100 text-yellow-800"
-                      }
-                    >
-                      {integration.status === 'connected' ? 'Conectado' : 'Pendiente'}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+              <Button 
+                variant="destructive" 
+                onClick={handleDisconnect}
+                disabled={disconnectMutation.isPending}
+              >
+                {disconnectMutation.isPending ? "Desconectando..." : "Desconectar"}
+              </Button>
+            </>
+          ) : (
+            <Button 
+              onClick={() => setShowConfigDialog(true)}
+              className="flex items-center space-x-2"
+            >
+              <RiAddLine />
+              <span>Configurar WhatsApp</span>
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
 
       {/* Configuration Dialog */}
       <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Configurar WhatsApp Business</DialogTitle>
+            <DialogTitle>Configurar WhatsApp</DialogTitle>
             <DialogDescription>
-              Configura o vincula una integración de WhatsApp para este chatbot
+              Configura la integración de WhatsApp para tu chatbot {chatbot?.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 py-4">
-            {/* Option to use existing or create new */}
-            {existingIntegrations.length > 0 && (
+          
+          <div className="space-y-6">
+            {/* Configuration Type Selection */}
+            {availableIntegrations.length > 0 && (
               <div className="space-y-4">
+                <Label className="text-base font-medium">Tipo de configuración</Label>
+                
                 <div className="flex items-center space-x-2">
                   <input
                     type="radio"
@@ -385,16 +372,16 @@ export default function WhatsAppIntegrationPage() {
                   />
                   <Label htmlFor="use-existing">Usar integración existente</Label>
                 </div>
-                
+
                 {useExistingConfig && (
                   <Select value={selectedExistingId} onValueChange={setSelectedExistingId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecciona una integración existente" />
+                      <SelectValue placeholder="Seleccionar integración existente" />
                     </SelectTrigger>
                     <SelectContent>
-                      {existingIntegrations.map((integration) => (
+                      {availableIntegrations.map((integration) => (
                         <SelectItem key={integration.id} value={integration.id.toString()}>
-                          {integration.displayName} - {integration.phoneNumber}
+                          {integration.displayName} ({integration.phoneNumber})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -451,24 +438,29 @@ export default function WhatsAppIntegrationPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="whatsapp-business-type">Tipo de negocio</Label>
-                  <select 
-                    id="whatsapp-business-type" 
-                    className="w-full border border-gray-300 rounded-md h-9 px-3"
-                  >
-                    <option value="products">Productos</option>
-                    <option value="services">Servicios</option>
-                    <option value="both">Productos y Servicios</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="whatsapp-description">Descripción del negocio</Label>
+                  <Label htmlFor="whatsapp-business-description">Descripción del negocio</Label>
                   <Textarea 
-                    id="whatsapp-description" 
+                    id="whatsapp-business-description" 
                     placeholder="Describe tu negocio..."
                     defaultValue={currentIntegration?.businessDescription || ""}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp-business-type">Tipo de negocio</Label>
+                  <Select defaultValue="retail">
+                    <SelectTrigger id="whatsapp-business-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="retail">Venta al por menor</SelectItem>
+                      <SelectItem value="service">Servicios</SelectItem>
+                      <SelectItem value="restaurant">Restaurante</SelectItem>
+                      <SelectItem value="health">Salud y bienestar</SelectItem>
+                      <SelectItem value="education">Educación</SelectItem>
+                      <SelectItem value="other">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -484,6 +476,7 @@ export default function WhatsAppIntegrationPage() {
               </div>
             )}
           </div>
+          
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfigDialog(false)}>
               Cancelar
@@ -502,6 +495,6 @@ export default function WhatsAppIntegrationPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Layout>
+    </div>
   );
 }
