@@ -87,7 +87,13 @@ export function Sidebar() {
           WhatsApp Chatbot
         </NavItem>
         
-
+        <NavItem 
+          href="/chatbot-config" 
+          icon={<RiRobotLine />} 
+          active={location.startsWith("/chatbot-config")}
+        >
+          Configurar IA
+        </NavItem>
         
         <NavItem 
           href="/ai-advanced" 

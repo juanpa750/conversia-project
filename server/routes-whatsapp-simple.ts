@@ -301,10 +301,50 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
         WHERE user_id = ${req.userId}
       `);
 
+      // Obtener datos AIDA de la respuesta AI si están disponibles
+      let aidaData = {};
+      try {
+        const { intelligentAI } = await import('./intelligentAIService');
+        const businessType = business.business_type === 'services' ? 'services' : 'products';
+        const objective: 'sales' | 'appointment' | 'support' | 'information' = 
+          business.business_type === 'services' ? 'appointment' : 'sales';
+        
+        const chatbotConfig = {
+          id: req.userId,
+          customInstructions: business.business_name ? 
+            `Hola! Soy especialista de ${business.business_name}.` :
+            'Hola! Soy tu asistente especializado.',
+          conversationObjective: objective,
+          aiPersonality: 'amigable',
+          businessType: business.business_type || 'general'
+        };
+        
+        const aiResponse = await intelligentAI.generateIntelligentResponse(
+          message,
+          [],
+          req.userId,
+          businessType,
+          chatbotConfig
+        );
+        
+        aidaData = {
+          aidaStage: aiResponse.aidaStage,
+          confidence: aiResponse.confidence,
+          objectiveCompleted: aiResponse.objectiveCompleted,
+          analysis: aiResponse.analysis,
+          detectedProducts: aiResponse.detectedProducts,
+          suggestedActions: aiResponse.suggestedActions,
+          nextQuestions: aiResponse.nextQuestions
+        };
+      } catch (error) {
+        console.log('Error obteniendo datos AIDA:', error);
+      }
+
       res.json({ 
         success: true, 
-        response: autoResponse,
-        message: 'Respuesta automática generada'
+        autoResponse,
+        message: 'Respuesta automática generada',
+        ...aidaData
       });
     } catch (error: any) {
       console.error('Error simulando mensaje:', error);

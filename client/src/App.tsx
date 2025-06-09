@@ -41,6 +41,7 @@ import SalesPipeline from "@/pages/crm/advanced/sales-pipeline";
 import NurtureCampaigns from "@/pages/crm/advanced/nurture-campaigns";
 import AIFlows from "@/pages/templates/ai-flows";
 import CalendarPage from "@/pages/calendar";
+import ChatbotConfig from "@/pages/chatbot-config";
 import { useAuth } from "@/hooks/use-auth";
 
 function Router() {
@@ -94,6 +95,11 @@ function Router() {
                 <ProductConfig chatbotId={params.id} />
               </Layout>
             )}
+          </Route>
+          <Route path="/chatbot-config">
+            <Layout>
+              <ChatbotConfig />
+            </Layout>
           </Route>
           <Route path="/crm">
             <Layout>
