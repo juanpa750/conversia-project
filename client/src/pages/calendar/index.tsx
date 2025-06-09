@@ -363,7 +363,7 @@ export default function CalendarPage() {
               {currentView === 'week' && (
                 <WeekView 
                   currentDate={currentDate} 
-                  appointments={appointments || []} 
+                  appointments={allAppointments || []} 
                   onDateSelect={setSelectedDate}
                 />
               )}
@@ -371,7 +371,7 @@ export default function CalendarPage() {
               {currentView === 'day' && (
                 <DayView 
                   selectedDate={selectedDate} 
-                  appointments={appointments || []} 
+                  appointments={allAppointments || []} 
                   onUpdateStatus={handleUpdateStatus}
                 />
               )}
@@ -533,10 +533,12 @@ function WeekView({ currentDate, appointments, onDateSelect }: any) {
 
 // Day View Component
 function DayView({ selectedDate, appointments, onUpdateStatus }: any) {
-  const dayAppointments = appointments.filter((apt: any) => 
-    apt.scheduledDate?.startsWith(selectedDate)
-  ).sort((a: any, b: any) => 
-    new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime()
+  const dayAppointments = appointments.filter((apt: any) => {
+    if (!apt.scheduled_date) return false;
+    const aptDate = new Date(apt.scheduled_date).toISOString().split('T')[0];
+    return aptDate === selectedDate;
+  }).sort((a: any, b: any) => 
+    new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime()
   );
   
   // Arreglar problema de fecha - usar la fecha local correcta
