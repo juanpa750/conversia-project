@@ -218,16 +218,35 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
           businessName: business.business_name
         });
 
+        // Configuración del chatbot con instrucciones personalizadas
+        const objective: 'sales' | 'appointment' | 'support' | 'information' = 
+          business.business_type === 'services' ? 'appointment' : 'sales';
+        
+        const chatbotConfig = {
+          id: req.userId,
+          customInstructions: business.business_name ? 
+            `Hola! Soy especialista de ${business.business_name}.` :
+            'Hola! Soy tu asistente especializado.',
+          conversationObjective: objective,
+          aiPersonality: 'amigable',
+          businessType: business.business_type || 'general'
+        };
+
+        const businessType = business.business_type === 'services' ? 'services' : 'products';
+        
         const aiResponse = await intelligentAI.generateIntelligentResponse(
           message,
           [],
           req.userId,
-          business.business_type || 'products'
+          businessType,
+          chatbotConfig
         );
         
-        console.log('🎯 Respuesta IA generada:', {
+        console.log('🎯 Respuesta AIDA generada:', {
           confidence: aiResponse.confidence,
           detectedProducts: aiResponse.detectedProducts?.length || 0,
+          aidaStage: aiResponse.aidaStage,
+          objectiveCompleted: aiResponse.objectiveCompleted,
           sentiment: aiResponse.analysis?.sentiment || 'neutral',
           hasActions: aiResponse.suggestedActions?.length || 0
         });
