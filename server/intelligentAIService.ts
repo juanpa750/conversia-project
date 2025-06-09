@@ -25,6 +25,17 @@ interface IntelligentResponse {
   suggestedActions: string[];
   nextQuestions: string[];
   analysis: ConversationAnalysis;
+  aidaStage: 'attention' | 'interest' | 'desire' | 'action' | 'retention';
+  followUpScheduled?: boolean;
+  objectiveCompleted?: boolean;
+}
+
+interface ChatbotConfig {
+  id: string;
+  customInstructions: string;
+  conversationObjective: 'sales' | 'appointment' | 'support' | 'information';
+  aiPersonality: string;
+  businessType: string;
 }
 
 export class IntelligentAIService {
@@ -357,7 +368,8 @@ export class IntelligentAIService {
     message: string, 
     history: string[], 
     userId: string,
-    businessType: 'products' | 'services' = 'products'
+    businessType: 'products' | 'services' = 'products',
+    chatbotConfig?: ChatbotConfig
   ): Promise<IntelligentResponse> {
     
     const analysis = this.analyzeConversation(message, history);
@@ -395,13 +407,27 @@ export class IntelligentAIService {
     // Adaptación según sentimiento
     responseMessage = this.adaptToSentiment(responseMessage, analysis);
 
+    // Determinar la etapa AIDA basada en la conversación
+    const aidaStage = this.determineAidaStage(analysis, history, detectedProducts.length > 0);
+    
+    // Aplicar instrucciones personalizadas del chatbot
+    if (chatbotConfig?.customInstructions) {
+      responseMessage = this.applyCustomInstructions(responseMessage, chatbotConfig);
+    }
+
+    // Verificar si el objetivo se completó
+    const objectiveCompleted = this.checkObjectiveCompletion(analysis, aidaStage, chatbotConfig?.conversationObjective);
+
     return {
       message: responseMessage,
       confidence: 0.85,
       detectedProducts,
       suggestedActions,
       nextQuestions,
-      analysis
+      analysis,
+      aidaStage,
+      objectiveCompleted,
+      followUpScheduled: false
     };
   }
 
@@ -430,7 +456,7 @@ export class IntelligentAIService {
       }
     };
 
-    const info = productInfo[insights.productId] || productInfo[1];
+    const info = productInfo[insights.productId as keyof typeof productInfo] || productInfo[1];
 
     switch (analysis.intent) {
       case 'pricing':
@@ -529,6 +555,86 @@ export class IntelligentAIService {
       return `¡Me alegra tu entusiasmo! ${message}`;
     }
     return message;
+  }
+
+  /**
+   * Determina la etapa AIDA de la conversación
+   */
+  private determineAidaStage(analysis: ConversationAnalysis, history: string[], hasProducts: boolean): 'attention' | 'interest' | 'desire' | 'action' | 'retention' {
+    const conversationLength = history.length;
+    
+    if (conversationLength === 0) return 'attention';
+    
+    if (analysis.intent === 'purchase' || analysis.intent === 'appointment') return 'action';
+    if (analysis.intent === 'pricing' && hasProducts) return 'desire';
+    if (analysis.intent === 'info' && hasProducts) return 'interest';
+    
+    if (conversationLength >= 5) return 'retention';
+    if (conversationLength >= 3) return 'desire';
+    if (conversationLength >= 1) return 'interest';
+    
+    return 'attention';
+  }
+
+  /**
+   * Aplica instrucciones personalizadas del chatbot
+   */
+  private applyCustomInstructions(message: string, config: ChatbotConfig): string {
+    if (message.includes('Hola') || message.includes('Gracias por contactarnos')) {
+      return config.customInstructions + ' ' + message.split('.').slice(1).join('.');
+    }
+    
+    if (config.aiPersonality === 'profesional') {
+      return message.replace(/¡/g, '').replace(/!/g, '.');
+    } else if (config.aiPersonality === 'amigable') {
+      return message + ' 😊';
+    }
+    
+    return message;
+  }
+
+  /**
+   * Verifica si el objetivo de la conversación se completó
+   */
+  private checkObjectiveCompletion(analysis: ConversationAnalysis, aidaStage: string, objective?: string): boolean {
+    switch (objective) {
+      case 'sales':
+        return analysis.intent === 'purchase' && aidaStage === 'action';
+      case 'appointment':
+        return analysis.intent === 'appointment' && aidaStage === 'action';
+      case 'information':
+        return aidaStage === 'desire' || aidaStage === 'action';
+      case 'support':
+        return analysis.intent === 'support' && aidaStage === 'action';
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Genera mensajes de seguimiento para recuperar conversaciones
+   */
+  static generateFollowUpMessages(aidaStage: string, productDetected: boolean, businessType: string): string[] {
+    const followUpMessages = {
+      attention: [
+        "Hola! ¿Sigues interesado en nuestros servicios? Estoy aquí para ayudarte.",
+        "No olvides que tenemos excelentes opciones para ti. ¿Te gustaría conocerlas?"
+      ],
+      interest: [
+        "Recuerda que tenemos una promoción especial. ¿Te interesa conocer los detalles?",
+        "¿Tienes alguna pregunta sobre nuestros productos? Estoy aquí para resolver tus dudas."
+      ],
+      desire: [
+        "Testimonio: 'Desde que uso este servicio, mi vida cambió completamente. Lo recomiendo 100%' - María, clienta satisfecha.",
+        "Solo por hoy tenemos un descuento especial. ¿Te interesa aprovecharlo?"
+      ],
+      action: [
+        "¿Ya decidiste? Te ayudo a completar tu compra en pocos pasos.",
+        "Recuerda que puedes agendar tu cita ahora mismo. ¿Qué horario te conviene?"
+      ]
+    };
+
+    return followUpMessages[aidaStage as keyof typeof followUpMessages] || followUpMessages.attention;
   }
 }
 
