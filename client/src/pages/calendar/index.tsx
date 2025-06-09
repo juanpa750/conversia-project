@@ -30,10 +30,16 @@ export default function CalendarPage() {
   });
 
   // Filter appointments for selected date
-  const appointments = allAppointments.filter((apt: any) => {
-    const aptDate = new Date(apt.scheduled_date).toISOString().split('T')[0];
-    return aptDate === selectedDate;
-  });
+  const appointments = Array.isArray(allAppointments) ? allAppointments.filter((apt: any) => {
+    if (!apt.scheduled_date) return false;
+    try {
+      const aptDate = new Date(apt.scheduled_date).toISOString().split('T')[0];
+      return aptDate === selectedDate;
+    } catch (error) {
+      console.error('Error parsing appointment date:', apt.scheduled_date);
+      return false;
+    }
+  }) : [];
 
   // Fetch available slots for selected date
   const { data: availableSlots = [] } = useQuery({
@@ -568,7 +574,7 @@ function AppointmentCard({ appointment, onUpdateStatus }: any) {
     }
   };
 
-  const { date, time } = formatDateTime(appointment.scheduledDate);
+  const { date, time } = formatDateTime(appointment.scheduled_date);
 
   return (
     <Card className="border-l-4 border-l-blue-500">

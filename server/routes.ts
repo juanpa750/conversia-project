@@ -164,27 +164,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/calendar/available-slots", isAuthenticated, async (req: any, res) => {
     try {
-      // Generar slots disponibles para los próximos 7 días
-      const slots = [];
-      const today = new Date();
+      const userId = req.userId;
+      const date = req.query.date as string || new Date().toISOString().split('T')[0];
       
-      for (let i = 1; i <= 7; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() + i);
-        
-        // Solo días laborables
-        if (date.getDay() !== 0 && date.getDay() !== 6) {
-          for (let hour = 9; hour <= 17; hour++) {
-            slots.push({
-              date: date.toISOString().split('T')[0],
-              time: `${hour}:00`,
-              available: Math.random() > 0.3 // 70% disponibilidad
-            });
-          }
+      // Generar todos los slots posibles para el día
+      const slots = [];
+      const startHour = 9;
+      const endHour = 17;
+      
+      // Generar slots cada 30 minutos
+      for (let hour = startHour; hour < endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+          const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          slots.push(timeStr);
         }
       }
       
-      res.json(slots);
+      // Obtener citas existentes para la fecha específica
+      const existingAppointments = await db.execute(
+        sql`SELECT * FROM appointments WHERE user_id = ${userId} ORDER BY scheduled_date DESC`
+      );
+      const dateAppointments = existingAppointments.rows.filter((apt: any) => {
+        if (!apt.scheduled_date) return false;
+        const aptDate = new Date(apt.scheduled_date).toISOString().split('T')[0];
+        return aptDate === date;
+      });
+      
+      // Marcar slots ocupados basado en citas reales
+      const occupiedTimes = new Set();
+      dateAppointments.forEach(apt => {
+        if (apt.status !== 'cancelled' && apt.scheduled_date) {
+          const aptDate = new Date(apt.scheduled_date);
+          const timeStr = `${aptDate.getHours().toString().padStart(2, '0')}:${aptDate.getMinutes().toString().padStart(2, '0')}`;
+          occupiedTimes.add(timeStr);
+        }
+      });
+      
+      // Devolver slots con información de estado real
+      const slotsWithStatus = slots.map(slot => ({
+        time: slot,
+        available: !occupiedTimes.has(slot),
+        occupied: occupiedTimes.has(slot)
+      }));
+      
+      res.json(slotsWithStatus);
     } catch (error) {
       console.error('Get calendar slots error:', error);
       res.json([]);
