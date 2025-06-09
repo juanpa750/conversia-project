@@ -104,6 +104,36 @@ export const chatbots = pgTable("chatbots", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// WhatsApp Integrations table - Per chatbot configuration
+export const whatsappIntegrations = pgTable("whatsapp_integrations", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  chatbotId: integer("chatbot_id").notNull().references(() => chatbots.id, { onDelete: 'cascade' }),
+  productId: integer("product_id"),
+  
+  // WhatsApp configuration
+  phoneNumber: varchar("phone_number").notNull(),
+  displayName: varchar("display_name").notNull(),
+  businessDescription: text("business_description"),
+  
+  // Integration settings
+  status: varchar("status").default("disconnected").notNull(), // connected, disconnected, error
+  isActive: boolean("is_active").default(true),
+  priority: integer("priority").default(1),
+  autoRespond: boolean("auto_respond").default(true),
+  operatingHours: jsonb("operating_hours"),
+  
+  // Statistics
+  messagesSent: integer("messages_sent").default(0),
+  messagesReceived: integer("messages_received").default(0),
+  lastMessageAt: timestamp("last_message_at"),
+  connectedAt: timestamp("connected_at"),
+  lastError: text("last_error"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Productos del negocio (para caso 1)
 export const businessProducts = pgTable("business_products", {
   id: serial("id").primaryKey(),

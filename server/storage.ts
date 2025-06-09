@@ -14,6 +14,13 @@ export interface ISimpleStorage {
   createWhatsappConnection(connection: any): Promise<WhatsappConnection>;
   updateWhatsappConnection(userId: string, updates: any): Promise<WhatsappConnection>;
   
+  // WhatsApp integration operations
+  getWhatsappIntegrations(userId: string): Promise<any[]>;
+  getWhatsappIntegrationByChatbot(chatbotId: number, userId: string): Promise<any>;
+  getWhatsappIntegrationById(id: number): Promise<any>;
+  createWhatsappIntegration(integration: any): Promise<any>;
+  deleteWhatsappIntegration(id: number): Promise<void>;
+  
   // Data operations
   getChatbots(userId: string): Promise<any[]>;
   createChatbot(chatbot: any): Promise<any>;
@@ -340,6 +347,85 @@ export class SimpleStorage implements ISimpleStorage {
     } catch (error) {
       console.error('Error fetching appointments:', error);
       return [];
+    }
+  }
+
+  // WhatsApp Integration methods
+  async getWhatsappIntegrations(userId: string): Promise<any[]> {
+    try {
+      const result = await db.execute(
+        sql`SELECT * FROM whatsapp_integrations WHERE user_id = ${userId} ORDER BY created_at DESC`
+      );
+      return result.rows || [];
+    } catch (error) {
+      console.error('Error fetching WhatsApp integrations:', error);
+      return [];
+    }
+  }
+
+  async getWhatsappIntegrationByChatbot(chatbotId: number, userId: string): Promise<any> {
+    try {
+      const result = await db.execute(
+        sql`SELECT * FROM whatsapp_integrations WHERE chatbot_id = ${chatbotId} AND user_id = ${userId}`
+      );
+      return result.rows?.[0] || null;
+    } catch (error) {
+      console.error('Error fetching WhatsApp integration by chatbot:', error);
+      return null;
+    }
+  }
+
+  async getWhatsappIntegrationById(id: number): Promise<any> {
+    try {
+      const result = await db.execute(
+        sql`SELECT * FROM whatsapp_integrations WHERE id = ${id}`
+      );
+      return result.rows?.[0] || null;
+    } catch (error) {
+      console.error('Error fetching WhatsApp integration by ID:', error);
+      return null;
+    }
+  }
+
+  async createWhatsappIntegration(integration: any): Promise<any> {
+    try {
+      const result = await db.execute(sql`
+        INSERT INTO whatsapp_integrations (
+          user_id, phone_number, display_name, business_description,
+          chatbot_id, product_id, priority, auto_respond, operating_hours,
+          status, is_active, created_at, updated_at
+        ) VALUES (
+          ${integration.userId},
+          ${integration.phoneNumber},
+          ${integration.displayName},
+          ${integration.businessDescription},
+          ${integration.chatbotId},
+          ${integration.productId},
+          ${integration.priority},
+          ${integration.autoRespond},
+          ${integration.operatingHours ? JSON.stringify(integration.operatingHours) : null},
+          ${integration.status},
+          ${integration.isActive},
+          NOW(),
+          NOW()
+        )
+        RETURNING *
+      `);
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error creating WhatsApp integration:', error);
+      throw error;
+    }
+  }
+
+  async deleteWhatsappIntegration(id: number): Promise<void> {
+    try {
+      await db.execute(
+        sql`DELETE FROM whatsapp_integrations WHERE id = ${id}`
+      );
+    } catch (error) {
+      console.error('Error deleting WhatsApp integration:', error);
+      throw error;
     }
   }
 }

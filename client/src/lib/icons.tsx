@@ -114,5 +114,6 @@ export {
   RiEdit2Line,
   RiFileSettingsLine,
   RiArrowRightSLine,
+  RiArrowLeftSLine,
   RiVipCrown2Line
 };
