@@ -203,29 +203,68 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
 
       const business = result.rows[0] as any;
       let autoResponse = '';
-      const lowerMessage = message.toLowerCase();
       
-      if (business.business_type === 'products') {
-        if (lowerMessage.includes('precio') || lowerMessage.includes('costo') || lowerMessage.includes('cuanto')) {
-          autoResponse = `Hola! En ${business.business_name} tenemos excelentes productos con precios competitivos. ¿Qué producto específico te interesa?`;
-        } else if (lowerMessage.includes('producto') || lowerMessage.includes('venta') || lowerMessage.includes('comprar')) {
-          autoResponse = `¡Perfecto! En ${business.business_name} tenemos una gran variedad de productos. ¿Podrías decirme qué tipo de producto buscas?`;
-        } else if (lowerMessage.includes('disponible') || lowerMessage.includes('stock')) {
-          autoResponse = `Te ayudo a verificar la disponibilidad. ¿Cuál producto necesitas?`;
-        } else if (lowerMessage.includes('hola') || lowerMessage.includes('buenos') || lowerMessage.includes('buenas')) {
-          autoResponse = business.welcome_message;
-        } else {
-          autoResponse = `Gracias por contactar ${business.business_name}. Somos especialistas en productos de calidad. ¿En qué puedo ayudarte hoy?`;
+      // Usar IA inteligente para generar respuesta
+      try {
+        const { freeAIService } = await import('./freeAIService');
+        
+        const context = {
+          userMessage: message,
+          conversationHistory: [], // En implementación real obtener del historial
+          businessType: business.business_type,
+          language: 'spanish',
+          userId: req.userId
+        };
+
+        console.log('🧠 Generando respuesta inteligente para:', {
+          message: message.substring(0, 50) + '...',
+          businessType: business.business_type,
+          businessName: business.business_name
+        });
+
+        const aiResponse = await freeAIService.generateResponse(context);
+        
+        console.log('🎯 Respuesta IA generada:', {
+          confidence: aiResponse.confidence,
+          detectedProducts: aiResponse.detectedProducts?.length || 0,
+          sentiment: aiResponse.sentimentAnalysis?.sentiment,
+          hasActions: aiResponse.recommendedActions?.length || 0
+        });
+
+        let autoResponse = aiResponse.message;
+        
+        // Personalizar con nombre del negocio si no está incluido
+        if (!autoResponse.includes(business.business_name)) {
+          if (autoResponse.startsWith('¡') || autoResponse.startsWith('Hola')) {
+            autoResponse = autoResponse.replace(/^(¡[^!]+!|Hola[^.]*\.)/, `$1 Soy ${business.business_name}.`);
+          } else {
+            autoResponse = `En ${business.business_name}, ${autoResponse.charAt(0).toLowerCase() + autoResponse.slice(1)}`;
+          }
         }
-      } else { // services
-        if (lowerMessage.includes('cita') || lowerMessage.includes('agendar') || lowerMessage.includes('turno')) {
-          autoResponse = `Hola! En ${business.business_name} estaremos encantados de atenderte. ¿Qué día y hora te conviene para tu cita?`;
-        } else if (lowerMessage.includes('horario') || lowerMessage.includes('hora') || lowerMessage.includes('disponible')) {
-          autoResponse = `Nuestros horarios de atención son de Lunes a Viernes de 9:00 AM a 6:00 PM. ¿Te gustaría agendar una cita?`;
-        } else if (lowerMessage.includes('servicio') || lowerMessage.includes('consulta')) {
-          autoResponse = `En ${business.business_name} ofrecemos servicios profesionales. ¿Qué tipo de consulta necesitas?`;
-        } else if (lowerMessage.includes('hola') || lowerMessage.includes('buenos') || lowerMessage.includes('buenas')) {
-          autoResponse = business.welcome_message;
+
+        // Log para debugging de productos detectados
+        if (aiResponse.detectedProducts && aiResponse.detectedProducts.length > 0) {
+          console.log('🎯 Productos detectados en mensaje:', aiResponse.detectedProducts);
+        }
+
+        // Respuesta de fallback si la IA no es confiable
+        if (aiResponse.confidence < 0.5) {
+          const lowerMessage = message.toLowerCase();
+          if (lowerMessage.includes('hola') || lowerMessage.includes('buenos') || lowerMessage.includes('buenas')) {
+            autoResponse = business.welcome_message || `¡Hola! Bienvenido a ${business.business_name}. ¿En qué puedo ayudarte hoy?`;
+          } else {
+            autoResponse = `Gracias por contactar ${business.business_name}. ¿En qué puedo ayudarte hoy?`;
+          }
+        }
+
+      } catch (error) {
+        console.error('Error con IA inteligente, usando respuesta básica:', error);
+        // Fallback a respuesta básica
+        const lowerMessage = message.toLowerCase();
+        if (lowerMessage.includes('hola') || lowerMessage.includes('buenos') || lowerMessage.includes('buenas')) {
+          autoResponse = business.welcome_message || `¡Hola! Bienvenido a ${business.business_name}. ¿En qué puedo ayudarte hoy?`;
+        } else if (business.business_type === 'products') {
+          autoResponse = `Gracias por contactar ${business.business_name}. Somos especialistas en productos de calidad. ¿En qué puedo ayudarte hoy?`;
         } else {
           autoResponse = `Gracias por contactar ${business.business_name}. Ofrecemos servicios profesionales. ¿Te gustaría agendar una cita?`;
         }
