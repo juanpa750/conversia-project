@@ -231,7 +231,8 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
           hasActions: aiResponse.recommendedActions?.length || 0
         });
 
-        let autoResponse = aiResponse.message;
+        autoResponse = aiResponse.message;
+        console.log('📝 Respuesta asignada:', autoResponse);
         
         // Personalizar con nombre del negocio si no está incluido
         if (!autoResponse.includes(business.business_name)) {
@@ -241,6 +242,8 @@ export function registerWhatsAppSimpleRoutes(app: Express) {
             autoResponse = `En ${business.business_name}, ${autoResponse.charAt(0).toLowerCase() + autoResponse.slice(1)}`;
           }
         }
+        
+        console.log('📝 Respuesta final:', autoResponse);
 
         // Log para debugging de productos detectados
         if (aiResponse.detectedProducts && aiResponse.detectedProducts.length > 0) {
