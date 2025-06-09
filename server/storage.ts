@@ -92,12 +92,12 @@ export class SimpleStorage implements ISimpleStorage {
 
   async createChatbot(chatbotData: any): Promise<any> {
     try {
-      const triggerKeywordsArray = chatbotData.triggerKeywords ? 
-        chatbotData.triggerKeywords.split(',').map((k: string) => k.trim()) : [];
+      // Convert trigger keywords to a simple comma-separated string instead of array
+      const triggerKeywordsString = chatbotData.triggerKeywords || '';
       
       const result = await db.execute(sql`
         INSERT INTO chatbots (
-          user_id, name, description, product_id, trigger_keywords,
+          user_id, name, description, product_id,
           ai_instructions, ai_personality, conversation_objective, 
           status, type, created_at, updated_at
         ) VALUES (
@@ -105,7 +105,6 @@ export class SimpleStorage implements ISimpleStorage {
           ${chatbotData.name}, 
           ${chatbotData.description}, 
           ${chatbotData.productId || null},
-          ${JSON.stringify(triggerKeywordsArray)}::text[],
           ${chatbotData.aiInstructions || ''},
           ${chatbotData.aiPersonality || ''},
           ${chatbotData.conversationObjective || ''},
@@ -115,7 +114,19 @@ export class SimpleStorage implements ISimpleStorage {
           NOW()
         ) RETURNING *
       `);
-      return result.rows[0];
+      
+      // Update trigger_keywords separately using a direct SQL approach
+      const chatbot = result.rows[0];
+      if (triggerKeywordsString && chatbot.id) {
+        const keywordsArray = triggerKeywordsString.split(',').map((k: string) => k.trim());
+        await db.execute(sql`
+          UPDATE chatbots 
+          SET trigger_keywords = ${keywordsArray} 
+          WHERE id = ${chatbot.id}
+        `);
+      }
+      
+      return chatbot;
     } catch (error) {
       console.error('Error creating chatbot:', error);
       throw error;
