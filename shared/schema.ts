@@ -218,6 +218,7 @@ export const whatsappMessages = pgTable("whatsapp_messages", {
 
 // Esquemas de validación
 export const insertWhatsappConnectionSchema = createInsertSchema(whatsappConnections);
+export const insertWhatsappIntegrationSchema = createInsertSchema(whatsappIntegrations);
 export const insertChatbotSchema = createInsertSchema(chatbots);
 export const insertBusinessProductSchema = createInsertSchema(businessProducts);
 export const insertBusinessServiceSchema = createInsertSchema(businessServices);
@@ -229,6 +230,8 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type WhatsappConnection = typeof whatsappConnections.$inferSelect;
 export type InsertWhatsappConnection = z.infer<typeof insertWhatsappConnectionSchema>;
+export type WhatsappIntegration = typeof whatsappIntegrations.$inferSelect;
+export type InsertWhatsappIntegration = z.infer<typeof insertWhatsappIntegrationSchema>;
 export type Chatbot = typeof chatbots.$inferSelect;
 export type InsertChatbot = z.infer<typeof insertChatbotSchema>;
 export type BusinessProduct = typeof businessProducts.$inferSelect;

@@ -206,7 +206,7 @@ export default function WhatsAppIntegrationPage() {
           schedule: {}
         },
         chatbotId: chatbotId!,
-        productId: chatbot?.productId,
+        productId: (chatbot as any)?.productId,
       });
     }
   };
@@ -245,7 +245,7 @@ export default function WhatsAppIntegrationPage() {
         </div>
         <h1 className="text-2xl font-bold text-gray-900">Integración WhatsApp</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Configura WhatsApp para: {chatbot?.name || `Chatbot ${chatbotId}`}
+          Configura WhatsApp para: {(chatbot as any)?.name || `Chatbot ${chatbotId}`}
         </p>
       </div>
 
