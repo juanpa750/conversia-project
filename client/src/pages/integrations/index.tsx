@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Card, 
   CardContent, 
@@ -7,18 +8,11 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -26,20 +20,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { 
   RiWhatsappLine, 
   RiGlobalLine,
-  RiLockLine,
-  RiAddLine,
   RiCheckLine,
-  RiCloseLine,
-  RiEdit2Line,
-  RiSettings3Line
 } from "@/lib/icons";
 import { Layout } from "@/components/layout/layout";
 
@@ -208,6 +195,84 @@ export default function IntegrationsPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Get WhatsApp status
+  const { data: whatsappStatus } = useQuery({
+    queryKey: ["/api/simple/status"],
+    refetchInterval: 5000,
+  });
+
+  // Dynamic platforms data based on actual WhatsApp status
+  const PLATFORMS = [
+    { 
+      id: "whatsapp", 
+      name: "WhatsApp", 
+      icon: <RiWhatsappLine className="h-5 w-5 text-green-600" />,
+      description: "Principal canal de comunicación. Permite mensajes, imágenes y documentos.",
+      status: whatsappStatus?.isConnected ? "connected" : "disconnected", 
+      features: ["mensajes", "plantillas", "multimedia", "chatbots", "commerce"],
+      accountInfo: whatsappStatus?.isConnected ? {
+        phone: "Configurado",
+        businessName: whatsappStatus.businessName || "Mi Empresa",
+        displayName: whatsappStatus.businessName || "Soporte Mi Empresa",
+        expiresAt: "2024-12-31"
+      } : null
+    },
+    { 
+      id: "instagram", 
+      name: "Instagram", 
+      icon: <div className="h-5 w-5 bg-gradient-to-tr from-purple-600 to-pink-500 rounded-md flex items-center justify-center">
+              <div className="h-3 w-3 border-2 border-white rounded-full"></div>
+            </div>,
+      description: "Comunicación visual a través de DMs de Instagram.",
+      status: "disconnected", 
+      features: ["mensajes", "multimedia", "stories"],
+    },
+    { 
+      id: "facebook", 
+      name: "Facebook Messenger", 
+      icon: <div className="h-5 w-5 bg-blue-500 text-white rounded-full flex items-center justify-center">
+              <div className="h-3 w-3 translate-y-[1px]">⚡</div>
+            </div>,
+      description: "Mensajería directa a través de Facebook Messenger.",
+      status: "disconnected", 
+      features: ["mensajes", "plantillas", "multimedia", "chatbots"],
+    },
+    { 
+      id: "telegram", 
+      name: "Telegram", 
+      icon: <div className="h-5 w-5 bg-blue-400 text-white rounded-full flex items-center justify-center">
+              <div className="h-3 w-3">✈️</div>
+            </div>,
+      description: "Canal de comunicación rápido y seguro con clientes.",
+      status: "disconnected", 
+      features: ["mensajes", "canales", "bots"],
+    },
+    { 
+      id: "web", 
+      name: "Web Chat", 
+      icon: <RiGlobalLine className="h-5 w-5 text-blue-600" />,
+      description: "Widget de chat integrado en tu sitio web.",
+      status: "connected", 
+      features: ["widget", "personalizacion", "analytics"],
+      accountInfo: {
+        domain: "miempresa.com",
+        widgetLocation: "Esquina inferior derecha",
+        theme: "Light - Blue",
+        lastActivity: "Hoy a las 12:30"
+      }
+    },
+    { 
+      id: "sms", 
+      name: "SMS", 
+      icon: <div className="h-5 w-5 bg-gray-300 text-gray-600 rounded-md flex items-center justify-center">
+              <div className="h-3 w-3">💬</div>
+            </div>,
+      description: "Comunicación directa por SMS para notificaciones importantes.",
+      status: "disconnected", 
+      features: ["mensajes", "plantillas", "segmentación"],
+    }
+  ];
 
   // WhatsApp Business configuration mutation
   const whatsappConfigMutation = useMutation({
