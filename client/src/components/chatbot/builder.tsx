@@ -438,13 +438,52 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                 <div className="space-y-6 pb-96">
                   <div className="flex items-center gap-2">
                     <RiBrainLine className="h-5 w-5" />
-                    <h3 className="text-lg font-medium">Instrucciones del Chatbot</h3>
+                    <h3 className="text-lg font-medium">Configuración de IA</h3>
                   </div>
                 
+                  {/* Selección de Producto */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>📦 Producto que Venderá el Chatbot</CardTitle>
+                      <p className="text-sm text-gray-600">Selecciona el producto específico. La IA leerá automáticamente toda la información detallada del producto para saber qué vender.</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="product-selection">Producto a Vender</Label>
+                        <Select 
+                          value={selectedProductId} 
+                          onValueChange={(value) => {
+                            setSelectedProductId(value);
+                            handleSaveField('productId', value === 'none' ? null : parseInt(value));
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona un producto" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sin producto específico</SelectItem>
+                            {products?.map((product: any) => (
+                              <SelectItem key={product.id} value={product.id.toString()}>
+                                {product.name} - {product.price || 'Sin precio'}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {selectedProductId !== 'none' && (
+                          <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                            <p className="text-sm text-green-700">
+                              ✅ La IA leerá automáticamente toda la información de este producto (descripción, características, precio, etc.)
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   {/* Personalidad del AI */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Personalidad del Asistente Virtual</CardTitle>
+                      <CardTitle>🤖 Personalidad del Asistente Virtual</CardTitle>
                       <p className="text-sm text-gray-600">Define cómo se comportará y comunicará tu chatbot</p>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -493,15 +532,15 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                   {/* Instrucciones Específicas */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Instrucciones Específicas</CardTitle>
-                      <p className="text-sm text-gray-600">Instrucciones detalladas sobre cómo debe actuar el chatbot</p>
+                      <CardTitle>🎯 Instrucciones de Venta</CardTitle>
+                      <p className="text-sm text-gray-600">Define CÓMO debe vender el producto. La IA ya conoce QUÉ vender (lee del producto seleccionado).</p>
                     </CardHeader>
                     <CardContent>
                       <div>
-                        <Label htmlFor="ai-instructions">Instrucciones para el AI</Label>
+                        <Label htmlFor="ai-instructions">Instrucciones Específicas de Venta</Label>
                         <Textarea
                           id="ai-instructions"
-                          placeholder="Ej: Cuando un cliente pregunte por precios, siempre menciona las promociones actuales. Si preguntan por disponibilidad..."
+                          placeholder="Ej: Siempre pregunta sobre necesidades específicas antes de recomendar. Menciona garantía en cada respuesta. Si preguntan precio, destaca el valor vs. competencia. Usa testimonios de clientes..."
                           value={aiInstructions}
                           onChange={(e) => {
                             setAiInstructions(e.target.value);
@@ -509,6 +548,11 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                           }}
                           className="min-h-[150px]"
                         />
+                        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                          <p className="text-sm text-blue-700">
+                            💡 <strong>Cómo funciona:</strong> La IA automáticamente lee toda la información del producto (descripción, precio, características) + estas instrucciones de venta para crear respuestas inteligentes.
+                          </p>
+                        </div>
                       </div>
 
                     </CardContent>
@@ -522,8 +566,74 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                 <div className="space-y-6 pb-96">
                   <div className="flex items-center gap-2">
                     <RiFlagLine className="h-5 w-5" />
-                    <h3 className="text-lg font-medium">Objetivo de la Conversación</h3>
+                    <h3 className="text-lg font-medium">Disparadores y Objetivos</h3>
                   </div>
+
+                  {/* Disparadores Automáticos */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>⚡ Disparadores Automáticos</CardTitle>
+                      <p className="text-sm text-gray-600">Define palabras clave que activarán automáticamente este chatbot</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="trigger-keywords">Palabras Clave de Activación</Label>
+                        <div className="flex gap-2 mb-2">
+                          <Input
+                            placeholder="Ej: keratina, cabello, tratamiento..."
+                            value={newKeyword}
+                            onChange={(e) => setNewKeyword(e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (newKeyword.trim() && !triggerKeywords.includes(newKeyword.trim())) {
+                                  const updatedKeywords = [...triggerKeywords, newKeyword.trim()];
+                                  setTriggerKeywords(updatedKeywords);
+                                  handleSaveField('triggerKeywords', updatedKeywords);
+                                  setNewKeyword('');
+                                }
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              if (newKeyword.trim() && !triggerKeywords.includes(newKeyword.trim())) {
+                                const updatedKeywords = [...triggerKeywords, newKeyword.trim()];
+                                setTriggerKeywords(updatedKeywords);
+                                handleSaveField('triggerKeywords', updatedKeywords);
+                                setNewKeyword('');
+                              }
+                            }}
+                          >
+                            Agregar
+                          </Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {triggerKeywords.map((keyword, index) => (
+                            <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                              {keyword}
+                              <button
+                                onClick={() => {
+                                  const updatedKeywords = triggerKeywords.filter((_, i) => i !== index);
+                                  setTriggerKeywords(updatedKeywords);
+                                  handleSaveField('triggerKeywords', updatedKeywords);
+                                }}
+                                className="ml-1 text-gray-500 hover:text-red-500"
+                              >
+                                ×
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                          <p className="text-sm text-yellow-700">
+                            🔥 <strong>Activación Automática:</strong> Cuando un cliente escriba cualquiera de estas palabras, este chatbot se activará automáticamente y usará la información del producto + las instrucciones de venta.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 
                   {/* Objetivo Principal */}
                   <Card>
