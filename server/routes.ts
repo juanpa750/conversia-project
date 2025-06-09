@@ -325,6 +325,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create chatbot from product with auto-configuration
+  app.post("/api/products/:id/create-chatbot", isAuthenticated, async (req: any, res) => {
+    try {
+      const productId = parseInt(req.params.id);
+      
+      // Get product details
+      const product = await simpleStorage.getProduct(productId);
+      if (!product || product.userId !== req.userId) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+
+      // Check if product already has a chatbot
+      if (product.chatbotId) {
+        return res.status(400).json({ message: 'Product already has a chatbot' });
+      }
+
+      // Extract keywords from product name and description
+      const extractKeywords = (text: string): string[] => {
+        const words = text.toLowerCase()
+          .replace(/[^\w\s]/g, ' ')
+          .split(/\s+/)
+          .filter(word => word.length > 2);
+        return [...new Set(words)].slice(0, 10);
+      };
+
+      const nameKeywords = extractKeywords(product.name);
+      const descKeywords = product.description ? extractKeywords(product.description) : [];
+      const triggerKeywords = [...new Set([...nameKeywords, ...descKeywords])];
+
+      // Generate AI instructions based on product
+      const aiInstructions = `Eres un especialista en ${product.name}. 
+
+INFORMACIÓN DEL PRODUCTO:
+- Nombre: ${product.name}
+- Precio: ${product.price} ${product.currency || 'USD'}
+- Categoría: ${product.category || 'General'}
+- Descripción: ${product.description || 'Producto de alta calidad'}
+
+OBJETIVOS DE CONVERSACIÓN:
+1. Captar ATENCIÓN con beneficios del producto
+2. Generar INTERÉS explicando características únicas
+3. Crear DESEO mostrando valor y soluciones
+4. Motivar ACCIÓN para compra o consulta
+
+PERSONALIDAD:
+- Experto y confiable
+- Enfocado en soluciones
+- Consultivo, no agresivo
+- Orientado al cliente
+
+Responde de manera natural y conversacional. Usa la información del producto para educar al cliente y guiarlo hacia una decisión de compra informada.`;
+
+      // Create chatbot with auto-configuration
+      const chatbotData = {
+        name: `${product.name} - Asistente`,
+        description: `Chatbot especializado en ${product.name} con IA avanzada`,
+        userId: req.userId,
+        productId: productId,
+        triggerKeywords: triggerKeywords.join(','),
+        aiInstructions: aiInstructions,
+        aiPersonality: 'Experto consultivo y orientado al cliente',
+        conversationObjective: `Vender ${product.name} usando metodología AIDA de forma natural`
+      };
+
+      const chatbot = await simpleStorage.createChatbot(chatbotData);
+
+      // Update product with chatbot reference
+      await simpleStorage.updateProduct(productId, { chatbotId: chatbot.id });
+
+      res.json({ 
+        chatbot, 
+        message: 'Chatbot creado y configurado automáticamente',
+        autoConfigured: true 
+      });
+    } catch (error) {
+      console.error('Create chatbot from product error:', error);
+      res.status(500).json({ message: 'Failed to create chatbot from product' });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;
