@@ -54,6 +54,7 @@ import {
   RiEdit2Line,
   RiFileSettingsLine,
   RiArrowRightSLine,
+  RiArrowLeftSLine,
   RiVipCrown2Line
 } from 'react-icons/ri';
 

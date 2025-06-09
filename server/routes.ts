@@ -249,6 +249,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // WhatsApp Integration Routes
+  
+  // Get all WhatsApp integrations for user
+  app.get("/api/whatsapp/integrations", isAuthenticated, async (req: any, res) => {
+    try {
+      const integrations = await simpleStorage.getWhatsappIntegrations(req.userId);
+      res.json(integrations);
+    } catch (error) {
+      console.error('Get WhatsApp integrations error:', error);
+      res.status(500).json({ message: 'Failed to get WhatsApp integrations' });
+    }
+  });
+
+  // Get WhatsApp integration for specific chatbot
+  app.get("/api/whatsapp/integrations/chatbot/:chatbotId", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbotId = parseInt(req.params.chatbotId);
+      const integration = await simpleStorage.getWhatsappIntegrationByChatbot(chatbotId, req.userId);
+      res.json(integration);
+    } catch (error) {
+      console.error('Get WhatsApp integration by chatbot error:', error);
+      res.status(500).json({ message: 'Failed to get WhatsApp integration' });
+    }
+  });
+
+  // Create new WhatsApp integration
+  app.post("/api/whatsapp/integrations", isAuthenticated, async (req: any, res) => {
+    try {
+      const {
+        phoneNumber,
+        displayName,
+        businessDescription,
+        businessType,
+        autoRespond,
+        operatingHours,
+        chatbotId,
+        productId
+      } = req.body;
+
+      const integrationData = {
+        userId: req.userId,
+        phoneNumber,
+        displayName,
+        businessDescription,
+        chatbotId: parseInt(chatbotId),
+        productId: productId ? parseInt(productId) : null,
+        priority: 1,
+        autoRespond: autoRespond ?? true,
+        operatingHours,
+        status: 'connected',
+        isActive: true
+      };
+
+      const integration = await simpleStorage.createWhatsappIntegration(integrationData);
+      res.json(integration);
+    } catch (error) {
+      console.error('Create WhatsApp integration error:', error);
+      res.status(500).json({ message: 'Failed to create WhatsApp integration' });
+    }
+  });
+
+  // Link existing WhatsApp integration to chatbot
+  app.post("/api/whatsapp/integrations/:id/link-chatbot", isAuthenticated, async (req: any, res) => {
+    try {
+      const integrationId = parseInt(req.params.id);
+      const { chatbotId } = req.body;
+
+      // Verify integration belongs to user
+      const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);
+      if (!integration || integration.userId !== req.userId) {
+        return res.status(404).json({ message: 'Integration not found' });
+      }
+
+      // Create a new integration record linked to the chatbot
+      const newIntegration = await simpleStorage.createWhatsappIntegration({
+        userId: req.userId,
+        phoneNumber: integration.phoneNumber,
+        displayName: integration.displayName,
+        businessDescription: integration.businessDescription,
+        chatbotId: parseInt(chatbotId),
+        productId: integration.productId,
+        priority: integration.priority,
+        autoRespond: integration.autoRespond,
+        operatingHours: integration.operatingHours,
+        status: integration.status,
+        isActive: true
+      });
+
+      res.json(newIntegration);
+    } catch (error) {
+      console.error('Link WhatsApp integration error:', error);
+      res.status(500).json({ message: 'Failed to link WhatsApp integration' });
+    }
+  });
+
+  // Delete WhatsApp integration
+  app.delete("/api/whatsapp/integrations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const integrationId = parseInt(req.params.id);
+      
+      // Verify integration belongs to user
+      const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);
+      if (!integration || integration.userId !== req.userId) {
+        return res.status(404).json({ message: 'Integration not found' });
+      }
+
+      await simpleStorage.deleteWhatsappIntegration(integrationId);
+      res.json({ message: 'WhatsApp integration deleted successfully' });
+    } catch (error) {
+      console.error('Delete WhatsApp integration error:', error);
+      res.status(500).json({ message: 'Failed to delete WhatsApp integration' });
+    }
+  });
+
   app.get("/api/calendar/available-slots", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.userId;
