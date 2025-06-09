@@ -332,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get product details
       const product = await simpleStorage.getProduct(productId);
-      if (!product || product.userId !== req.userId) {
+      if (!product || product.user_id !== req.userId) {
         return res.status(404).json({ message: 'Product not found' });
       }
 
@@ -352,7 +352,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const nameKeywords = extractKeywords(product.name);
       const descKeywords = product.description ? extractKeywords(product.description) : [];
-      const triggerKeywords = [...new Set([...nameKeywords, ...descKeywords])];
+      const keywordSet = new Set([...nameKeywords, ...descKeywords]);
+      const triggerKeywords = Array.from(keywordSet);
 
       // Generate AI instructions based on product
       const aiInstructions = `Eres un especialista en ${product.name}. 
