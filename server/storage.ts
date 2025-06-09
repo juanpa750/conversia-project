@@ -21,6 +21,9 @@ export interface ISimpleStorage {
   updateChatbot(id: number, updates: any): Promise<any>;
   deleteChatbot(id: number): Promise<void>;
   getProducts(userId: string): Promise<any[]>;
+  getUserProducts(userId: string): Promise<any[]>;
+  getProduct(id: number): Promise<any>;
+  updateProduct(id: number, updates: any): Promise<any>;
   getAppointments(userId: string): Promise<any[]>;
 }
 
