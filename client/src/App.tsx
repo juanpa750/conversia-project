@@ -78,6 +78,11 @@ function Router() {
               <Chatbots />
             </Layout>
           </Route>
+          <Route path="/chatbots/builder">
+            <Layout>
+              <ChatbotBuilderPage />
+            </Layout>
+          </Route>
           <Route path="/chatbots/builder/:id">
             {(params) => (
               <Layout>

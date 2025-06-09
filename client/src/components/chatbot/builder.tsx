@@ -200,14 +200,19 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
         return apiRequest('POST', '/api/chatbots', chatbotData);
       }
     },
-    onSuccess: () => {
-      console.log('💾 Save successful');
+    onSuccess: (result: any) => {
+      console.log('💾 Save successful', result);
       toast({
         title: "Guardado exitoso",
         description: "Todos los cambios se han guardado correctamente",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/chatbots'] });
       queryClient.invalidateQueries({ queryKey: [`/api/chatbots/${chatbotId}`] });
+      
+      // If this was a new chatbot creation, redirect to edit page
+      if (!chatbotId && result?.id) {
+        window.location.href = `/chatbots/builder/${result.id}`;
+      }
     },
     onError: (error: any) => {
       console.error('💾 Save error:', error);
