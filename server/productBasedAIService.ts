@@ -195,7 +195,8 @@ export class ProductBasedAIService {
     
     // Si no hay producto detectado, intentar detectarlo
     if (!detectedProductId) {
-      detectedProductId = await this.detectProductFromMessage(context.userMessage, '');
+      const detected = await this.detectProductFromMessage(context.userMessage, context.businessName);
+      detectedProductId = detected || undefined;
     }
 
     // Determinar etapa AIDA (interno)
@@ -227,7 +228,7 @@ export class ProductBasedAIService {
     productId: number, 
     context: ConversationContext, 
     aidaStage: string
-  ): Promise<Omit<AIResponse, 'nextAidaStage' | 'objectiveProgress' | 'requiresHumanIntervention'>> {
+  ): Promise<Partial<AIResponse>> {
     
     const product = await this.getProductConfiguration(productId);
     if (!product) {
@@ -286,8 +287,8 @@ export class ProductBasedAIService {
   /**
    * Genera respuesta cuando no se detecta producto específico
    */
-  private async generateProductListResponse(context: ConversationContext): Promise<Omit<AIResponse, 'nextAidaStage' | 'objectiveProgress' | 'requiresHumanIntervention'>> {
-    const userProducts = await this.getUserProducts(''); // Necesitamos userId aquí
+  private async generateProductListResponse(context: ConversationContext): Promise<Partial<AIResponse>> {
+    const userProducts = await this.getUserProducts(context.businessName); // Necesitamos userId aquí
     
     if (userProducts.length === 0) {
       return {

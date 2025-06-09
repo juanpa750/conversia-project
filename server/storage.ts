@@ -166,6 +166,69 @@ export class SimpleStorage implements ISimpleStorage {
     }
   }
 
+  async getUserProducts(userId: string): Promise<any[]> {
+    try {
+      const result = await db.execute(sql`
+        SELECT 
+          id, user_id, name, description, price, currency, category, 
+          product_image, images, features, specifications, availability, 
+          stock, sku, tags, free_shipping, cash_on_delivery,
+          ai_instructions, conversation_objective, ai_personality, trigger_keywords,
+          created_at, updated_at
+        FROM products 
+        WHERE user_id = ${userId} AND availability = true 
+        ORDER BY created_at DESC
+      `);
+      return result.rows || [];
+    } catch (error) {
+      console.error('Error fetching user products:', error);
+      return [];
+    }
+  }
+
+  async getProduct(id: number): Promise<any> {
+    try {
+      const result = await db.execute(sql`
+        SELECT 
+          id, user_id, name, description, price, currency, category, 
+          product_image, images, features, specifications, availability, 
+          stock, sku, tags, free_shipping, cash_on_delivery,
+          ai_instructions, conversation_objective, ai_personality, trigger_keywords,
+          created_at, updated_at
+        FROM products 
+        WHERE id = ${id}
+      `);
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      return null;
+    }
+  }
+
+  async updateProduct(id: number, updates: any): Promise<any> {
+    try {
+      const result = await db.execute(sql`
+        UPDATE products 
+        SET 
+          name = COALESCE(${updates.name}, name),
+          description = COALESCE(${updates.description}, description),
+          price = COALESCE(${updates.price}, price),
+          category = COALESCE(${updates.category}, category),
+          ai_instructions = COALESCE(${updates.aiInstructions}, ai_instructions),
+          conversation_objective = COALESCE(${updates.conversationObjective}, conversation_objective),
+          ai_personality = COALESCE(${updates.aiPersonality}, ai_personality),
+          trigger_keywords = COALESCE(${updates.triggerKeywords ? JSON.stringify(updates.triggerKeywords) : null}, trigger_keywords),
+          updated_at = NOW()
+        WHERE id = ${id}
+        RETURNING *
+      `);
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error updating product:', error);
+      throw error;
+    }
+  }
+
   async getAppointments(userId: string): Promise<any[]> {
     try {
       const result = await db.execute(
