@@ -160,6 +160,8 @@ export class SimpleStorage implements ISimpleStorage {
             WHERE c.id = ${id}`
       );
       
+      console.log('🗄️ Raw chatbot result:', JSON.stringify(result.rows?.[0], null, 2));
+      
       if (!result.rows || result.rows.length === 0) {
         return null;
       }
