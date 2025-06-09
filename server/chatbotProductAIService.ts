@@ -39,39 +39,59 @@ export class ChatbotProductAIService {
       const chatbots = await storage.getChatbots(userId);
       const messageLower = message.toLowerCase();
       
+      console.log('🎯 Chatbots disponibles:', chatbots.length);
+      console.log('🔍 Mensaje a analizar:', messageLower);
+      
       let bestMatch: number | null = null;
       let highestScore = 0;
       
       for (const chatbot of chatbots) {
         let score = 0;
         
+        console.log(`\n📋 Analizando chatbot ID ${chatbot.id}:`, chatbot.name);
+        console.log('📝 Keywords raw:', chatbot.triggerKeywords);
+        console.log('📝 Keywords type:', typeof chatbot.triggerKeywords);
+        console.log('🔗 Product ID:', chatbot.productId);
+        
         // Verificar palabras clave de disparadores
         if (chatbot.triggerKeywords && Array.isArray(chatbot.triggerKeywords)) {
+          console.log('✅ Keywords son array, verificando...');
           for (const keyword of chatbot.triggerKeywords) {
-            if (messageLower.includes(keyword.toLowerCase())) {
+            const keywordLower = keyword.toLowerCase();
+            console.log(`  🔍 Verificando "${keywordLower}" en "${messageLower}"`);
+            if (messageLower.includes(keywordLower)) {
               score += 10;
+              console.log(`  ✅ MATCH! +10 puntos. Score actual: ${score}`);
             }
           }
+        } else {
+          console.log('❌ Keywords no son array:', chatbot.triggerKeywords);
         }
         
         // Si el chatbot tiene un producto asociado, verificar nombre del producto
         if (chatbot.productId) {
           try {
             const product = await storage.getProduct(chatbot.productId);
+            console.log('🛍️ Producto asociado:', product?.name);
             if (product && messageLower.includes(product.name.toLowerCase())) {
               score += 8;
+              console.log(`  ✅ MATCH nombre producto! +8 puntos. Score actual: ${score}`);
             }
             if (product?.category && messageLower.includes(product.category.toLowerCase())) {
               score += 5;
+              console.log(`  ✅ MATCH categoría! +5 puntos. Score actual: ${score}`);
             }
           } catch (error) {
             console.log('Error loading product for chatbot:', error);
           }
         }
         
+        console.log(`📊 Score final para chatbot ${chatbot.id}: ${score}`);
+        
         if (score > highestScore) {
           highestScore = score;
           bestMatch = chatbot.id;
+          console.log(`🏆 Nuevo mejor match: ID ${bestMatch} con score ${highestScore}`);
         }
       }
       

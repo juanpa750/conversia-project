@@ -83,7 +83,25 @@ export class SimpleStorage implements ISimpleStorage {
       const result = await db.execute(
         sql`SELECT * FROM chatbots WHERE user_id = ${userId} ORDER BY created_at DESC`
       );
-      return result.rows || [];
+      
+      console.log('🗄️ Raw database result:', JSON.stringify(result.rows?.[0], null, 2));
+      
+      // Map snake_case columns to camelCase for JavaScript compatibility
+      return (result.rows || []).map((row: any) => ({
+        id: row.id,
+        userId: row.user_id,
+        name: row.name,
+        description: row.description,
+        productId: row.product_id,
+        triggerKeywords: row.trigger_keywords,
+        aiInstructions: row.ai_instructions,
+        aiPersonality: row.ai_personality,
+        conversationObjective: row.conversation_objective,
+        status: row.status,
+        type: row.type,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      }));
     } catch (error) {
       console.error('Error fetching chatbots:', error);
       return [];
