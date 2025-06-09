@@ -114,8 +114,9 @@ export default function WhatsApp() {
     mutationFn: async (data: any) => {
       console.log('Enviando mensaje:', data);
       const response = await apiRequest("POST", "/api/simple/simulate-message", data);
-      console.log('Respuesta del servidor:', response);
-      return response;
+      const jsonData = await response.json();
+      console.log('Respuesta del servidor:', jsonData);
+      return jsonData;
     },
     onSuccess: (data: any) => {
       console.log('onSuccess ejecutado con data:', data);
