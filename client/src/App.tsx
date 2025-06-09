@@ -42,7 +42,7 @@ import NurtureCampaigns from "@/pages/crm/advanced/nurture-campaigns";
 import AIFlows from "@/pages/templates/ai-flows";
 import CalendarPage from "@/pages/calendar";
 import ChatbotConfig from "@/pages/chatbot-config";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth-simple";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -56,16 +56,17 @@ function Router() {
   }
 
   return (
-    <Switch>
-      {!isAuthenticated ? (
-        <>
-          <Route path="/login" component={Login} />
-          <Route path="/register" component={Register} />
-          <Route path="*">
-            <Login />
-          </Route>
-        </>
-      ) : (
+    <LanguageProvider>
+      <Switch>
+        {!isAuthenticated ? (
+          <>
+            <Route path="/login" component={Login} />
+            <Route path="/register" component={Register} />
+            <Route path="*">
+              <Login />
+            </Route>
+          </>
+        ) : (
         <>
           <Route path="/">
             <Layout>
@@ -280,6 +281,7 @@ function Router() {
       )}
       <Route component={NotFound} />
     </Switch>
+    </LanguageProvider>
   );
 }
 
