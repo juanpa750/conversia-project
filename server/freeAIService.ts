@@ -1,7 +1,16 @@
-// Servicio de IA gratuito para respuestas automáticas
+// Servicio de IA gratuito para respuestas automáticas - MEJORADO CON IA AVANZADA
+import { advancedAIService } from './advancedAIService';
+
 interface AIResponse {
   message: string;
   confidence: number;
+  detectedProducts?: number[];
+  recommendedActions?: string[];
+  nextQuestions?: string[];
+  sentimentAnalysis?: {
+    sentiment: 'positive' | 'negative' | 'neutral';
+    confidence: number;
+  };
 }
 
 interface ChatContext {
@@ -9,6 +18,7 @@ interface ChatContext {
   conversationHistory: string[];
   businessType: string;
   language: string;
+  userId?: string;
 }
 
 export class FreeAIService {
@@ -71,12 +81,44 @@ export class FreeAIService {
   }
 
   async generateResponse(context: ChatContext): Promise<AIResponse> {
+    // Si tenemos userId, usar IA inteligente
+    if (context.userId) {
+      try {
+        const { intelligentAI } = await import('./intelligentAIService');
+        
+        // Determinar tipo de negocio basado en businessType
+        const businessType = context.businessType.toLowerCase().includes('servicio') || 
+                           context.businessType.toLowerCase().includes('cita') || 
+                           context.businessType.toLowerCase().includes('appointment') ? 'services' : 'products';
+        
+        const intelligentResponse = await intelligentAI.generateIntelligentResponse(
+          context.userMessage,
+          context.conversationHistory,
+          context.userId,
+          businessType
+        );
+
+        return {
+          message: intelligentResponse.message,
+          confidence: intelligentResponse.confidence,
+          detectedProducts: intelligentResponse.detectedProducts,
+          recommendedActions: intelligentResponse.suggestedActions,
+          nextQuestions: intelligentResponse.nextQuestions,
+          sentimentAnalysis: {
+            sentiment: intelligentResponse.analysis.sentiment > 0.2 ? 'positive' : 
+                      intelligentResponse.analysis.sentiment < -0.2 ? 'negative' : 'neutral',
+            confidence: Math.abs(intelligentResponse.analysis.sentiment)
+          }
+        };
+      } catch (error) {
+        console.error('Error with intelligent AI, using fallback:', error);
+        // Continuar con IA básica si hay error
+      }
+    }
+
+    // IA básica como fallback
     const { userMessage, businessType, language } = context;
-    
-    // Analizar el mensaje del usuario
     const category = this.analyzeMessage(userMessage);
-    
-    // Generar respuesta contextual
     let responses = this.responses.get(category) || this.responses.get('default')!;
     
     // Personalizar para el tipo de negocio
@@ -88,7 +130,6 @@ export class FreeAIService {
       ];
     }
 
-    // Seleccionar respuesta aleatoria
     const selectedResponse = responses[Math.floor(Math.random() * responses.length)];
     
     return {
