@@ -58,6 +58,12 @@ export default function MasterDashboard() {
     displayName: ''
   });
 
+  const [verification, setVerification] = useState({
+    phoneNumberId: '',
+    verificationCode: '',
+    showVerification: false
+  });
+
   // Get all clients metrics
   const { data: clientsMetrics, isLoading: metricsLoading } = useQuery<ClientMetrics[]>({
     queryKey: ['/api/master/metrics'],
@@ -117,11 +123,56 @@ export default function MasterDashboard() {
       
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
+      if (data.requiresVerification) {
+        setVerification({
+          phoneNumberId: data.phoneNumberId,
+          verificationCode: '',
+          showVerification: true
+        });
+        toast({
+          title: "SMS Enviado",
+          description: data.message || "Revisa tu WhatsApp Business para el código de verificación"
+        });
+      } else {
+        toast({
+          title: "Número agregado",
+          description: "WhatsApp conectado exitosamente con 1000 mensajes gratis",
+        });
+        setAddPhone({ setupCode: '', phoneNumber: '', displayName: '' });
+        queryClient.invalidateQueries({ queryKey: ['/api/master/metrics'] });
+      }
+    },
+    onError: (error: Error) => {
       toast({
-        title: "Número agregado",
-        description: "WhatsApp conectado exitosamente con 1000 mensajes gratis",
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
       });
+    }
+  });
+
+  // Verify phone mutation
+  const verifyPhoneMutation = useMutation({
+    mutationFn: async (data: { phoneNumberId: string; verificationCode: string }) => {
+      const response = await fetch('/api/master/verify-phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to verify phone number');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "Verificado",
+        description: data.message || "WhatsApp verificado exitosamente con 1000 mensajes gratis"
+      });
+      setVerification({ phoneNumberId: '', verificationCode: '', showVerification: false });
       setAddPhone({ setupCode: '', phoneNumber: '', displayName: '' });
       queryClient.invalidateQueries({ queryKey: ['/api/master/metrics'] });
     },
@@ -156,6 +207,21 @@ export default function MasterDashboard() {
       return;
     }
     addPhoneMutation.mutate(addPhone);
+  };
+
+  const handleVerifyPhone = () => {
+    if (!verification.verificationCode) {
+      toast({
+        title: "Error",
+        description: "Ingresa el código de verificación",
+        variant: "destructive"
+      });
+      return;
+    }
+    verifyPhoneMutation.mutate({
+      phoneNumberId: verification.phoneNumberId,
+      verificationCode: verification.verificationCode
+    });
   };
 
   // Calculate total metrics
@@ -418,16 +484,65 @@ export default function MasterDashboard() {
                 disabled={addPhoneMutation.isPending}
                 className="w-full md:w-auto"
               >
-                {addPhoneMutation.isPending ? 'Agregando...' : 'Agregar Número WhatsApp'}
+                {addPhoneMutation.isPending ? 'Agregando a Meta...' : 'Agregar Número WhatsApp'}
               </Button>
               
               <Alert>
                 <AlertDescription>
-                  Una vez agregado, el número quedará conectado automáticamente y listo para recibir mensajes con respuestas de IA personalizadas.
+                  El sistema agregará automáticamente el número a tu Meta Business Manager y enviará SMS de verificación.
                 </AlertDescription>
               </Alert>
             </CardContent>
           </Card>
+
+          {/* SMS Verification Modal */}
+          {verification.showVerification && (
+            <Card className="border-orange-200 bg-orange-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-orange-800">
+                  <MessageSquare className="w-5 h-5" />
+                  Verificación SMS Requerida
+                </CardTitle>
+                <CardDescription className="text-orange-700">
+                  Se envió un código de verificación al número WhatsApp Business. Ingrésalo para completar la configuración.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="verificationCode">Código de Verificación SMS</Label>
+                  <Input
+                    id="verificationCode"
+                    placeholder="123456"
+                    value={verification.verificationCode}
+                    onChange={(e) => setVerification({...verification, verificationCode: e.target.value})}
+                    maxLength={6}
+                  />
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleVerifyPhone} 
+                    disabled={verifyPhoneMutation.isPending}
+                  >
+                    {verifyPhoneMutation.isPending ? 'Verificando...' : 'Verificar Código'}
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setVerification({...verification, showVerification: false})}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+                
+                <Alert>
+                  <AlertDescription>
+                    Una vez verificado, el WhatsApp estará listo para responder automáticamente con IA.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
