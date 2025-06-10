@@ -28,7 +28,15 @@ export const users = pgTable("users", {
   timeFormat: varchar("time_format").default('24h'),
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
-  // WhatsApp Cloud API Integration
+  // WhatsApp Cloud API Integration - Master API Architecture
+  phoneNumberId: text("phone_number_id"), // Meta Phone Number ID for this client
+  businessAccountId: text("business_account_id"), // Meta Business Account ID
+  monthlyFreeUsed: integer("monthly_free_used").default(0), // Messages used this month
+  monthlyFreeLimit: integer("monthly_free_limit").default(1000), // 1000 free per client
+  setupCode: text("setup_code"), // Unique code for client onboarding
+  phoneVerified: boolean("phone_verified").default(false), // If completed verification
+  lastResetDate: timestamp("last_reset_date"), // Last counter reset
+  // Legacy fields (will be deprecated)
   whatsappAccessToken: text("whatsapp_access_token"),
   whatsappPhoneNumberId: varchar("whatsapp_phone_number_id"),
   whatsappBusinessAccountId: varchar("whatsapp_business_account_id"),
@@ -223,6 +231,19 @@ export const whatsappMessages = pgTable("whatsapp_messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Master API multi-client numbers table
+export const whatsappNumbers = pgTable("whatsapp_numbers", {
+  id: serial("id").primaryKey(),
+  clientId: varchar("client_id").references(() => users.id),
+  phoneNumber: text("phone_number"), // +57300123456
+  phoneNumberId: text("phone_number_id"), // Meta Phone Number ID
+  businessAccountId: text("business_account_id"), // Meta Business Account ID
+  displayName: text("display_name"), // Business name
+  verificationStatus: text("verification_status").default("pending"), // pending, verified, rejected
+  webhookConfigured: boolean("webhook_configured").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Esquemas de validación
 export const insertWhatsappConnectionSchema = createInsertSchema(whatsappConnections);
 export const insertWhatsappIntegrationSchema = createInsertSchema(whatsappIntegrations);
@@ -231,6 +252,7 @@ export const insertBusinessProductSchema = createInsertSchema(businessProducts);
 export const insertBusinessServiceSchema = createInsertSchema(businessServices);
 export const insertAppointmentSchema = createInsertSchema(appointments);
 export const insertWhatsappMessageSchema = createInsertSchema(whatsappMessages);
+export const insertWhatsappNumberSchema = createInsertSchema(whatsappNumbers);
 
 // Tipos
 export type User = typeof users.$inferSelect;

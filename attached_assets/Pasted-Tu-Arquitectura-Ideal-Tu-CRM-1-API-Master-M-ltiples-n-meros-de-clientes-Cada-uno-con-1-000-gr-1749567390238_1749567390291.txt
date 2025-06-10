@@ -1,0 +1,175 @@
+Tu Arquitectura Ideal:
+Tu CRM (1 API Master) → Múltiples números de clientes → Cada uno con 1,000 gratis
+Configuración Paso a Paso:
+1. Tú configuras UNA SOLA VEZ la API Master
+Facebook Business Manager (tuyo):
+bash# Setup inicial (solo tú lo haces)
+1. developers.facebook.com
+2. Crear App → Business → WhatsApp
+3. Configurar webhook (tu servidor)
+4. Obtener System User Access Token (permanente)
+2. Cada cliente registra SU número bajo TU app
+Proceso por cliente:
+javascript// Tu cliente solo necesita:
+1. Número WhatsApp Business verificado
+2. Leer QR code que tú generas
+3. Aceptar permisos
+
+// Tú manejas:
+- Registro del número bajo tu app
+- Configuración automática  
+- Asignación de tokens
+3. Configuración Técnica Multi-Número
+Base de datos actualizada:
+sqlCREATE TABLE client_whatsapp_numbers (
+    id INTEGER PRIMARY KEY,
+    client_id INTEGER,
+    phone_number TEXT, -- +573001234567
+    phone_number_id TEXT, -- ID de WhatsApp
+    display_name TEXT,
+    status TEXT, -- 'active', 'pending', 'suspended'
+    monthly_conversations_used INTEGER DEFAULT 0,
+    free_conversations_remaining INTEGER DEFAULT 1000,
+    last_reset_date DATE,
+    created_at DATETIME,
+    FOREIGN KEY (client_id) REFERENCES clients(id)
+);
+Registro automático de números:
+javascript// Endpoint para registrar nuevo número de cliente
+app.post('/api/register-client-number', async (req, res) => {
+  const { client_id, phone_number } = req.body;
+  
+  try {
+    // 1. Registrar número en WhatsApp Business API
+    const whatsappResponse = await axios.post(
+      `https://graph.facebook.com/v18.0/${BUSINESS_ACCOUNT_ID}/phone_numbers`,
+      {
+        cc: phone_number.substring(1, 3), // código país
+        phone_number: phone_number.substring(3), // número sin código
+        migrated_number: phone_number
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${SYSTEM_USER_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    // 2. Guardar en base de datos
+    await db.run(`
+      INSERT INTO client_whatsapp_numbers 
+      (client_id, phone_number, phone_number_id, status, free_conversations_remaining)
+      VALUES (?, ?, ?, 'active', 1000)
+    `, [client_id, phone_number, whatsappResponse.data.id]);
+    
+    res.json({ 
+      success: true, 
+      phone_number_id: whatsappResponse.data.id,
+      message: 'Número registrado exitosamente - 1000 mensajes gratis disponibles'
+    });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+4. Webhook Inteligente que Maneja Múltiples Números
+javascriptapp.post('/webhook/whatsapp', async (req, res) => {
+  try {
+    const changes = req.body.entry[0].changes[0];
+    const phoneNumberId = changes.value.metadata.phone_number_id;
+    
+    // 1. Identificar a qué cliente pertenece este número
+    const clientNumber = await db.get(`
+      SELECT cn.*, c.name as client_name, c.ai_personality 
+      FROM client_whatsapp_numbers cn
+      JOIN clients c ON cn.client_id = c.id
+      WHERE cn.phone_number_id = ?
+    `, [phoneNumberId]);
+    
+    if (!clientNumber) {
+      return res.status(404).json({ error: 'Número no encontrado' });
+    }
+    
+    // 2. Procesar mensaje
+    const messages = changes.value.messages;
+    if (messages) {
+      for (const message of messages) {
+        await processMessage(message, clientNumber);
+      }
+    }
+    
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(500).send('Error');
+  }
+});
+
+async function processMessage(message, clientNumber) {
+  // 1. Verificar si es conversación gratuita
+  const isFreeConversation = await checkFreeConversation(
+    message.from, 
+    clientNumber.phone_number_id
+  );
+  
+  // 2. Generar respuesta con IA específica del cliente
+  const aiResponse = await generateAIResponse(
+    message.text.body, 
+    clientNumber.ai_personality,
+    message.from
+  );
+  
+  // 3. Enviar respuesta
+  await sendWhatsAppMessage(
+    clientNumber.phone_number_id,
+    message.from,
+    aiResponse
+  );
+  
+  // 4. Actualizar contadores
+  if (!isFreeConversation) {
+    await updateConversationCounter(clientNumber.id);
+  }
+}
+5. Dashboard para Clientes
+javascript// Cada cliente ve SUS métricas
+app.get('/api/client/:id/stats', async (req, res) => {
+  const stats = await db.get(`
+    SELECT 
+      cn.phone_number,
+      cn.free_conversations_remaining,
+      cn.monthly_conversations_used,
+      COUNT(DISTINCT conv.id) as total_conversations,
+      COUNT(m.id) as total_messages
+    FROM client_whatsapp_numbers cn
+    LEFT JOIN conversations conv ON conv.phone_number_id = cn.phone_number_id
+    LEFT JOIN messages m ON m.conversation_id = conv.id
+    WHERE cn.client_id = ?
+    AND DATE(conv.created_at) >= DATE('now', 'start of month')
+  `, [req.params.id]);
+  
+  res.json(stats);
+});
+Proceso para el Cliente (Súper Simple):
+Paso 1: Cliente se registra en tu CRM
+Cliente → "Quiero conectar mi WhatsApp"
+Tu CRM → "Ingresa tu número: +573001234567"
+Paso 2: Tú generas código QR automáticamente
+javascript// Tu sistema genera QR para verificación
+const qrCode = await generateWhatsAppQRCode(clientPhoneNumber);
+// Cliente escanea desde su WhatsApp Business
+Paso 3: Cliente configura su personalidad de IA
+Dashboard Cliente:
+- "Soy una inmobiliaria en Bogotá"
+- "Responde profesional pero amigable"  
+- "Ofrece citas de lunes a viernes"
+Paso 4: ¡Listo! Todo automático
+Cliente Final → Mensaje a WhatsApp del cliente
+Tu IA → Respuesta automática (usando los 1000 gratis del cliente)
+Ventajas de Este Modelo:
+✅ Cada cliente = 1,000 mensajes gratis
+✅ Tú manejas toda la complejidad técnica
+✅ Cliente solo escanea QR y configura
+✅ Escalabilidad infinita
+✅ Control total de la plataforma

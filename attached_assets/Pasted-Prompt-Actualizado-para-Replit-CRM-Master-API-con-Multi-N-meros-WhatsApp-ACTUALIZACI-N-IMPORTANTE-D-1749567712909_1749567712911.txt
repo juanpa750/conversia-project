@@ -1,0 +1,315 @@
+Prompt Actualizado para Replit: CRM Master API con Multi-Números WhatsApp
+ACTUALIZACIÓN IMPORTANTE DEL SISTEMA:
+Necesito que actualices el CRM para que funcione con arquitectura Master API, donde:
+
+YO controlo un solo conjunto de tokens de WhatsApp Business API
+Cada cliente agrega SU número de WhatsApp a mi cuenta master
+Cada número obtiene sus propios 1,000 mensajes gratuitos mensuales
+Los clientes solo escanean un QR y leen un código, SIN configurar API
+
+1. NUEVA ARQUITECTURA DEL SISTEMA
+Configuración Master:
+javascript// Un solo conjunto de credenciales para TODOS los números
+const MASTER_CONFIG = {
+  access_token: process.env.WHATSAPP_MASTER_TOKEN, // Tu token master
+  app_id: process.env.WHATSAPP_APP_ID,
+  app_secret: process.env.WHATSAPP_APP_SECRET,
+  verify_token: process.env.WHATSAPP_VERIFY_TOKEN
+}
+
+// Múltiples números bajo tu cuenta
+const CLIENT_PHONES = {
+  "client_1": {
+    phone_number_id: "PHONE_ID_1", // +57300123456
+    business_account_id: "BUSINESS_ID_1",
+    free_messages_used: 150,
+    free_messages_limit: 1000
+  },
+  "client_2": {
+    phone_number_id: "PHONE_ID_2", // +57300789012  
+    business_account_id: "BUSINESS_ID_2",
+    free_messages_used: 300,
+    free_messages_limit: 1000
+  }
+}
+2. ACTUALIZACIÓN DE BASE DE DATOS
+Modificar tabla clients:
+sql-- ACTUALIZAR tabla clients
+ALTER TABLE clients ADD COLUMN phone_number_id TEXT; -- ID del número en tu API
+ALTER TABLE clients ADD COLUMN business_account_id TEXT; -- Account ID específico
+ALTER TABLE clients ADD COLUMN monthly_free_used INTEGER DEFAULT 0; -- Mensajes gratuitos usados
+ALTER TABLE clients ADD COLUMN monthly_free_limit INTEGER DEFAULT 1000; -- Límite mensual
+ALTER TABLE clients ADD COLUMN qr_code TEXT; -- QR generado para cliente
+ALTER TABLE clients ADD COLUMN setup_code TEXT; -- Código de configuración
+ALTER TABLE clients ADD COLUMN phone_verified BOOLEAN DEFAULT 0; -- Si completó verificación
+ALTER TABLE clients ADD COLUMN last_reset_date DATE; -- Última vez que se reseteó contador
+
+-- Nueva tabla para tracking de números
+CREATE TABLE whatsapp_numbers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    client_id INTEGER,
+    phone_number TEXT, -- +57300123456
+    phone_number_id TEXT, -- Meta Phone Number ID  
+    business_account_id TEXT, -- Meta Business Account ID
+    display_name TEXT, -- Nombre del negocio
+    verification_status TEXT, -- pending, verified, rejected
+    webhook_configured BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES clients (id)
+);
+3. PROCESO DE ONBOARDING PARA CLIENTES
+Flujo simplificado para clientes:
+javascript// 1. Cliente se registra en tu CRM (solo email/nombre)
+app.post('/api/clients/register', async (req, res) => {
+  const { name, email, business_name } = req.body;
+  
+  // Crear cliente
+  const client = await createClient({
+    name, email, business_name,
+    setup_code: generateSetupCode(), // Código único
+    qr_code: generateQRCode() // QR para fácil acceso
+  });
+  
+  res.json({
+    message: "Cliente registrado exitosamente",
+    setup_code: client.setup_code,
+    qr_code: client.qr_code,
+    next_step: "Agrega tu número WhatsApp Business"
+  });
+});
+
+// 2. Cliente agrega su número (TÚ lo verificas en Meta)
+app.post('/api/clients/add-whatsapp', async (req, res) => {
+  const { setup_code, phone_number } = req.body;
+  
+  const client = await findClientBySetupCode(setup_code);
+  
+  // TÚ agregas el número a tu Meta Business Manager
+  const phoneNumberId = await addPhoneToMasterAccount(phone_number);
+  
+  await updateClient(client.id, {
+    phone_number_id: phoneNumberId,
+    phone_verified: true
+  });
+  
+  res.json({
+    message: "Número agregado exitosamente",
+    status: "Tu WhatsApp ya está conectado y listo",
+    free_messages_remaining: 1000
+  });
+});
+4. WEBHOOK UNIFICADO PARA TODOS LOS NÚMEROS
+Un solo webhook maneja todos los números:
+javascriptapp.post('/webhook/whatsapp', async (req, res) => {
+  try {
+    const body = req.body;
+    
+    if (body.object !== 'whatsapp_business_account') {
+      return res.status(404).send('Not Found');
+    }
+    
+    body.entry.forEach(async (entry) => {
+      const changes = entry.changes[0];
+      const value = changes.value;
+      
+      // IDENTIFICAR CLIENTE POR PHONE_NUMBER_ID
+      const phoneNumberId = value.metadata.phone_number_id;
+      const client = await findClientByPhoneId(phoneNumberId);
+      
+      if (!client) {
+        console.log(`Cliente no encontrado para phone_id: ${phoneNumberId}`);
+        return;
+      }
+      
+      // Procesar mensaje para este cliente específico
+      if (value.messages) {
+        await processIncomingMessage(value.messages[0], client);
+      }
+    });
+    
+    res.status(200).send('EVENT_RECEIVED');
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(500).send('Error processing webhook');
+  }
+});
+
+// Función para procesar mensaje por cliente
+async function processIncomingMessage(message, client) {
+  const conversationId = await getOrCreateConversation(
+    client.id, 
+    message.from
+  );
+  
+  // Usar IA específica del cliente
+  const aiConfig = await getClientAIConfig(client.id);
+  const aiResponse = await generateAIResponse(message.text.body, aiConfig);
+  
+  // Enviar respuesta usando el phone_number_id del cliente
+  await sendWhatsAppMessage(
+    client.phone_number_id,
+    message.from,
+    aiResponse
+  );
+  
+  // Actualizar contador de mensajes gratuitos del cliente
+  await updateFreeMessageCounter(client.id);
+}
+5. GESTIÓN DE MENSAJES GRATUITOS POR CLIENTE
+Tracking individual por número:
+javascript// Función para trackear mensajes gratuitos por cliente
+async function updateFreeMessageCounter(clientId) {
+  const client = await getClient(clientId);
+  const currentMonth = new Date().getMonth();
+  const lastReset = new Date(client.last_reset_date).getMonth();
+  
+  // Reset contador si es nuevo mes
+  if (currentMonth !== lastReset) {
+    await resetClientFreeMessages(clientId);
+    return { remaining: 1000, used: 0 };
+  }
+  
+  // Incrementar contador
+  const newUsed = client.monthly_free_used + 1;
+  await updateClient(clientId, {
+    monthly_free_used: newUsed
+  });
+  
+  return {
+    remaining: 1000 - newUsed,
+    used: newUsed,
+    client_phone: client.phone_number
+  };
+}
+
+// Dashboard con métricas por cliente
+app.get('/api/dashboard/metrics', async (req, res) => {
+  const clients = await getAllClients();
+  
+  const metrics = await Promise.all(clients.map(async (client) => {
+    const conversations = await getClientConversations(client.id);
+    const freeRemaining = 1000 - client.monthly_free_used;
+    
+    return {
+      client_name: client.name,
+      phone_number: client.phone_number,
+      conversations_today: conversations.today,
+      free_messages_remaining: freeRemaining,
+      ai_responses_sent: conversations.ai_responses,
+      conversion_rate: conversations.conversion_rate
+    };
+  }));
+  
+  res.json(metrics);
+});
+6. ENVÍO DE MENSAJES CON ROUTING AUTOMÁTICO
+Una función que maneja todos los números:
+javascriptasync function sendWhatsAppMessage(phoneNumberId, to, message) {
+  try {
+    const response = await axios.post(
+      `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
+      {
+        messaging_product: 'whatsapp',
+        to: to,
+        text: { body: message }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${MASTER_CONFIG.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error sending message:', error.response?.data);
+    throw error;
+  }
+}
+7. DASHBOARD ACTUALIZADO PARA MULTI-CLIENTE
+Panel de control master:
+html<!-- Dashboard debe mostrar: -->
+<div class="dashboard">
+  <h2>CRM Master - Control Total</h2>
+  
+  <!-- Métricas generales -->
+  <div class="master-metrics">
+    <div class="metric">
+      <h3>Total Clientes Activos</h3>
+      <span id="total-clients">0</span>
+    </div>
+    <div class="metric">
+      <h3>Mensajes Gratuitos Restantes</h3>
+      <span id="total-free-remaining">0</span>
+    </div>
+    <div class="metric">
+      <h3>Conversaciones Hoy</h3>
+      <span id="conversations-today">0</span>
+    </div>
+  </div>
+  
+  <!-- Lista de clientes -->
+  <div class="clients-list">
+    <h3>Clientes Conectados</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Número WhatsApp</th>
+          <th>Mensajes Gratis Restantes</th>
+          <th>Conversaciones Activas</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="clients-table">
+        <!-- Generado dinámicamente -->
+      </tbody>
+    </table>
+  </div>
+</div>
+8. NUEVAS VARIABLES DE ENTORNO
+env# WhatsApp Master API (TUS credenciales únicas)
+WHATSAPP_MASTER_TOKEN=tu_access_token_master
+WHATSAPP_APP_ID=tu_app_id
+WHATSAPP_APP_SECRET=tu_app_secret
+WHATSAPP_VERIFY_TOKEN=tu_verify_token_personalizado
+
+# OpenAI (tu cuenta)
+OPENAI_API_KEY=tu_openai_key
+
+# Configuración
+NODE_ENV=production
+PORT=3000
+DATABASE_URL=./database.sqlite
+
+# Webhook URL (tu dominio de Replit)
+WEBHOOK_URL=https://tu-proyecto.replit.app/webhook/whatsapp
+9. PROCESO PARA AGREGAR NUEVOS CLIENTES
+Workflow simplificado:
+
+Cliente se registra → Obtiene setup_code y QR
+Cliente comparte su número → Tú lo agregas a Meta Business Manager
+Sistema automáticamente detecta → Número queda activo en tu CRM
+Cliente ya puede recibir → Mensajes automáticos con IA
+Dashboard actualiza → Métricas en tiempo real
+
+10. VENTAJAS DE ESTA ARQUITECTURA
+✅ Escalabilidad: Múltiples clientes bajo tu API master
+✅ Simplicidad: Clientes no configuran nada técnico
+✅ Economía: 1,000 mensajes gratis POR CADA número
+✅ Control: Tú manejas todos los tokens y configuraciones
+✅ Flexibilidad: Fácil agregar/remover números
+✅ Profesionalismo: Cada cliente mantiene su número propio
+INSTRUCCIONES ESPECÍFICAS PARA REPLIT:
+
+ACTUALIZAR el código existente con esta nueva arquitectura
+MIGRAR base de datos agregando las nuevas columnas
+CREAR endpoints para el nuevo flujo de onboarding
+IMPLEMENTAR el webhook unificado
+ACTUALIZAR el dashboard con métricas multi-cliente
+TESTEAR con múltiples números de prueba
+DOCUMENTAR el proceso de agregar nuevos clientes
+
+¿Puedes actualizar completamente el CRM con esta nueva arquitectura Master API Multi-Cliente?
