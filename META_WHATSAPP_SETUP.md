@@ -7,7 +7,7 @@
 2. Haz clic en "Mis Apps" → "Crear App"
 3. Selecciona tipo: **"Business"**
 4. Completa:
-   - Nombre de la app: "BotMaster WhatsApp API"
+   - Nombre de la app: "ConversIA WhatsApp API"
    - Email de contacto: tu email
    - Propósito comercial: "Provide customer support and marketing services"
 
@@ -114,7 +114,7 @@ curl -X POST \
   -d '{
     "messaging_product": "whatsapp",
     "to": "+573001234567",
-    "text": { "body": "Hola! Este es un mensaje de prueba desde BotMaster." }
+    "text": { "body": "Hola! Este es un mensaje de prueba desde ConversIA." }
   }'
 ```
 

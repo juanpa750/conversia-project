@@ -500,7 +500,7 @@ export default function MasterDashboard() {
             <Card className="border-orange-200 bg-orange-50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-orange-800">
-                  <MessageSquare className="w-5 h-5" />
+                  <MessageCircle className="w-5 h-5" />
                   Verificación SMS Requerida
                 </CardTitle>
                 <CardDescription className="text-orange-700">
