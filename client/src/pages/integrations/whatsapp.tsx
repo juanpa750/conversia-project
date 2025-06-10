@@ -139,8 +139,10 @@ export default function WhatsAppIntegrationPage() {
         description: "Generando código QR para conexión de WhatsApp",
       });
       setShowQRDialog(true);
-      // Start polling for QR code
-      pollQRStatus();
+      // Wait a moment then start polling for QR code
+      setTimeout(() => {
+        pollQRStatus();
+      }, 500);
     },
     onError: (error: any) => {
       toast({
@@ -176,11 +178,16 @@ export default function WhatsAppIntegrationPage() {
 
   // Poll QR status
   const pollQRStatus = async () => {
-    if (!currentIntegration) return;
+    if (!currentIntegration) {
+      console.log('No current integration for polling');
+      return;
+    }
     
     try {
+      console.log('Polling QR status for integration:', currentIntegration.id);
       const response = await apiRequest("GET", `/api/whatsapp/qr/${currentIntegration.id}`, {});
       const qrStatus = response as unknown as QRStatus;
+      console.log('QR Status received:', qrStatus);
       setQrData(qrStatus);
       
       if (qrStatus.status === 'connected') {
@@ -196,6 +203,11 @@ export default function WhatsAppIntegrationPage() {
       }
     } catch (error) {
       console.error('Error polling QR status:', error);
+      toast({
+        title: "Error",
+        description: "Error obteniendo código QR",
+        variant: "destructive",
+      });
     }
   };
 
@@ -247,6 +259,7 @@ export default function WhatsAppIntegrationPage() {
 
   const handleConnect = () => {
     if (currentIntegration) {
+      setQrData(null); // Reset QR data
       connectMutation.mutate(currentIntegration.id);
     }
   };
@@ -529,6 +542,8 @@ export default function WhatsAppIntegrationPage() {
                     src={qrData.qrCode} 
                     alt="QR Code" 
                     className="mx-auto w-64 h-64 border rounded-lg"
+                    onError={() => console.error('Error loading QR image')}
+                    onLoad={() => console.log('QR image loaded successfully')}
                   />
                   <div className="space-y-2">
                     <p className="text-sm text-gray-600">
@@ -548,7 +563,14 @@ export default function WhatsAppIntegrationPage() {
               ) : (
                 <div className="flex flex-col items-center space-y-4">
                   <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-                  <p className="text-sm text-gray-600">Generando código QR...</p>
+                  <p className="text-sm text-gray-600">
+                    {qrData ? `Conectando... (${qrData.status})` : 'Generando código QR...'}
+                  </p>
+                  {qrData && (
+                    <p className="text-xs text-gray-400">
+                      Debug: {JSON.stringify({ status: qrData.status, hasQR: !!qrData.qrCode })}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
