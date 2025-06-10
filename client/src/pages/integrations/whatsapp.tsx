@@ -137,32 +137,56 @@ export default function WhatsAppIntegrationPage() {
       setShowQRDialog(true);
       setQrData(null); // Reset QR data
       
-      // Wait for connection to initialize, then fetch QR immediately
-      setTimeout(async () => {
+      // Start immediate polling for QR code
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      const fetchQR = async () => {
+        attempts++;
         try {
+          console.log(`Fetching QR attempt ${attempts}/${maxAttempts} for integration ${integrationId}`);
           const response = await apiRequest("GET", `/api/whatsapp/qr/${integrationId}`, {});
           const qrStatusData = response as unknown as QRStatus;
-          console.log('Initial QR fetch:', qrStatusData);
+          console.log('QR Response:', qrStatusData);
+          
           setQrData(qrStatusData);
           
-          if (qrStatusData.status === 'qr_ready') {
+          if (qrStatusData.qrCode && qrStatusData.status === 'qr_ready') {
             toast({
               title: "Código QR generado",
               description: "Escanea el código QR con WhatsApp",
             });
+            // Start polling for connection status
+            pollQRStatus(integrationId);
+            return;
           }
           
-          // Start polling for status changes
-          pollQRStatus(integrationId);
+          // If no QR yet and haven't reached max attempts, try again
+          if (attempts < maxAttempts) {
+            setTimeout(fetchQR, 1000);
+          } else {
+            toast({
+              title: "Error",
+              description: "No se pudo generar el código QR después de varios intentos",
+              variant: "destructive",
+            });
+          }
         } catch (error) {
-          console.error('Error fetching initial QR:', error);
-          toast({
-            title: "Error",
-            description: "Error generando código QR",
-            variant: "destructive",
-          });
+          console.error(`Error fetching QR (attempt ${attempts}):`, error);
+          if (attempts < maxAttempts) {
+            setTimeout(fetchQR, 1000);
+          } else {
+            toast({
+              title: "Error",
+              description: "Error generando código QR",
+              variant: "destructive",
+            });
+          }
         }
-      }, 1500);
+      };
+      
+      // Start fetching after a short delay to allow session initialization
+      setTimeout(fetchQR, 1000);
     },
     onError: (error: any) => {
       toast({
@@ -657,7 +681,9 @@ export default function WhatsAppIntegrationPage() {
             <Button 
               onClick={(e) => {
                 e.preventDefault();
-                pollQRStatus();
+                if (currentIntegration?.id) {
+                  pollQRStatus(currentIntegration.id);
+                }
               }}
               variant="outline"
               className="flex items-center space-x-2"
