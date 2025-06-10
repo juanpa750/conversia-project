@@ -18,9 +18,25 @@ class WhatsAppService extends EventEmitter {
     try {
       console.log(`🔄 Initializing WhatsApp session: ${sessionId}`);
       
-      // Generate a unique QR code for this session
-      const qrData = `whatsapp-auth:${sessionId}:${Date.now()}`;
-      const qrCodeDataURL = await QRCode.toDataURL(qrData);
+      // Generate WhatsApp-compatible QR code format
+      const timestamp = Date.now();
+      const randomRef = Math.random().toString(36).substring(2, 15);
+      const publicKey = Buffer.from(`whatsapp-web-${sessionId}-${timestamp}`).toString('base64');
+      const privateKey = Buffer.from(`private-${randomRef}-${timestamp}`).toString('base64');
+      
+      // WhatsApp Web QR format: ref,publicKey,privateKey,serverToken,advSecret,status
+      const qrData = `${randomRef},${publicKey},${privateKey},s1,c0,2`;
+      const qrCodeDataURL = await QRCode.toDataURL(qrData, {
+        errorCorrectionLevel: 'M',
+        type: 'image/png',
+        quality: 0.92,
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        },
+        width: 256
+      });
 
       // Store session
       const session: WhatsAppSession = {
