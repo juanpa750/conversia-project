@@ -428,6 +428,28 @@ export class SimpleStorage implements ISimpleStorage {
       throw error;
     }
   }
+
+  async updateWhatsappIntegrationStatus(id: number, status: string): Promise<void> {
+    try {
+      await db.execute(
+        sql`UPDATE whatsapp_integrations SET status = ${status}, updated_at = NOW() WHERE id = ${id}`
+      );
+    } catch (error) {
+      console.error('Error updating WhatsApp integration status:', error);
+      throw error;
+    }
+  }
+
+  async updateWhatsappIntegrationPhone(id: number, phoneNumber: string): Promise<void> {
+    try {
+      await db.execute(
+        sql`UPDATE whatsapp_integrations SET phone_number = ${phoneNumber}, updated_at = NOW() WHERE id = ${id}`
+      );
+    } catch (error) {
+      console.error('Error updating WhatsApp integration phone:', error);
+      throw error;
+    }
+  }
 }
 
 export const simpleStorage = new SimpleStorage();

@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { isAuthenticated, generateToken, hashPassword, comparePassword } from "./auth";
 import { simpleStorage } from "./storage";
+import { whatsappService } from "./whatsappService";
 import { registerWhatsAppSimpleRoutes } from "./routes-whatsapp-simple";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
@@ -298,7 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         priority: 1,
         autoRespond: autoRespond ?? true,
         operatingHours,
-        status: 'connected',
+        status: 'disconnected', // Start as disconnected until QR scan
         isActive: true
       };
 
@@ -360,6 +361,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Delete WhatsApp integration error:', error);
       res.status(500).json({ message: 'Failed to delete WhatsApp integration' });
+    }
+  });
+
+  // Real WhatsApp Connection endpoints
+  // Initialize WhatsApp connection with QR
+  app.post("/api/whatsapp/connect/:integrationId", isAuthenticated, async (req: any, res) => {
+    try {
+      const integrationId = parseInt(req.params.integrationId);
+      
+      // Verify integration belongs to user
+      const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);
+      if (!integration || integration.userId !== req.userId) {
+        return res.status(404).json({ message: 'Integration not found' });
+      }
+
+      // Create session ID for this integration
+      const sessionId = `${req.userId}_${integrationId}`;
+      
+      // Initialize WhatsApp session
+      const result = await whatsappService.initializeSession(sessionId);
+      
+      if (result.success) {
+        // Update integration status to initializing
+        await simpleStorage.updateWhatsappIntegrationStatus(integrationId, 'initializing');
+        res.json({ success: true, sessionId, message: 'WhatsApp initialization started' });
+      } else {
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error('WhatsApp connect error:', error);
+      res.status(500).json({ message: 'Failed to initialize WhatsApp connection' });
+    }
+  });
+
+  // Get QR code for WhatsApp connection
+  app.get("/api/whatsapp/qr/:integrationId", isAuthenticated, async (req: any, res) => {
+    try {
+      const integrationId = parseInt(req.params.integrationId);
+      
+      // Verify integration belongs to user
+      const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);
+      if (!integration || integration.userId !== req.userId) {
+        return res.status(404).json({ message: 'Integration not found' });
+      }
+
+      const sessionId = `${req.userId}_${integrationId}`;
+      const session = whatsappService.getSessionStatus(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ message: 'Session not found. Initialize connection first.' });
+      }
+
+      res.json({
+        status: session.status,
+        qrCode: session.qrCode,
+        isConnected: session.isConnected,
+        error: session.lastError
+      });
+    } catch (error) {
+      console.error('Get QR code error:', error);
+      res.status(500).json({ message: 'Failed to get QR code' });
+    }
+  });
+
+  // Get WhatsApp connection status
+  app.get("/api/whatsapp/status/:integrationId", isAuthenticated, async (req: any, res) => {
+    try {
+      const integrationId = parseInt(req.params.integrationId);
+      
+      // Verify integration belongs to user
+      const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);
+      if (!integration || integration.userId !== req.userId) {
+        return res.status(404).json({ message: 'Integration not found' });
+      }
+
+      const sessionId = `${req.userId}_${integrationId}`;
+      const session = whatsappService.getSessionStatus(sessionId);
+      
+      if (!session) {
+        return res.json({
+          status: 'disconnected',
+          isConnected: false,
+          phoneNumber: null
+        });
+      }
+
+      // Get connected phone number if available
+      const connectedNumber = session.isConnected ? 
+        await whatsappService.getConnectedNumber(sessionId) : null;
+
+      // Update database status if session is connected
+      if (session.isConnected && integration.status !== 'connected') {
+        await simpleStorage.updateWhatsappIntegrationStatus(integrationId, 'connected');
+        if (connectedNumber) {
+          await simpleStorage.updateWhatsappIntegrationPhone(integrationId, `+${connectedNumber}`);
+        }
+      }
+
+      res.json({
+        status: session.status,
+        isConnected: session.isConnected,
+        phoneNumber: connectedNumber ? `+${connectedNumber}` : integration.phoneNumber,
+        error: session.lastError
+      });
+    } catch (error) {
+      console.error('Get WhatsApp status error:', error);
+      res.status(500).json({ message: 'Failed to get WhatsApp status' });
+    }
+  });
+
+  // Disconnect WhatsApp session
+  app.post("/api/whatsapp/disconnect/:integrationId", isAuthenticated, async (req: any, res) => {
+    try {
+      const integrationId = parseInt(req.params.integrationId);
+      
+      // Verify integration belongs to user
+      const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);
+      if (!integration || integration.userId !== req.userId) {
+        return res.status(404).json({ message: 'Integration not found' });
+      }
+
+      const sessionId = `${req.userId}_${integrationId}`;
+      const result = await whatsappService.disconnectSession(sessionId);
+      
+      // Update database status
+      await simpleStorage.updateWhatsappIntegrationStatus(integrationId, 'disconnected');
+      
+      if (result.success) {
+        res.json({ success: true, message: 'WhatsApp disconnected successfully' });
+      } else {
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error('WhatsApp disconnect error:', error);
+      res.status(500).json({ message: 'Failed to disconnect WhatsApp' });
+    }
+  });
+
+  // Send test message via WhatsApp
+  app.post("/api/whatsapp/test-message/:integrationId", isAuthenticated, async (req: any, res) => {
+    try {
+      const integrationId = parseInt(req.params.integrationId);
+      const { to, message } = req.body;
+      
+      // Verify integration belongs to user
+      const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);
+      if (!integration || integration.userId !== req.userId) {
+        return res.status(404).json({ message: 'Integration not found' });
+      }
+
+      const sessionId = `${req.userId}_${integrationId}`;
+      const result = await whatsappService.sendMessage(sessionId, to, message);
+      
+      if (result.success) {
+        res.json({ success: true, message: 'Message sent successfully' });
+      } else {
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error('Send test message error:', error);
+      res.status(500).json({ message: 'Failed to send test message' });
     }
   });
 

@@ -263,19 +263,8 @@ export default function WhatsAppIntegrationPage() {
         </CardHeader>
         <CardContent>
           {currentIntegration ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <div>
-                    <p className="font-medium text-green-800">Conectado</p>
-                    <p className="text-sm text-green-600">WhatsApp está configurado y activo</p>
-                  </div>
-                </div>
-                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
-                  {currentIntegration.status}
-                </Badge>
-              </div>
+            <WhatsAppConnectionStatus integration={currentIntegration} />
+          ) : (
 
               <div className="grid grid-cols-2 gap-4">
                 <div>

@@ -1,342 +1,215 @@
-import { storage } from './storage';
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
+import QRCode from 'qrcode';
+import { EventEmitter } from 'events';
 
-interface WhatsAppMessage {
-  to: string;
-  message: string;
-  type: 'text' | 'template';
-  templateName?: string;
-  templateParams?: string[];
+interface WhatsAppSession {
+  client: Client;
+  isConnected: boolean;
+  qrCode?: string;
+  status: 'initializing' | 'qr_ready' | 'connecting' | 'connected' | 'disconnected' | 'error';
+  lastError?: string;
 }
 
-interface AppointmentWhatsAppData {
-  clientName: string;
-  clientPhone: string;
-  date: string;
-  time: string;
-  service: string;
-  duration: number;
-  companyName: string;
-}
+class WhatsAppService extends EventEmitter {
+  private sessions: Map<string, WhatsAppSession> = new Map();
 
-export class WhatsAppService {
-  
-  /**
-   * Format WhatsApp message template with appointment data
-   */
-  private static formatWhatsAppTemplate(template: string, data: AppointmentWhatsAppData): string {
-    return template
-      .replace(/{clientName}/g, data.clientName)
-      .replace(/{date}/g, new Date(data.date).toLocaleDateString('es-ES', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      }))
-      .replace(/{time}/g, data.time)
-      .replace(/{service}/g, data.service)
-      .replace(/{duration}/g, data.duration.toString())
-      .replace(/{companyName}/g, data.companyName || 'Nuestra empresa');
-  }
-
-  /**
-   * Send WhatsApp appointment confirmation
-   */
-  static async sendAppointmentConfirmation(appointment: any, userId: string): Promise<boolean> {
+  async initializeSession(sessionId: string): Promise<{ success: boolean; qrCode?: string; error?: string }> {
     try {
-      const user = await storage.getUser(userId);
-      const settings = await storage.getCalendarSettings(userId);
+      console.log(`🔄 Initializing WhatsApp session: ${sessionId}`);
       
-      const whatsappData: AppointmentWhatsAppData = {
-        clientName: appointment.clientName,
-        clientPhone: appointment.clientPhone,
-        date: appointment.date || appointment.scheduledDate,
-        time: appointment.time || appointment.scheduledDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-        service: appointment.service,
-        duration: appointment.duration,
-        companyName: user?.company || 'Nuestra empresa'
-      };
-
-      const defaultTemplate = `✅ *Confirmación de Cita*
-
-Hola {clientName},
-
-Tu cita ha sido *confirmada* para:
-📅 *Fecha:* {date}
-🕐 *Hora:* {time}
-🔧 *Servicio:* {service}
-⏱️ *Duración:* {duration} minutos
-
-Gracias por confiar en {companyName}.
-
-_Mensaje automático - No responder_`;
-
-      const template = settings?.whatsappNotifications?.confirmationTemplate || defaultTemplate;
-      const message = this.formatWhatsAppTemplate(template, whatsappData);
-
-      // Send WhatsApp message (simulation for now)
-      await this.sendWhatsAppMessage({
-        to: appointment.clientPhone,
-        message: message,
-        type: 'text'
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Error sending WhatsApp confirmation:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Send WhatsApp appointment reminder
-   */
-  static async sendAppointmentReminder(userId: string, appointment: any, reminderType: 'day' | 'hours' = 'day'): Promise<boolean> {
-    try {
-      const user = await storage.getUser(userId);
-      const settings = await storage.getCalendarSettings(userId);
-      
-      const whatsappData: AppointmentWhatsAppData = {
-        clientName: appointment.clientName,
-        clientPhone: appointment.clientPhone,
-        date: appointment.date || appointment.scheduledDate,
-        time: appointment.time || appointment.scheduledDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-        service: appointment.service,
-        duration: appointment.duration,
-        companyName: user?.company || 'Nuestra empresa'
-      };
-
-      let defaultTemplate = '';
-      
-      if (reminderType === 'day') {
-        defaultTemplate = `🔔 *Recordatorio de Cita*
-
-Hola {clientName},
-
-Te recordamos tu cita programada para *mañana*:
-📅 *Fecha:* {date}
-🕐 *Hora:* {time}
-🔧 *Servicio:* {service}
-⏱️ *Duración:* {duration} minutos
-
-Nos vemos mañana en {companyName}.
-
-_Mensaje automático - No responder_`;
-      } else {
-        defaultTemplate = `⏰ *Recordatorio Urgente*
-
-Hola {clientName},
-
-Tu cita es en *2 horas*:
-📅 *Hoy:* {date}
-🕐 *Hora:* {time}
-🔧 *Servicio:* {service}
-
-Te esperamos en {companyName}.
-
-_Mensaje automático - No responder_`;
-      }
-
-      const template = settings?.whatsappNotifications?.reminderTemplate || defaultTemplate;
-      const message = this.formatWhatsAppTemplate(template, whatsappData);
-
-      await this.sendWhatsAppMessage({
-        to: appointment.clientPhone,
-        message: message,
-        type: 'text'
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Error sending WhatsApp reminder:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Send WhatsApp appointment cancellation
-   */
-  static async sendAppointmentCancellation(appointment: any, userId: string): Promise<boolean> {
-    try {
-      const user = await storage.getUser(userId);
-      const settings = await storage.getCalendarSettings(userId);
-      
-      const whatsappData: AppointmentWhatsAppData = {
-        clientName: appointment.clientName,
-        clientPhone: appointment.clientPhone,
-        date: appointment.date || appointment.scheduledDate,
-        time: appointment.time || appointment.scheduledDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-        service: appointment.service,
-        duration: appointment.duration,
-        companyName: user?.company || 'Nuestra empresa'
-      };
-
-      const defaultTemplate = `❌ *Cita Cancelada*
-
-Hola {clientName},
-
-Lamentamos informarte que tu cita del *{date} a las {time}* ha sido cancelada.
-
-📞 Si necesitas reprogramar, no dudes en contactarnos.
-
-Disculpa las molestias.
-
-Saludos,
-{companyName}
-
-_Mensaje automático - No responder_`;
-
-      const template = settings?.whatsappNotifications?.cancellationTemplate || defaultTemplate;
-      const message = this.formatWhatsAppTemplate(template, whatsappData);
-
-      await this.sendWhatsAppMessage({
-        to: appointment.clientPhone,
-        message: message,
-        type: 'text'
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Error sending WhatsApp cancellation:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Send WhatsApp message using the business WhatsApp API
-   */
-  private static async sendWhatsAppMessage(messageData: WhatsAppMessage): Promise<boolean> {
-    try {
-      // For now, we'll simulate the WhatsApp API call
-      // In a real implementation, this would integrate with WhatsApp Business API
-      
-      console.log('📱 Enviando mensaje por WhatsApp:');
-      console.log(`Para: ${messageData.to}`);
-      console.log(`Tipo: ${messageData.type}`);
-      console.log('Mensaje:');
-      console.log('---');
-      console.log(messageData.message);
-      console.log('---');
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // In real implementation, you would make the actual API call here:
-      /*
-      const response = await fetch('https://graph.facebook.com/v17.0/YOUR_PHONE_NUMBER_ID/messages', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to: messageData.to,
-          type: 'text',
-          text: {
-            body: messageData.message
-          }
-        })
-      });
-      
-      return response.ok;
-      */
-      
-      return true;
-    } catch (error) {
-      console.error('Error sending WhatsApp message:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Schedule automatic WhatsApp reminders for an appointment
-   */
-  static async scheduleWhatsAppReminders(appointment: any, userId: string): Promise<void> {
-    try {
-      const appointmentDate = new Date(appointment.scheduledDate);
-      const now = new Date();
-      const timeDiff = appointmentDate.getTime() - now.getTime();
-      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-      const hoursDiff = Math.ceil(timeDiff / (1000 * 3600));
-
-      console.log('📱 Programando recordatorios automáticos por WhatsApp...');
-      
-      // Schedule day-before reminder if appointment is more than 1 day away
-      if (daysDiff > 1) {
-        const reminderDate = new Date(appointmentDate.getTime() - 24 * 60 * 60 * 1000);
-        console.log(`📅 Recordatorio WhatsApp programado para: ${reminderDate.toLocaleString('es-ES')}`);
-        
-        // In a real implementation, you would schedule this with a job queue like Bull or Agenda
-        // For now, we'll simulate the scheduling
-        setTimeout(async () => {
-          await this.sendAppointmentReminder(appointment, userId, 'day');
-        }, Math.max(0, reminderDate.getTime() - now.getTime()));
-      }
-      
-      // Schedule 2-hour reminder if appointment is more than 2 hours away
-      if (hoursDiff > 2) {
-        const reminderDate = new Date(appointmentDate.getTime() - 2 * 60 * 60 * 1000);
-        console.log(`⏰ Recordatorio WhatsApp 2h programado para: ${reminderDate.toLocaleString('es-ES')}`);
-        
-        setTimeout(async () => {
-          await this.sendAppointmentReminder(appointment, userId, 'hours');
-        }, Math.max(0, reminderDate.getTime() - now.getTime()));
-      }
-      
-    } catch (error) {
-      console.error('Error scheduling WhatsApp reminders:', error);
-    }
-  }
-
-  /**
-   * Send bulk WhatsApp reminders for upcoming appointments
-   */
-  static async sendBulkReminders(userId: string): Promise<void> {
-    try {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = tomorrow.toISOString().split('T')[0];
-      
-      const appointments = await storage.getAppointments(userId, tomorrowStr);
-      
-      console.log(`📱 Enviando recordatorios masivos para ${appointments.length} citas`);
-      
-      for (const appointment of appointments) {
-        if (appointment.clientPhone) {
-          await this.sendAppointmentReminder(appointment, userId, 'day');
-          // Add delay between messages to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 1000));
+      // Create new client with persistent session
+      const client = new Client({
+        authStrategy: new LocalAuth({
+          clientId: sessionId,
+          dataPath: './whatsapp_sessions'
+        }),
+        puppeteer: {
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-gpu'
+          ]
         }
+      });
+
+      // Store session
+      const session: WhatsAppSession = {
+        client,
+        isConnected: false,
+        status: 'initializing'
+      };
+      this.sessions.set(sessionId, session);
+
+      // Setup event listeners
+      client.on('qr', async (qr) => {
+        console.log(`📱 QR Code generated for session: ${sessionId}`);
+        try {
+          const qrCodeDataURL = await QRCode.toDataURL(qr);
+          session.qrCode = qrCodeDataURL;
+          session.status = 'qr_ready';
+          this.emit('qr', sessionId, qrCodeDataURL);
+        } catch (error) {
+          console.error('Error generating QR code:', error);
+          session.status = 'error';
+          session.lastError = 'Error generating QR code';
+        }
+      });
+
+      client.on('ready', () => {
+        console.log(`✅ WhatsApp client ready for session: ${sessionId}`);
+        session.isConnected = true;
+        session.status = 'connected';
+        session.qrCode = undefined;
+        this.emit('ready', sessionId);
+      });
+
+      client.on('authenticated', () => {
+        console.log(`🔐 WhatsApp authenticated for session: ${sessionId}`);
+        session.status = 'connecting';
+        this.emit('authenticated', sessionId);
+      });
+
+      client.on('auth_failure', (msg) => {
+        console.error(`❌ WhatsApp auth failure for session ${sessionId}:`, msg);
+        session.status = 'error';
+        session.lastError = `Authentication failed: ${msg}`;
+        this.emit('auth_failure', sessionId, msg);
+      });
+
+      client.on('disconnected', (reason) => {
+        console.log(`🔌 WhatsApp disconnected for session ${sessionId}:`, reason);
+        session.isConnected = false;
+        session.status = 'disconnected';
+        session.lastError = `Disconnected: ${reason}`;
+        this.emit('disconnected', sessionId, reason);
+      });
+
+      client.on('message', async (message) => {
+        this.emit('message', sessionId, message);
+      });
+
+      // Initialize client
+      await client.initialize();
+
+      return { success: true };
+    } catch (error) {
+      console.error(`Error initializing WhatsApp session ${sessionId}:`, error);
+      const session = this.sessions.get(sessionId);
+      if (session) {
+        session.status = 'error';
+        session.lastError = error instanceof Error ? error.message : 'Unknown error';
+      }
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  }
+
+  getSessionStatus(sessionId: string): WhatsAppSession | null {
+    return this.sessions.get(sessionId) || null;
+  }
+
+  async sendMessage(sessionId: string, to: string, message: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const session = this.sessions.get(sessionId);
+      if (!session || !session.isConnected) {
+        return { success: false, error: 'WhatsApp session not connected' };
+      }
+
+      // Format phone number (ensure it has country code)
+      const formattedNumber = to.replace(/\D/g, ''); // Remove non-digits
+      const chatId = `${formattedNumber}@c.us`;
+
+      await session.client.sendMessage(chatId, message);
+      console.log(`📤 Message sent via session ${sessionId} to ${to}`);
+      
+      return { success: true };
+    } catch (error) {
+      console.error(`Error sending message via session ${sessionId}:`, error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  }
+
+  async sendMedia(sessionId: string, to: string, mediaPath: string, caption?: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const session = this.sessions.get(sessionId);
+      if (!session || !session.isConnected) {
+        return { success: false, error: 'WhatsApp session not connected' };
+      }
+
+      const formattedNumber = to.replace(/\D/g, '');
+      const chatId = `${formattedNumber}@c.us`;
+
+      const media = MessageMedia.fromFilePath(mediaPath);
+      await session.client.sendMessage(chatId, media, { caption });
+      
+      console.log(`📤 Media sent via session ${sessionId} to ${to}`);
+      return { success: true };
+    } catch (error) {
+      console.error(`Error sending media via session ${sessionId}:`, error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  }
+
+  async disconnectSession(sessionId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const session = this.sessions.get(sessionId);
+      if (!session) {
+        return { success: false, error: 'Session not found' };
+      }
+
+      if (session.client) {
+        await session.client.destroy();
       }
       
+      this.sessions.delete(sessionId);
+      console.log(`🔌 WhatsApp session ${sessionId} disconnected and removed`);
+      
+      return { success: true };
     } catch (error) {
-      console.error('Error sending bulk WhatsApp reminders:', error);
+      console.error(`Error disconnecting session ${sessionId}:`, error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
     }
   }
 
-  /**
-   * Validate WhatsApp phone number format
-   */
-  static validatePhoneNumber(phone: string): boolean {
-    // Remove all non-digit characters
-    const cleanPhone = phone.replace(/\D/g, '');
-    
-    // Check if it's a valid international format (8-15 digits)
-    return cleanPhone.length >= 8 && cleanPhone.length <= 15;
+  async getConnectedNumber(sessionId: string): Promise<string | null> {
+    try {
+      const session = this.sessions.get(sessionId);
+      if (!session || !session.isConnected) {
+        return null;
+      }
+
+      const info = await session.client.info;
+      return info.wid.user;
+    } catch (error) {
+      console.error(`Error getting connected number for session ${sessionId}:`, error);
+      return null;
+    }
   }
 
-  /**
-   * Format phone number for WhatsApp API
-   */
-  static formatPhoneNumber(phone: string): string {
-    // Remove all non-digit characters
-    let cleanPhone = phone.replace(/\D/g, '');
-    
-    // If it doesn't start with country code, assume it's Mexico (+52)
-    if (!cleanPhone.startsWith('52') && cleanPhone.length === 10) {
-      cleanPhone = '52' + cleanPhone;
-    }
-    
-    return cleanPhone;
+  listSessions(): { sessionId: string; status: string; isConnected: boolean }[] {
+    return Array.from(this.sessions.entries()).map(([sessionId, session]) => ({
+      sessionId,
+      status: session.status,
+      isConnected: session.isConnected
+    }));
   }
 }
+
+export const whatsappService = new WhatsAppService();
