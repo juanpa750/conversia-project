@@ -793,13 +793,13 @@ Responde de manera natural y conversacional. Usa la información del producto pa
       }
 
       // Update WhatsApp API configuration with user's credentials
-      whatsappCloudAPI.config = {
+      whatsappCloudAPI.updateConfig({
         accessToken: user.whatsappAccessToken,
         phoneNumberId: user.whatsappPhoneNumberId,
         verifyToken: user.whatsappVerifyToken || 'default_verify_token',
         apiVersion: 'v21.0',
         graphApiUrl: 'https://graph.facebook.com'
-      };
+      });
 
       const status = await whatsappCloudAPI.getConnectionStatus();
       res.json(status);
@@ -817,6 +817,22 @@ Responde de manera natural y conversacional. Usa la información del producto pa
       if (!phoneNumber) {
         return res.status(400).json({ error: 'Phone number is required' });
       }
+
+      const user = await simpleStorage.getUser(req.userId);
+      
+      if (!user?.whatsappAccessToken || !user?.whatsappPhoneNumberId) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'WhatsApp credentials not configured' 
+        });
+      }
+
+      // Update WhatsApp API configuration with user's credentials
+      whatsappCloudAPI.updateConfig({
+        accessToken: user.whatsappAccessToken,
+        phoneNumberId: user.whatsappPhoneNumberId,
+        verifyToken: user.whatsappVerifyToken || 'default_verify_token'
+      });
 
       const result = await whatsappCloudAPI.sendTestMessage(req.userId!, phoneNumber);
       res.json(result);

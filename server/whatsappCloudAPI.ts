@@ -48,6 +48,13 @@ export class WhatsAppCloudAPI extends EventEmitter {
   }
 
   /**
+   * Actualizar configuración de la API
+   */
+  updateConfig(newConfig: Partial<WhatsAppCloudConfig>): void {
+    this.config = { ...this.config, ...newConfig };
+  }
+
+  /**
    * Verificar webhook de WhatsApp (GET)
    */
   verifyWebhook(mode: string, token: string, challenge: string): string | null {
