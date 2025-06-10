@@ -68,7 +68,7 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="text-xl text-gray-900 dark:text-white">Acceso Rápido</CardTitle>
             <CardDescription className="text-gray-600 dark:text-gray-300">
-              Accede directamente a las funciones principales de BotMaster
+              Accede directamente a las funciones principales de ConversIA
             </CardDescription>
           </CardHeader>
           <CardContent>

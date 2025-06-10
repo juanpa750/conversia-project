@@ -57,7 +57,7 @@ export function Sidebar() {
           <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-md bg-primary text-white">
             <RiRobotLine className="text-xl" />
           </div>
-          <span className="text-xl font-semibold text-gray-900">BotMaster</span>
+          <span className="text-xl font-semibold text-gray-900">ConversIA</span>
         </div>
       </div>
       

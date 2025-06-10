@@ -11,7 +11,7 @@ interface LanguageContextType {
 const translations = {
   es: {
     // Login
-    'login.title': 'BotMaster',
+    'login.title': 'ConversIA',
     'login.subtitle': 'Inicia sesión para gestionar tus chatbots',
     'login.email': 'Correo electrónico',
     'login.password': 'Contraseña',
@@ -145,12 +145,12 @@ const translations = {
     'crmAdvanced.explore': 'Explorar',
     
     // Login page
-    'loginPage.welcome': 'Bienvenido a BotMaster',
+    'loginPage.welcome': 'Bienvenido a ConversIA',
     'loginPage.description': 'La plataforma líder para gestión de chatbots de WhatsApp'
   },
   en: {
     // Login
-    'login.title': 'BotMaster',
+    'login.title': 'ConversIA',
     'login.subtitle': 'Sign in to manage your chatbots',
     'login.email': 'Email',
     'login.password': 'Password',
@@ -284,12 +284,12 @@ const translations = {
     'crmAdvanced.explore': 'Explore',
     
     // Login page
-    'loginPage.welcome': 'Welcome to BotMaster',
+    'loginPage.welcome': 'Welcome to ConversIA',
     'loginPage.description': 'The leading platform for WhatsApp chatbot management'
   },
   pt: {
     // Login
-    'login.title': 'BotMaster',
+    'login.title': 'ConversIA',
     'login.subtitle': 'Entre para gerenciar seus chatbots',
     'login.email': 'Email',
     'login.password': 'Senha',

@@ -1,8 +1,8 @@
-# BotMaster - WhatsApp Chatbot Platform
+# ConversIA - WhatsApp Chatbot Platform
 
 ## Overview
 
-BotMaster is a comprehensive WhatsApp chatbot platform designed for businesses to create, manage, and analyze chatbots. It enables businesses to automate customer service, boost sales, and improve client relationships through WhatsApp chatbots.
+ConversIA is a comprehensive WhatsApp chatbot platform designed for businesses to create, manage, and analyze chatbots. It enables businesses to automate customer service, boost sales, and improve client relationships through WhatsApp chatbots.
 
 The application follows a modern web architecture with a React frontend and Node.js Express backend. It uses Drizzle ORM with PostgreSQL for data storage and includes Stripe integration for subscription management.
 
