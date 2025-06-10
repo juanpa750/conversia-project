@@ -155,7 +155,7 @@ export default function WhatsAppIntegrationPage() {
             throw new Error('No auth token found in localStorage');
           }
           
-          const url = `http://localhost:5000/api/whatsapp/qr/${integrationId}`;
+          const url = `/api/whatsapp/qr/${integrationId}`;
           console.log('📡 Making request to:', url);
           
           const requestOptions = {
@@ -301,7 +301,7 @@ export default function WhatsAppIntegrationPage() {
     if (!targetId) return;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/whatsapp/qr/${targetId}`, {
+      const response = await fetch(`/api/whatsapp/qr/${targetId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           'Content-Type': 'application/json'
