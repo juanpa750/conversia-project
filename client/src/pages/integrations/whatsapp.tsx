@@ -151,9 +151,30 @@ export default function WhatsAppIntegrationPage() {
             throw new Error('No auth token found');
           }
           
-          // Use apiRequest instead of direct fetch to ensure proper error handling
-          const qrData = await apiRequest("GET", `/api/whatsapp/qr/${integrationId}`, {});
+          // Make direct fetch request with proper response handling
+          console.log('Making API request to:', `/api/whatsapp/qr/${integrationId}`);
+          console.log('Auth token present:', !!authToken);
+          
+          const response = await fetch(`http://localhost:5000/api/whatsapp/qr/${integrationId}`, {
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          console.log('Response status:', response.status);
+          console.log('Response ok:', response.ok);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API Error:', errorText);
+            throw new Error(`API Error: ${response.status} - ${errorText}`);
+          }
+          
+          const qrData = await response.json();
           console.log('QR API Response:', qrData);
+          console.log('QR Data type:', typeof qrData);
+          console.log('QR Data keys:', Object.keys(qrData || {}));
           
           if (qrData && qrData.qrCode) {
             console.log('QR Code received, length:', qrData.qrCode.length);
