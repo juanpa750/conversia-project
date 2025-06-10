@@ -133,16 +133,16 @@ export default function WhatsAppIntegrationPage() {
     mutationFn: async (integrationId: number) => {
       return await apiRequest("POST", `/api/whatsapp/connect/${integrationId}`, {});
     },
-    onSuccess: () => {
+    onSuccess: (_, integrationId) => {
       toast({
         title: "Iniciando conexión",
         description: "Generando código QR para conexión de WhatsApp",
       });
       setShowQRDialog(true);
-      // Wait a moment then start polling for QR code
+      // Wait a moment then start polling for QR code with specific integration ID
       setTimeout(() => {
-        pollQRStatus();
-      }, 500);
+        pollQRStatus(integrationId);
+      }, 1000);
     },
     onError: (error: any) => {
       toast({
@@ -177,15 +177,16 @@ export default function WhatsAppIntegrationPage() {
   });
 
   // Poll QR status
-  const pollQRStatus = async () => {
-    if (!currentIntegration) {
-      console.log('No current integration for polling');
+  const pollQRStatus = async (integrationId?: number) => {
+    const targetId = integrationId || currentIntegration?.id;
+    if (!targetId) {
+      console.log('No integration ID for polling');
       return;
     }
     
     try {
-      console.log('Polling QR status for integration:', currentIntegration.id);
-      const response = await apiRequest("GET", `/api/whatsapp/qr/${currentIntegration.id}`, {});
+      console.log('Polling QR status for integration:', targetId);
+      const response = await apiRequest("GET", `/api/whatsapp/qr/${targetId}`, {});
       const qrStatus = response as unknown as QRStatus;
       console.log('QR Status received:', qrStatus);
       setQrData(qrStatus);
@@ -199,7 +200,7 @@ export default function WhatsAppIntegrationPage() {
         queryClient.invalidateQueries({ queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`] });
       } else if (qrStatus.status === 'qr_ready' || qrStatus.status === 'connecting') {
         // Continue polling
-        setTimeout(pollQRStatus, 2000);
+        setTimeout(() => pollQRStatus(targetId), 2000);
       }
     } catch (error) {
       console.error('Error polling QR status:', error);
@@ -603,7 +604,10 @@ export default function WhatsAppIntegrationPage() {
               Cancelar
             </Button>
             <Button 
-              onClick={pollQRStatus}
+              onClick={(e) => {
+                e.preventDefault();
+                pollQRStatus();
+              }}
               variant="outline"
               className="flex items-center space-x-2"
             >
