@@ -1,0 +1,174 @@
+Instrucciones Específicas para Replit Agent:
+Necesito que agregues SOLO la integración de WhatsApp Business API a mi CRM existente, aprovechando las 1000 conversaciones GRATIS mensuales de Meta Cloud API. Aquí están las especificaciones exactas:
+1. CONFIGURACIÓN DE WHATSAPP BUSINESS API (GRATUITA)
+Setup con Meta Cloud API Directo:
+
+Usar Meta WhatsApp Cloud API (NO BSP como Twilio)
+Aprovechar 1000 conversaciones gratuitas por mes por número
+Configuración directa con Facebook Developers
+
+Variables de entorno a agregar:
+env# WhatsApp Cloud API - Meta Direct
+WHATSAPP_ACCESS_TOKEN=EAAxxxxxx  # Token de Facebook App
+WHATSAPP_PHONE_NUMBER_ID=123456789  # ID del número verificado
+WHATSAPP_VERIFY_TOKEN=mi_token_secreto  # Token para verificar webhook
+WHATSAPP_API_VERSION=v18.0  # Versión actual de la API
+GRAPH_API_URL=https://graph.facebook.com
+2. ENDPOINTS ESPECÍFICOS NECESARIOS
+A) Webhook para recibir mensajes:
+javascript// GET /webhook/whatsapp - Verificación inicial de webhook
+app.get('/webhook/whatsapp', (req, res) => {
+  // Verificar token con Facebook
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+  
+  if (mode === 'subscribe' && token === process.env.WHATSAPP_VERIFY_TOKEN) {
+    res.status(200).send(challenge);
+  } else {
+    res.status(403).send('Forbidden');
+  }
+});
+
+// POST /webhook/whatsapp - Recibir mensajes entrantes
+app.post('/webhook/whatsapp', (req, res) => {
+  // Procesar mensajes entrantes
+  // Detectar si es ventana gratuita (cliente inició)
+  // Integrar con IA existente del CRM
+  // Guardar en base de datos
+  // Responder automáticamente
+});
+B) Función para enviar mensajes:
+javascriptasync function sendWhatsAppMessage(to, message, clientId) {
+  // Usar Graph API de Facebook
+  // Endpoint: https://graph.facebook.com/v18.0/{phone-number-id}/messages
+  // Tracking de conversaciones gratuitas vs pagadas
+  // Actualizar contadores en base de datos
+}
+3. FUNCIONES ESPECÍFICAS REQUERIDAS
+A) Detección de Ventana Gratuita:
+javascriptasync function checkFreeWindow(customerPhone, clientId) {
+  // Verificar si conversación está en ventana de 24h gratuitas
+  // Verificar si cliente inició la conversación (servicio gratuito)
+  // Actualizar estado en base de datos
+  // Retornar: { isFree: boolean, reason: string, expiresAt: datetime }
+}
+B) Contador de Mensajes Gratuitos:
+javascriptasync function updateMessageCounter(clientId, conversationType) {
+  // Tracking de 1000 mensajes gratuitos mensuales
+  // Diferenciación entre conversaciones de servicio (ilimitadas) y marketing
+  // Alertas cuando se acerca al límite
+  // Reset mensual automático
+}
+C) Procesador de Mensajes Entrantes:
+javascriptasync function processIncomingMessage(webhookData) {
+  // 1. Extraer información del mensaje
+  // 2. Identificar cliente por phone_number_id
+  // 3. Verificar ventana gratuita
+  // 4. Integrar con IA existente del CRM
+  // 5. Generar respuesta automática
+  // 6. Enviar respuesta
+  // 7. Actualizar base de datos
+}
+4. INTEGRACIÓN CON CRM EXISTENTE
+Campos a agregar en tabla de clientes:
+sqlALTER TABLE clients ADD COLUMN whatsapp_phone_number_id TEXT;
+ALTER TABLE clients ADD COLUMN whatsapp_access_token TEXT;
+ALTER TABLE clients ADD COLUMN whatsapp_business_account_id TEXT;
+ALTER TABLE clients ADD COLUMN monthly_free_messages_used INTEGER DEFAULT 0;
+ALTER TABLE clients ADD COLUMN free_messages_reset_date DATE;
+Nuevos endpoints para configuración:
+javascript// POST /api/clients/:id/whatsapp/connect
+// Conectar número de WhatsApp del cliente al CRM
+
+// GET /api/clients/:id/whatsapp/status  
+// Ver estado de conexión y mensajes restantes
+
+// POST /api/clients/:id/whatsapp/test
+// Enviar mensaje de prueba
+5. CONFIGURACIÓN PASO A PASO
+Para que el código funcione, necesito que incluyas:
+
+Instrucciones de setup con Facebook:
+
+markdown## Setup WhatsApp Business API GRATIS:
+
+1. Ve a developers.facebook.com
+2. Crea una nueva App → Business
+3. Agrega producto "WhatsApp Business API"
+4. Configura webhook URL: https://tu-replit.repl.co/webhook/whatsapp
+5. Verifica tu número de teléfono comercial
+6. Copia tokens necesarios a .env
+
+Función de configuración automática:
+
+javascriptasync function setupWhatsAppForClient(clientId, phoneNumber) {
+  // Registrar número en WhatsApp Business API
+  // Configurar webhook específico para este cliente
+  // Verificar tokens y permisos
+  // Guardar configuración en base de datos
+}
+
+Dashboard para mostrar estado:
+
+html<!-- Agregar a dashboard existente -->
+<div class="whatsapp-status">
+  <h3>WhatsApp Business API</h3>
+  <p>Mensajes gratuitos restantes: <span id="free-messages">1000</span></p>
+  <p>Conversaciones activas: <span id="active-conversations">15</span></p>
+  <button onclick="testWhatsApp()">Enviar Mensaje de Prueba</button>
+</div>
+6. APROVECHAMIENTO MÁXIMO DE MENSAJES GRATUITOS
+Estrategias a implementar en el código:
+
+Priorizar conversaciones de servicio (ilimitadas y gratis)
+Detectar automáticamente cuando cliente inicia conversación
+Reiniciar ventanas de 24h cuando cliente responde
+Optimizar mensajes proactivos para usar solo cuando sea necesario
+Alertas automáticas antes de agotar mensajes gratuitos
+
+Lógica de decisión:
+javascriptfunction shouldSendMessage(customerPhone, messageType, clientId) {
+  // Verificar si es conversación de servicio (gratis)
+  // Verificar mensajes gratuitos restantes
+  // Priorizar según importancia del mensaje
+  // Retornar: { canSend: boolean, cost: number, reason: string }
+}
+7. TESTING Y VALIDACIÓN
+Funciones de prueba requeridas:
+javascript// Probar conexión con WhatsApp API
+async function testWhatsAppConnection(clientId) {}
+
+// Enviar mensaje de prueba
+async function sendTestMessage(clientId, phoneNumber) {}
+
+// Verificar webhook funcionando
+async function validateWebhook() {}
+8. MANEJO DE ERRORES
+Casos específicos a manejar:
+
+Token expirado o inválido
+Número no verificado en WhatsApp Business
+Límite de mensajes alcanzado
+Webhook no recibiendo mensajes
+Errores de la Graph API de Facebook
+
+RESULTADO ESPERADO:
+Al final de esta integración, mi CRM debe poder:
+
+✅ Conectar números de WhatsApp Business de mis clientes
+✅ Recibir mensajes automáticamente vía webhook
+✅ Responder con IA usando mensajes GRATUITOS
+✅ Aprovechar las 1000 conversaciones gratis mensuales
+✅ Detectar y usar conversaciones de servicio ilimitadas
+✅ Mostrar contador de mensajes restantes
+✅ Alertar cuando se acerque al límite
+
+INSTRUCCIONES PARA REPLIT:
+
+Crea SOLO los archivos necesarios para WhatsApp
+Integra con mi CRM existente (no recrear todo)
+Incluye instrucciones de configuración con Facebook
+Agrega endpoints necesarios
+Crea funciones de testing
+Documenta el proceso de conexión

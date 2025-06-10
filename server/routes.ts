@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { isAuthenticated, generateToken, hashPassword, comparePassword } from "./auth";
 import { simpleStorage } from "./storage";
 import { whatsappService } from "./whatsappService";
+import { whatsappCloudAPI } from "./whatsappCloudAPI";
 import { registerWhatsAppSimpleRoutes } from "./routes-whatsapp-simple";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
@@ -710,6 +711,115 @@ Responde de manera natural y conversacional. Usa la información del producto pa
   });
 
   // Create HTTP server
+  // ===========================================
+  // WHATSAPP CLOUD API WEBHOOK ENDPOINTS
+  // ===========================================
+
+  // GET /webhook/whatsapp - Verificación inicial de webhook Meta
+  app.get('/webhook/whatsapp', (req, res) => {
+    console.log('🔍 WhatsApp webhook verification request');
+    
+    const mode = req.query['hub.mode'] as string;
+    const token = req.query['hub.verify_token'] as string;
+    const challenge = req.query['hub.challenge'] as string;
+    
+    const result = whatsappCloudAPI.verifyWebhook(mode, token, challenge);
+    
+    if (result) {
+      res.status(200).send(result);
+    } else {
+      res.status(403).send('Forbidden');
+    }
+  });
+
+  // POST /webhook/whatsapp - Recibir mensajes entrantes de Meta
+  app.post('/webhook/whatsapp', async (req, res) => {
+    try {
+      console.log('📨 Received WhatsApp webhook message');
+      
+      await whatsappCloudAPI.processIncomingMessage(req.body);
+      res.status(200).send('OK');
+      
+    } catch (error) {
+      console.error('❌ Error processing webhook:', error);
+      res.status(500).send('Internal Server Error');
+    }
+  });
+
+  // ===========================================
+  // WHATSAPP CLOUD API MANAGEMENT ENDPOINTS
+  // ===========================================
+
+  // POST /api/whatsapp/cloud/send - Enviar mensaje vía Cloud API
+  app.post('/api/whatsapp/cloud/send', isAuthenticated, async (req: any, res) => {
+    try {
+      const { to, message, clientId } = req.body;
+      
+      if (!to || !message) {
+        return res.status(400).json({ error: 'Phone number and message are required' });
+      }
+
+      const result = await whatsappCloudAPI.sendMessage(to, message, clientId || req.userId);
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          messageId: result.messageId,
+          cost: result.cost
+        });
+      } else {
+        res.status(400).json({ 
+          success: false, 
+          error: result.error 
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error sending WhatsApp message:', error);
+      res.status(500).json({ error: 'Failed to send message' });
+    }
+  });
+
+  // GET /api/whatsapp/cloud/status - Estado de conexión Cloud API
+  app.get('/api/whatsapp/cloud/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const status = await whatsappCloudAPI.getConnectionStatus();
+      res.json(status);
+    } catch (error) {
+      console.error('Error getting WhatsApp status:', error);
+      res.status(500).json({ error: 'Failed to get status' });
+    }
+  });
+
+  // POST /api/whatsapp/cloud/test - Enviar mensaje de prueba
+  app.post('/api/whatsapp/cloud/test', isAuthenticated, async (req: any, res) => {
+    try {
+      const { phoneNumber } = req.body;
+      
+      if (!phoneNumber) {
+        return res.status(400).json({ error: 'Phone number is required' });
+      }
+
+      const result = await whatsappCloudAPI.sendTestMessage(req.userId!, phoneNumber);
+      res.json(result);
+      
+    } catch (error) {
+      console.error('Error sending test message:', error);
+      res.status(500).json({ error: 'Failed to send test message' });
+    }
+  });
+
+  // GET /api/whatsapp/cloud/config - Validar configuración
+  app.get('/api/whatsapp/cloud/config', isAuthenticated, async (req: any, res) => {
+    try {
+      const validation = whatsappCloudAPI.validateConfig();
+      res.json(validation);
+    } catch (error) {
+      console.error('Error validating config:', error);
+      res.status(500).json({ error: 'Failed to validate configuration' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

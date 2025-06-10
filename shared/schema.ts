@@ -28,6 +28,13 @@ export const users = pgTable("users", {
   timeFormat: varchar("time_format").default('24h'),
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
+  // WhatsApp Cloud API Integration
+  whatsappAccessToken: text("whatsapp_access_token"),
+  whatsappPhoneNumberId: varchar("whatsapp_phone_number_id"),
+  whatsappBusinessAccountId: varchar("whatsapp_business_account_id"),
+  whatsappVerifyToken: varchar("whatsapp_verify_token"),
+  monthlyFreeMessagesUsed: integer("monthly_free_messages_used").default(0),
+  freeMessagesResetDate: timestamp("free_messages_reset_date"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
