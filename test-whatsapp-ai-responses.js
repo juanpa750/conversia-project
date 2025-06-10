@@ -9,8 +9,8 @@ async function testWhatsAppAIResponses() {
     // Step 1: Test authentication
     console.log('1. Testing authentication...');
     const loginResponse = await axios.post(`${BASE_URL}/api/auth/login`, {
-      email: 'demo@example.com',
-      password: 'demo123'
+      email: 'prueba@conversia.com',
+      password: '123456'
     });
     
     if (loginResponse.status === 200) {
