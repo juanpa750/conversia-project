@@ -144,37 +144,49 @@ export default function WhatsAppIntegrationPage() {
       const fetchQRWithRetries = async () => {
         try {
           retries++;
-          console.log(`QR fetch attempt ${retries}/${maxRetries} for integration:`, integrationId);
+          console.log(`🔄 QR FETCH ATTEMPT ${retries}/${maxRetries}`);
+          console.log('🔗 Integration ID:', integrationId);
           
           const authToken = localStorage.getItem('token');
+          console.log('🔑 Auth token present:', !!authToken);
+          console.log('🔑 Token length:', authToken ? authToken.length : 0);
+          
           if (!authToken) {
-            throw new Error('No auth token found');
+            throw new Error('No auth token found in localStorage');
           }
           
-          // Make direct fetch request with proper response handling
-          console.log('Making API request to:', `/api/whatsapp/qr/${integrationId}`);
-          console.log('Auth token present:', !!authToken);
+          const url = `http://localhost:5000/api/whatsapp/qr/${integrationId}`;
+          console.log('📡 Making request to:', url);
           
-          const response = await fetch(`http://localhost:5000/api/whatsapp/qr/${integrationId}`, {
+          const requestOptions = {
+            method: 'GET',
             headers: {
               'Authorization': `Bearer ${authToken}`,
               'Content-Type': 'application/json'
             }
-          });
+          };
+          console.log('📋 Request options:', requestOptions);
           
-          console.log('Response status:', response.status);
-          console.log('Response ok:', response.ok);
+          const response = await fetch(url, requestOptions);
+          
+          console.log('📈 Response status:', response.status);
+          console.log('✅ Response ok:', response.ok);
+          console.log('📋 Response headers:', Object.fromEntries(response.headers.entries()));
           
           if (!response.ok) {
             const errorText = await response.text();
-            console.error('API Error:', errorText);
-            throw new Error(`API Error: ${response.status} - ${errorText}`);
+            console.error('❌ API Error Response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
           }
           
           const qrData = await response.json();
-          console.log('QR API Response:', qrData);
-          console.log('QR Data type:', typeof qrData);
-          console.log('QR Data keys:', Object.keys(qrData || {}));
+          console.log('📦 QR Response received:', qrData);
+          console.log('📊 QR Data status:', qrData?.status);
+          console.log('🔲 QR Code present:', !!qrData?.qrCode);
+          if (qrData?.qrCode) {
+            console.log('📏 QR Code length:', qrData.qrCode.length);
+            console.log('🏷️ QR Code prefix:', qrData.qrCode.substring(0, 30));
+          }
           
           if (qrData && qrData.qrCode) {
             console.log('QR Code received, length:', qrData.qrCode.length);
@@ -198,10 +210,17 @@ export default function WhatsAppIntegrationPage() {
           
         } catch (error) {
           console.error(`QR fetch error (attempt ${retries}):`, error);
+          console.error('Error details:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            type: typeof error,
+            error: error
+          });
           
           if (retries < maxRetries) {
+            console.log(`Retrying in 1 second... (${retries}/${maxRetries})`);
             setTimeout(fetchQRWithRetries, 1000);
           } else {
+            console.error('Max retries reached, setting error state');
             setQrData({ 
               status: 'error', 
               isConnected: false, 
@@ -209,7 +228,7 @@ export default function WhatsAppIntegrationPage() {
             });
             toast({
               title: "Error",
-              description: "No se pudo generar el código QR",
+              description: "No se pudo generar el código QR después de varios intentos",
               variant: "destructive",
             });
           }
