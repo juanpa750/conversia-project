@@ -8,7 +8,7 @@ async function testCompleteWhatsAppWorkflow() {
     const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'prueba@botmaster.com', password: '123456' })
+      body: JSON.stringify({ email: 'prueba@conversia.com', password: '123456' })
     });
     
     const loginData = await loginResponse.json();
