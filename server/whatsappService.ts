@@ -1,6 +1,6 @@
-import QRCode from 'qrcode';
 import { EventEmitter } from 'events';
-import WebSocket from 'ws';
+import pkg from 'whatsapp-web.js';
+const { Client, LocalAuth } = pkg;
 
 interface WhatsAppSession {
   isConnected: boolean;
@@ -8,7 +8,7 @@ interface WhatsAppSession {
   status: 'initializing' | 'qr_ready' | 'connecting' | 'connected' | 'disconnected' | 'error';
   lastError?: string;
   phoneNumber?: string;
-  sessionData?: any;
+  client?: Client;
 }
 
 class WhatsAppService extends EventEmitter {
@@ -16,43 +16,76 @@ class WhatsAppService extends EventEmitter {
 
   async initializeSession(sessionId: string): Promise<{ success: boolean; qrCode?: string; error?: string }> {
     try {
-      console.log(`🔄 Initializing WhatsApp session: ${sessionId}`);
+      console.log(`🔄 Initializing real WhatsApp session: ${sessionId}`);
       
-      // Generate WhatsApp-compatible QR code format
-      const timestamp = Date.now();
-      const randomRef = Math.random().toString(36).substring(2, 15);
-      const publicKey = Buffer.from(`whatsapp-web-${sessionId}-${timestamp}`).toString('base64');
-      const privateKey = Buffer.from(`private-${randomRef}-${timestamp}`).toString('base64');
-      
-      // WhatsApp Web QR format: ref,publicKey,privateKey,serverToken,advSecret,status
-      const qrData = `${randomRef},${publicKey},${privateKey},s1,c0,2`;
-      const qrCodeDataURL = await QRCode.toDataURL(qrData, {
-        errorCorrectionLevel: 'M',
-        type: 'image/png',
-        quality: 0.92,
-        margin: 1,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        },
-        width: 256
+      // Create WhatsApp client with authentication
+      const client = new Client({
+        authStrategy: new LocalAuth({
+          clientId: sessionId
+        }),
+        puppeteer: {
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-gpu'
+          ]
+        }
       });
 
       // Store session
       const session: WhatsAppSession = {
         isConnected: false,
-        status: 'qr_ready',
-        qrCode: qrCodeDataURL
+        status: 'initializing',
+        client: client
       };
       
       this.sessions.set(sessionId, session);
 
-      // Simulate QR scan process
-      setTimeout(() => {
-        this.simulateQRScan(sessionId);
-      }, 5000); // Auto-connect after 5 seconds for demo
+      // Set up event handlers
+      client.on('qr', (qr) => {
+        console.log(`📋 QR Code generated for session: ${sessionId}`);
+        session.qrCode = qr;
+        session.status = 'qr_ready';
+        this.emit('qr', sessionId, qr);
+      });
 
-      return { success: true, qrCode: qrCodeDataURL };
+      client.on('ready', () => {
+        console.log(`✅ WhatsApp client ready for session: ${sessionId}`);
+        session.isConnected = true;
+        session.status = 'connected';
+        session.phoneNumber = client.info?.wid?.user || 'Unknown';
+        this.emit('ready', sessionId);
+      });
+
+      client.on('authenticated', () => {
+        console.log(`🔐 WhatsApp authenticated for session: ${sessionId}`);
+        session.status = 'connecting';
+      });
+
+      client.on('disconnected', (reason) => {
+        console.log(`📱 WhatsApp disconnected for session: ${sessionId}, reason: ${reason}`);
+        session.isConnected = false;
+        session.status = 'disconnected';
+        this.emit('disconnected', sessionId, reason);
+      });
+
+      client.on('auth_failure', (message) => {
+        console.error(`❌ WhatsApp auth failure for session: ${sessionId}, message: ${message}`);
+        session.status = 'error';
+        session.lastError = message;
+        this.emit('auth_failure', sessionId, message);
+      });
+
+      // Initialize the client
+      await client.initialize();
+
+      return { success: true };
     } catch (error) {
       console.error(`Error initializing WhatsApp session ${sessionId}:`, error);
       const session = this.sessions.get(sessionId);
@@ -67,49 +100,56 @@ class WhatsAppService extends EventEmitter {
     }
   }
 
-  private simulateQRScan(sessionId: string) {
-    const session = this.sessions.get(sessionId);
-    if (!session) return;
-
-    console.log(`📱 Simulating QR scan for session: ${sessionId}`);
-    
-    // Update to connecting
-    session.status = 'connecting';
-    session.qrCode = undefined;
-    this.emit('qr_scanned', sessionId);
-
-    // Simulate connection process
-    setTimeout(() => {
-      if (session.status === 'connecting') {
-        session.isConnected = true;
-        session.status = 'connected';
-        session.phoneNumber = '+521234567890'; // Simulated phone number
-        console.log(`✅ WhatsApp connected for session: ${sessionId}`);
-        this.emit('connected', sessionId);
-      }
-    }, 3000);
-  }
-
   getSessionStatus(sessionId: string): WhatsAppSession | null {
-    return this.sessions.get(sessionId) || null;
+    const session = this.sessions.get(sessionId);
+    if (!session) return null;
+    
+    // Create a clean status object without the client instance
+    return {
+      isConnected: session.isConnected,
+      qrCode: session.qrCode,
+      status: session.status,
+      lastError: session.lastError,
+      phoneNumber: session.phoneNumber
+    };
   }
 
   async sendMessage(sessionId: string, to: string, message: string): Promise<{ success: boolean; error?: string }> {
     try {
       const session = this.sessions.get(sessionId);
-      if (!session || !session.isConnected) {
+      if (!session || !session.isConnected || !session.client) {
         return { success: false, error: 'WhatsApp session not connected' };
       }
 
-      // Simulate message sending
       console.log(`📤 Sending message via session ${sessionId} to ${to}: ${message}`);
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Format phone number for WhatsApp (ensure it has @c.us suffix)
+      const formattedNumber = to.includes('@') ? to : `${to}@c.us`;
+      
+      // Send message using real WhatsApp client
+      await session.client.sendMessage(formattedNumber, message);
       
       return { success: true };
     } catch (error) {
       console.error(`Error sending message via session ${sessionId}:`, error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  }
+
+  async destroySession(sessionId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const session = this.sessions.get(sessionId);
+      if (session && session.client) {
+        await session.client.destroy();
+      }
+      this.sessions.delete(sessionId);
+      console.log(`🗑️ WhatsApp session destroyed: ${sessionId}`);
+      return { success: true };
+    } catch (error) {
+      console.error(`Error destroying WhatsApp session ${sessionId}:`, error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
