@@ -84,7 +84,7 @@ export function Sidebar() {
           icon={<RiStore2Line />} 
           active={location.startsWith("/store")}
         >
-          Tienda
+          Productos
         </NavItem>
         
         <NavItem 
