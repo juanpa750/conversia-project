@@ -820,6 +820,28 @@ Responde de manera natural y conversacional. Usa la información del producto pa
     }
   });
 
+  // POST /api/auth/update-whatsapp-config - Actualizar configuración WhatsApp
+  app.post('/api/auth/update-whatsapp-config', isAuthenticated, async (req: any, res) => {
+    try {
+      const { accessToken, phoneNumberId, businessAccountId, verifyToken } = req.body;
+      
+      const updateData = {
+        whatsappAccessToken: accessToken,
+        whatsappPhoneNumberId: phoneNumberId,
+        whatsappBusinessAccountId: businessAccountId,
+        whatsappVerifyToken: verifyToken,
+        freeMessagesResetDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1) // Primer día del próximo mes
+      };
+
+      await simpleStorage.updateUserWhatsAppConfig(req.userId, updateData);
+      
+      res.json({ success: true, message: 'WhatsApp configuration updated successfully' });
+    } catch (error) {
+      console.error('Error updating WhatsApp config:', error);
+      res.status(500).json({ error: 'Failed to update WhatsApp configuration' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
