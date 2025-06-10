@@ -89,7 +89,7 @@ export default function WhatsAppIntegrationPage() {
   const chatbotId = urlParams.get('chatbot');
 
   // Get chatbot data
-  const { data: chatbot } = useQuery({
+  const { data: chatbot } = useQuery<{ id: number; name: string; productId?: number }>({
     queryKey: [`/api/chatbots/${chatbotId}`],
     enabled: !!chatbotId,
   });
@@ -180,16 +180,17 @@ export default function WhatsAppIntegrationPage() {
     
     try {
       const response = await apiRequest("GET", `/api/whatsapp/qr/${currentIntegration.id}`, {});
-      setQrData(response);
+      const qrStatus = response as unknown as QRStatus;
+      setQrData(qrStatus);
       
-      if (response.status === 'connected') {
+      if (qrStatus.status === 'connected') {
         toast({
           title: "WhatsApp conectado",
           description: "¡WhatsApp se ha conectado exitosamente!",
         });
         setShowQRDialog(false);
         queryClient.invalidateQueries({ queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`] });
-      } else if (response.status === 'qr_ready' || response.status === 'connecting') {
+      } else if (qrStatus.status === 'qr_ready' || qrStatus.status === 'connecting') {
         // Continue polling
         setTimeout(pollQRStatus, 2000);
       }
@@ -562,7 +563,7 @@ export default function WhatsAppIntegrationPage() {
               variant="outline"
               className="flex items-center space-x-2"
             >
-              <RiRefreshLine />
+              <RiCheckLine />
               <span>Actualizar</span>
             </Button>
           </DialogFooter>
