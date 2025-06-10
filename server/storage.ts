@@ -368,7 +368,25 @@ export class SimpleStorage implements ISimpleStorage {
       const result = await db.execute(
         sql`SELECT * FROM whatsapp_integrations WHERE chatbot_id = ${chatbotId} AND user_id = ${userId}`
       );
-      return result.rows?.[0] || null;
+      const row = result.rows?.[0];
+      if (!row) return null;
+      
+      // Map database fields to expected interface
+      return {
+        id: row.id,
+        phoneNumber: row.phone_number,
+        displayName: row.display_name,
+        businessDescription: row.business_description,
+        status: row.status,
+        isActive: row.is_active,
+        chatbotId: row.chatbot_id,
+        productId: row.product_id,
+        priority: row.priority,
+        autoRespond: row.auto_respond,
+        operatingHours: row.operating_hours ? JSON.parse(row.operating_hours) : {},
+        createdAt: row.created_at,
+        user_id: row.user_id
+      };
     } catch (error) {
       console.error('Error fetching WhatsApp integration by chatbot:', error);
       return null;
@@ -380,7 +398,25 @@ export class SimpleStorage implements ISimpleStorage {
       const result = await db.execute(
         sql`SELECT * FROM whatsapp_integrations WHERE id = ${id}`
       );
-      return result.rows?.[0] || null;
+      const row = result.rows?.[0];
+      if (!row) return null;
+      
+      // Map database fields to expected interface
+      return {
+        id: row.id,
+        phoneNumber: row.phone_number,
+        displayName: row.display_name,
+        businessDescription: row.business_description,
+        status: row.status,
+        isActive: row.is_active,
+        chatbotId: row.chatbot_id,
+        productId: row.product_id,
+        priority: row.priority,
+        autoRespond: row.auto_respond,
+        operatingHours: row.operating_hours ? JSON.parse(row.operating_hours) : {},
+        createdAt: row.created_at,
+        user_id: row.user_id
+      };
     } catch (error) {
       console.error('Error fetching WhatsApp integration by ID:', error);
       return null;
