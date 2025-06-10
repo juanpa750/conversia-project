@@ -22,6 +22,7 @@ import WhatsAppConnect from "@/pages/integrations/whatsapp-connect";
 import WhatsAppBotConfig from "@/pages/integrations/whatsapp-bot";
 import WhatsAppIntegrationPage from "@/pages/integrations/whatsapp";
 import WhatsAppCloudIntegration from "@/pages/integrations/whatsapp-cloud";
+import MasterDashboard from "@/pages/master/dashboard";
 import MultiWhatsAppAccounts from "@/pages/whatsapp/multi-accounts";
 import WhatsAppSimpleConnect from "@/pages/whatsapp/simple-connect";
 import WhatsApp from "@/pages/WhatsApp";
@@ -204,6 +205,11 @@ function Router() {
           <Route path="/integrations/whatsapp-cloud">
             <Layout>
               <WhatsAppCloudIntegration />
+            </Layout>
+          </Route>
+          <Route path="/master/dashboard">
+            <Layout>
+              <MasterDashboard />
             </Layout>
           </Route>
           <Route path="/whatsapp">
