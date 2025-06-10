@@ -133,16 +133,36 @@ export default function WhatsAppIntegrationPage() {
     mutationFn: async (integrationId: number) => {
       return await apiRequest("POST", `/api/whatsapp/connect/${integrationId}`, {});
     },
-    onSuccess: (_, integrationId) => {
-      toast({
-        title: "Iniciando conexión",
-        description: "Generando código QR para conexión de WhatsApp",
-      });
+    onSuccess: async (_, integrationId) => {
       setShowQRDialog(true);
-      // Wait a moment then start polling for QR code with specific integration ID
-      setTimeout(() => {
-        pollQRStatus(integrationId);
-      }, 1000);
+      setQrData(null); // Reset QR data
+      
+      // Wait for connection to initialize, then fetch QR immediately
+      setTimeout(async () => {
+        try {
+          const response = await apiRequest("GET", `/api/whatsapp/qr/${integrationId}`, {});
+          const qrStatusData = response as unknown as QRStatus;
+          console.log('Initial QR fetch:', qrStatusData);
+          setQrData(qrStatusData);
+          
+          if (qrStatusData.status === 'qr_ready') {
+            toast({
+              title: "Código QR generado",
+              description: "Escanea el código QR con WhatsApp",
+            });
+          }
+          
+          // Start polling for status changes
+          pollQRStatus(integrationId);
+        } catch (error) {
+          console.error('Error fetching initial QR:', error);
+          toast({
+            title: "Error",
+            description: "Error generando código QR",
+            variant: "destructive",
+          });
+        }
+      }, 1500);
     },
     onError: (error: any) => {
       toast({
@@ -176,7 +196,32 @@ export default function WhatsAppIntegrationPage() {
     },
   });
 
-  // Poll QR status
+  // Poll QR status with React Query
+  const { data: qrStatus, refetch: refetchQR } = useQuery({
+    queryKey: [`/api/whatsapp/qr/${currentIntegration?.id}`],
+    enabled: false, // Don't auto-fetch
+    retry: false,
+    refetchInterval: false,
+  });
+
+  // Update qrData when qrStatus changes
+  useEffect(() => {
+    if (qrStatus) {
+      setQrData(qrStatus as QRStatus);
+      console.log('QR Status updated:', qrStatus);
+      
+      if ((qrStatus as QRStatus).status === 'connected') {
+        toast({
+          title: "WhatsApp conectado",
+          description: "¡WhatsApp se ha conectado exitosamente!",
+        });
+        setShowQRDialog(false);
+        queryClient.invalidateQueries({ queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`] });
+      }
+    }
+  }, [qrStatus]);
+
+  // Manual polling function
   const pollQRStatus = async (integrationId?: number) => {
     const targetId = integrationId || currentIntegration?.id;
     if (!targetId) {
@@ -187,18 +232,18 @@ export default function WhatsAppIntegrationPage() {
     try {
       console.log('Polling QR status for integration:', targetId);
       const response = await apiRequest("GET", `/api/whatsapp/qr/${targetId}`, {});
-      const qrStatus = response as unknown as QRStatus;
-      console.log('QR Status received:', qrStatus);
-      setQrData(qrStatus);
+      const qrStatusData = response as unknown as QRStatus;
+      console.log('QR Status received:', qrStatusData);
+      setQrData(qrStatusData);
       
-      if (qrStatus.status === 'connected') {
+      if (qrStatusData.status === 'connected') {
         toast({
           title: "WhatsApp conectado",
           description: "¡WhatsApp se ha conectado exitosamente!",
         });
         setShowQRDialog(false);
         queryClient.invalidateQueries({ queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`] });
-      } else if (qrStatus.status === 'qr_ready' || qrStatus.status === 'connecting') {
+      } else if (qrStatusData.status === 'qr_ready' || qrStatusData.status === 'connecting') {
         // Continue polling
         setTimeout(() => pollQRStatus(targetId), 2000);
       }

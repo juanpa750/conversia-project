@@ -429,11 +429,11 @@ export function Chatbots() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="text-gray-500"
+                  className="text-green-600 hover:text-green-700"
                   asChild
                 >
                   <Link href={`/integrations/whatsapp?chatbot=${chatbot.id}`}>
-                    <RiWhatsappLine />
+                    <RiWhatsappLine className="h-4 w-4" />
                   </Link>
                 </Button>
                 <DropdownMenu>
@@ -547,7 +547,7 @@ export function Chatbots() {
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="text-gray-500"
+                        className="text-green-600 hover:text-green-700"
                         asChild
                       >
                         <Link href={`/integrations/whatsapp?chatbot=${chatbot.id}`}>
