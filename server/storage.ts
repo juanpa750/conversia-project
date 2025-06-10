@@ -383,7 +383,16 @@ export class SimpleStorage implements ISimpleStorage {
         productId: row.product_id,
         priority: row.priority,
         autoRespond: row.auto_respond,
-        operatingHours: row.operating_hours ? JSON.parse(row.operating_hours) : {},
+        operatingHours: (() => {
+          try {
+            if (typeof row.operating_hours === 'string') {
+              return JSON.parse(row.operating_hours);
+            }
+            return row.operating_hours || {};
+          } catch (e) {
+            return {};
+          }
+        })(),
         createdAt: row.created_at,
         user_id: row.user_id
       };
@@ -413,7 +422,16 @@ export class SimpleStorage implements ISimpleStorage {
         productId: row.product_id,
         priority: row.priority,
         autoRespond: row.auto_respond,
-        operatingHours: row.operating_hours ? JSON.parse(row.operating_hours) : {},
+        operatingHours: (() => {
+          try {
+            if (typeof row.operating_hours === 'string') {
+              return JSON.parse(row.operating_hours);
+            }
+            return row.operating_hours || {};
+          } catch (e) {
+            return {};
+          }
+        })(),
         createdAt: row.created_at,
         user_id: row.user_id
       };
