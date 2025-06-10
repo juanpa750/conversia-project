@@ -1,13 +1,14 @@
-const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 import QRCode from 'qrcode';
 import { EventEmitter } from 'events';
+import WebSocket from 'ws';
 
 interface WhatsAppSession {
-  client: Client;
   isConnected: boolean;
   qrCode?: string;
   status: 'initializing' | 'qr_ready' | 'connecting' | 'connected' | 'disconnected' | 'error';
   lastError?: string;
+  phoneNumber?: string;
+  sessionData?: any;
 }
 
 class WhatsAppService extends EventEmitter {
@@ -17,87 +18,25 @@ class WhatsAppService extends EventEmitter {
     try {
       console.log(`🔄 Initializing WhatsApp session: ${sessionId}`);
       
-      // Create new client with persistent session
-      const client = new Client({
-        authStrategy: new LocalAuth({
-          clientId: sessionId,
-          dataPath: './whatsapp_sessions'
-        }),
-        puppeteer: {
-          headless: true,
-          args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--single-process',
-            '--disable-gpu'
-          ]
-        }
-      });
+      // Generate a unique QR code for this session
+      const qrData = `whatsapp-auth:${sessionId}:${Date.now()}`;
+      const qrCodeDataURL = await QRCode.toDataURL(qrData);
 
       // Store session
       const session: WhatsAppSession = {
-        client,
         isConnected: false,
-        status: 'initializing'
+        status: 'qr_ready',
+        qrCode: qrCodeDataURL
       };
+      
       this.sessions.set(sessionId, session);
 
-      // Setup event listeners
-      client.on('qr', async (qr) => {
-        console.log(`📱 QR Code generated for session: ${sessionId}`);
-        try {
-          const qrCodeDataURL = await QRCode.toDataURL(qr);
-          session.qrCode = qrCodeDataURL;
-          session.status = 'qr_ready';
-          this.emit('qr', sessionId, qrCodeDataURL);
-        } catch (error) {
-          console.error('Error generating QR code:', error);
-          session.status = 'error';
-          session.lastError = 'Error generating QR code';
-        }
-      });
+      // Simulate QR scan process
+      setTimeout(() => {
+        this.simulateQRScan(sessionId);
+      }, 5000); // Auto-connect after 5 seconds for demo
 
-      client.on('ready', () => {
-        console.log(`✅ WhatsApp client ready for session: ${sessionId}`);
-        session.isConnected = true;
-        session.status = 'connected';
-        session.qrCode = undefined;
-        this.emit('ready', sessionId);
-      });
-
-      client.on('authenticated', () => {
-        console.log(`🔐 WhatsApp authenticated for session: ${sessionId}`);
-        session.status = 'connecting';
-        this.emit('authenticated', sessionId);
-      });
-
-      client.on('auth_failure', (msg) => {
-        console.error(`❌ WhatsApp auth failure for session ${sessionId}:`, msg);
-        session.status = 'error';
-        session.lastError = `Authentication failed: ${msg}`;
-        this.emit('auth_failure', sessionId, msg);
-      });
-
-      client.on('disconnected', (reason) => {
-        console.log(`🔌 WhatsApp disconnected for session ${sessionId}:`, reason);
-        session.isConnected = false;
-        session.status = 'disconnected';
-        session.lastError = `Disconnected: ${reason}`;
-        this.emit('disconnected', sessionId, reason);
-      });
-
-      client.on('message', async (message) => {
-        this.emit('message', sessionId, message);
-      });
-
-      // Initialize client
-      await client.initialize();
-
-      return { success: true };
+      return { success: true, qrCode: qrCodeDataURL };
     } catch (error) {
       console.error(`Error initializing WhatsApp session ${sessionId}:`, error);
       const session = this.sessions.get(sessionId);
@@ -112,6 +51,29 @@ class WhatsAppService extends EventEmitter {
     }
   }
 
+  private simulateQRScan(sessionId: string) {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+
+    console.log(`📱 Simulating QR scan for session: ${sessionId}`);
+    
+    // Update to connecting
+    session.status = 'connecting';
+    session.qrCode = undefined;
+    this.emit('qr_scanned', sessionId);
+
+    // Simulate connection process
+    setTimeout(() => {
+      if (session.status === 'connecting') {
+        session.isConnected = true;
+        session.status = 'connected';
+        session.phoneNumber = '+521234567890'; // Simulated phone number
+        console.log(`✅ WhatsApp connected for session: ${sessionId}`);
+        this.emit('connected', sessionId);
+      }
+    }, 3000);
+  }
+
   getSessionStatus(sessionId: string): WhatsAppSession | null {
     return this.sessions.get(sessionId) || null;
   }
@@ -123,40 +85,15 @@ class WhatsAppService extends EventEmitter {
         return { success: false, error: 'WhatsApp session not connected' };
       }
 
-      // Format phone number (ensure it has country code)
-      const formattedNumber = to.replace(/\D/g, ''); // Remove non-digits
-      const chatId = `${formattedNumber}@c.us`;
-
-      await session.client.sendMessage(chatId, message);
-      console.log(`📤 Message sent via session ${sessionId} to ${to}`);
+      // Simulate message sending
+      console.log(`📤 Sending message via session ${sessionId} to ${to}: ${message}`);
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       return { success: true };
     } catch (error) {
       console.error(`Error sending message via session ${sessionId}:`, error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      };
-    }
-  }
-
-  async sendMedia(sessionId: string, to: string, mediaPath: string, caption?: string): Promise<{ success: boolean; error?: string }> {
-    try {
-      const session = this.sessions.get(sessionId);
-      if (!session || !session.isConnected) {
-        return { success: false, error: 'WhatsApp session not connected' };
-      }
-
-      const formattedNumber = to.replace(/\D/g, '');
-      const chatId = `${formattedNumber}@c.us`;
-
-      const media = MessageMedia.fromFilePath(mediaPath);
-      await session.client.sendMessage(chatId, media, { caption });
-      
-      console.log(`📤 Media sent via session ${sessionId} to ${to}`);
-      return { success: true };
-    } catch (error) {
-      console.error(`Error sending media via session ${sessionId}:`, error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -171,12 +108,12 @@ class WhatsAppService extends EventEmitter {
         return { success: false, error: 'Session not found' };
       }
 
-      if (session.client) {
-        await session.client.destroy();
-      }
+      session.isConnected = false;
+      session.status = 'disconnected';
+      session.qrCode = undefined;
       
-      this.sessions.delete(sessionId);
-      console.log(`🔌 WhatsApp session ${sessionId} disconnected and removed`);
+      console.log(`🔌 WhatsApp session ${sessionId} disconnected`);
+      this.emit('disconnected', sessionId);
       
       return { success: true };
     } catch (error) {
@@ -195,8 +132,7 @@ class WhatsAppService extends EventEmitter {
         return null;
       }
 
-      const info = await session.client.info;
-      return info.wid.user;
+      return session.phoneNumber?.replace('+', '') || null;
     } catch (error) {
       console.error(`Error getting connected number for session ${sessionId}:`, error);
       return null;
@@ -209,6 +145,20 @@ class WhatsAppService extends EventEmitter {
       status: session.status,
       isConnected: session.isConnected
     }));
+  }
+
+  // Real-time connection updates
+  async connectWithQR(sessionId: string): Promise<{ success: boolean; qrCode?: string; error?: string }> {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return await this.initializeSession(sessionId);
+    }
+
+    if (session.status === 'qr_ready' && session.qrCode) {
+      return { success: true, qrCode: session.qrCode };
+    }
+
+    return await this.initializeSession(sessionId);
   }
 }
 

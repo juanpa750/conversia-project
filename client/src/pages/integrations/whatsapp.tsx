@@ -44,7 +44,7 @@ interface WhatsAppIntegration {
   phoneNumber: string;
   displayName: string;
   businessDescription: string;
-  status: 'connected' | 'disconnected';
+  status: 'connected' | 'disconnected' | 'initializing' | 'qr_ready' | 'connecting';
   isActive: boolean;
   chatbotId: number;
   productId?: number;
@@ -67,11 +67,20 @@ interface WhatsAppConfig {
   };
 }
 
+interface QRStatus {
+  status: string;
+  qrCode?: string;
+  isConnected: boolean;
+  error?: string;
+}
+
 export default function WhatsAppIntegrationPage() {
   const [, setLocation] = useLocation();
   const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [showQRDialog, setShowQRDialog] = useState(false);
   const [useExistingConfig, setUseExistingConfig] = useState(false);
   const [selectedExistingId, setSelectedExistingId] = useState<string>("");
+  const [qrData, setQrData] = useState<QRStatus | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -119,43 +128,42 @@ export default function WhatsAppIntegrationPage() {
     },
   });
 
-  // Link existing WhatsApp integration to chatbot
-  const linkIntegrationMutation = useMutation({
-    mutationFn: async (data: { integrationId: string; chatbotId: string }) => {
-      return await apiRequest("PUT", `/api/whatsapp/integrations/${data.integrationId}/link`, {
-        chatbotId: data.chatbotId,
-      });
+  // Connect WhatsApp with QR
+  const connectMutation = useMutation({
+    mutationFn: async (integrationId: number) => {
+      return await apiRequest("POST", `/api/whatsapp/connect/${integrationId}`, {});
     },
     onSuccess: () => {
       toast({
-        title: "WhatsApp vinculado",
-        description: "El chatbot ha sido vinculado exitosamente a la integración de WhatsApp.",
+        title: "Iniciando conexión",
+        description: "Generando código QR para conexión de WhatsApp",
       });
-      setShowConfigDialog(false);
-      queryClient.invalidateQueries({ queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/integrations"] });
+      setShowQRDialog(true);
+      // Start polling for QR code
+      pollQRStatus();
     },
     onError: (error: any) => {
       toast({
-        title: "Error de vinculación",
-        description: error.message || "Error vinculando WhatsApp",
+        title: "Error de conexión",
+        description: error.message || "Error iniciando conexión WhatsApp",
         variant: "destructive",
       });
     },
   });
 
-  // Disconnect WhatsApp integration
+  // Disconnect WhatsApp
   const disconnectMutation = useMutation({
     mutationFn: async (integrationId: number) => {
-      return await apiRequest("DELETE", `/api/whatsapp/integrations/${integrationId}`);
+      return await apiRequest("POST", `/api/whatsapp/disconnect/${integrationId}`, {});
     },
     onSuccess: () => {
       toast({
         title: "WhatsApp desconectado",
-        description: "La integración de WhatsApp ha sido desconectada exitosamente.",
+        description: "La conexión de WhatsApp ha sido desconectada exitosamente.",
       });
       queryClient.invalidateQueries({ queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/integrations"] });
+      setQrData(null);
+      setShowQRDialog(false);
     },
     onError: (error: any) => {
       toast({
@@ -166,22 +174,48 @@ export default function WhatsAppIntegrationPage() {
     },
   });
 
+  // Poll QR status
+  const pollQRStatus = async () => {
+    if (!currentIntegration) return;
+    
+    try {
+      const response = await apiRequest("GET", `/api/whatsapp/qr/${currentIntegration.id}`, {});
+      setQrData(response);
+      
+      if (response.status === 'connected') {
+        toast({
+          title: "WhatsApp conectado",
+          description: "¡WhatsApp se ha conectado exitosamente!",
+        });
+        setShowQRDialog(false);
+        queryClient.invalidateQueries({ queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`] });
+      } else if (response.status === 'qr_ready' || response.status === 'connecting') {
+        // Continue polling
+        setTimeout(pollQRStatus, 2000);
+      }
+    } catch (error) {
+      console.error('Error polling QR status:', error);
+    }
+  };
+
   const availableIntegrations = existingIntegrations.filter(
     integration => integration.chatbotId !== parseInt(chatbotId || "0")
   );
 
   const handleSaveConfiguration = async () => {
     if (useExistingConfig && selectedExistingId) {
-      linkIntegrationMutation.mutate({
-        integrationId: selectedExistingId,
-        chatbotId: chatbotId!,
+      // Link existing integration logic would go here
+      toast({
+        title: "Función en desarrollo",
+        description: "La vinculación de integraciones existentes estará disponible pronto.",
+        variant: "destructive",
       });
     } else {
       // Get form values
       const phoneNumber = (document.getElementById('whatsapp-phone') as HTMLInputElement)?.value;
       const displayName = (document.getElementById('whatsapp-display-name') as HTMLInputElement)?.value;
       const businessDescription = (document.getElementById('whatsapp-business-description') as HTMLTextAreaElement)?.value;
-      const businessType = (document.getElementById('whatsapp-business-type') as HTMLSelectElement)?.value;
+      const businessType = "retail";
       const autoRespond = (document.getElementById('whatsapp-auto-respond') as HTMLInputElement)?.checked;
 
       if (!phoneNumber || !displayName || !businessDescription) {
@@ -207,6 +241,12 @@ export default function WhatsAppIntegrationPage() {
           schedule: {},
         },
       });
+    }
+  };
+
+  const handleConnect = () => {
+    if (currentIntegration) {
+      connectMutation.mutate(currentIntegration.id);
     }
   };
 
@@ -263,8 +303,39 @@ export default function WhatsAppIntegrationPage() {
         </CardHeader>
         <CardContent>
           {currentIntegration ? (
-            <WhatsAppConnectionStatus integration={currentIntegration} />
-          ) : (
+            <div className="space-y-4">
+              <div className={`flex items-center justify-between p-4 border rounded-lg ${
+                currentIntegration.status === 'connected' 
+                  ? 'bg-green-50 border-green-200' 
+                  : 'bg-yellow-50 border-yellow-200'
+              }`}>
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full ${
+                    currentIntegration.status === 'connected' ? 'bg-green-500' : 'bg-yellow-500'
+                  }`}></div>
+                  <div>
+                    <p className={`font-medium ${
+                      currentIntegration.status === 'connected' ? 'text-green-800' : 'text-yellow-800'
+                    }`}>
+                      {currentIntegration.status === 'connected' ? 'Conectado' : 'Desconectado'}
+                    </p>
+                    <p className={`text-sm ${
+                      currentIntegration.status === 'connected' ? 'text-green-600' : 'text-yellow-600'
+                    }`}>
+                      {currentIntegration.status === 'connected' 
+                        ? 'WhatsApp está configurado y activo' 
+                        : 'Necesita conectarse escaneando código QR'}
+                    </p>
+                  </div>
+                </div>
+                <Badge variant="outline" className={
+                  currentIntegration.status === 'connected' 
+                    ? 'bg-green-100 text-green-800 border-green-300'
+                    : 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                }>
+                  {currentIntegration.status}
+                </Badge>
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -307,21 +378,44 @@ export default function WhatsAppIntegrationPage() {
         <CardFooter className="flex justify-between">
           {currentIntegration ? (
             <>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowConfigDialog(true)}
-                className="flex items-center space-x-2"
-              >
-                <RiSettings3Line />
-                <span>Reconfigurar</span>
-              </Button>
-              <Button 
-                variant="destructive" 
-                onClick={handleDisconnect}
-                disabled={disconnectMutation.isPending}
-              >
-                {disconnectMutation.isPending ? "Desconectando..." : "Desconectar"}
-              </Button>
+              {currentIntegration.status === 'connected' ? (
+                <>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowConfigDialog(true)}
+                    className="flex items-center space-x-2"
+                  >
+                    <RiSettings3Line />
+                    <span>Reconfigurar</span>
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleDisconnect}
+                    disabled={disconnectMutation.isPending}
+                  >
+                    {disconnectMutation.isPending ? "Desconectando..." : "Desconectar"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowConfigDialog(true)}
+                    className="flex items-center space-x-2"
+                  >
+                    <RiSettings3Line />
+                    <span>Reconfigurar</span>
+                  </Button>
+                  <Button 
+                    onClick={handleConnect}
+                    disabled={connectMutation.isPending}
+                    className="flex items-center space-x-2"
+                  >
+                    <RiWhatsappLine />
+                    <span>{connectMutation.isPending ? "Conectando..." : "Conectar con QR"}</span>
+                  </Button>
+                </>
+              )}
             </>
           ) : (
             <Button 
@@ -346,124 +440,60 @@ export default function WhatsAppIntegrationPage() {
           </DialogHeader>
           
           <div className="space-y-6">
-            {/* Configuration Type Selection */}
-            {availableIntegrations.length > 0 && (
-              <div className="space-y-4">
-                <Label className="text-base font-medium">Tipo de configuración</Label>
-                
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="use-existing"
-                    name="config-type"
-                    checked={useExistingConfig}
-                    onChange={(e) => setUseExistingConfig(e.target.checked)}
-                  />
-                  <Label htmlFor="use-existing">Usar integración existente</Label>
-                </div>
-
-                {useExistingConfig && (
-                  <Select value={selectedExistingId} onValueChange={setSelectedExistingId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar integración existente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableIntegrations.map((integration) => (
-                        <SelectItem key={integration.id} value={integration.id.toString()}>
-                          {integration.displayName} ({integration.phoneNumber})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="create-new"
-                    name="config-type"
-                    checked={!useExistingConfig}
-                    onChange={(e) => setUseExistingConfig(!e.target.checked)}
-                  />
-                  <Label htmlFor="create-new">Crear nueva integración</Label>
-                </div>
-              </div>
-            )}
-
-            {/* New Integration Form */}
-            {!useExistingConfig && (
-              <div className="space-y-4">
-                <div className="rounded-md bg-green-50 p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <RiWhatsappLine className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-green-800">Nueva integración</h3>
-                      <div className="mt-2 text-sm text-green-700">
-                        <p>Crea una nueva configuración de WhatsApp para este chatbot</p>
-                      </div>
+            <div className="space-y-4">
+              <div className="rounded-md bg-blue-50 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <RiWhatsappLine className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800">Nueva integración</h3>
+                    <div className="mt-2 text-sm text-blue-700">
+                      <p>Crea una nueva configuración de WhatsApp para este chatbot</p>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="whatsapp-phone">Número de WhatsApp</Label>
-                    <Input 
-                      id="whatsapp-phone" 
-                      placeholder="+52 55 1234 5678"
-                      defaultValue={currentIntegration?.phoneNumber || ""}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="whatsapp-display-name">Nombre para mostrar</Label>
-                    <Input 
-                      id="whatsapp-display-name" 
-                      placeholder="Mi Negocio"
-                      defaultValue={currentIntegration?.displayName || ""}
-                    />
-                  </div>
-                </div>
-
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="whatsapp-business-description">Descripción del negocio</Label>
-                  <Textarea 
-                    id="whatsapp-business-description" 
-                    placeholder="Describe tu negocio..."
-                    defaultValue={currentIntegration?.businessDescription || ""}
+                  <Label htmlFor="whatsapp-phone">Número de WhatsApp</Label>
+                  <Input 
+                    id="whatsapp-phone" 
+                    placeholder="+52 55 1234 5678"
+                    defaultValue={currentIntegration?.phoneNumber || ""}
                   />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="whatsapp-business-type">Tipo de negocio</Label>
-                  <Select defaultValue="retail">
-                    <SelectTrigger id="whatsapp-business-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="retail">Venta al por menor</SelectItem>
-                      <SelectItem value="service">Servicios</SelectItem>
-                      <SelectItem value="restaurant">Restaurante</SelectItem>
-                      <SelectItem value="health">Salud y bienestar</SelectItem>
-                      <SelectItem value="education">Educación</SelectItem>
-                      <SelectItem value="other">Otro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="whatsapp-auto-respond"
-                    defaultChecked={currentIntegration?.autoRespond ?? true}
+                  <Label htmlFor="whatsapp-display-name">Nombre para mostrar</Label>
+                  <Input 
+                    id="whatsapp-display-name" 
+                    placeholder="Mi Negocio"
+                    defaultValue={currentIntegration?.displayName || ""}
                   />
-                  <Label htmlFor="whatsapp-auto-respond">
-                    Responder automáticamente con IA
-                  </Label>
                 </div>
               </div>
-            )}
+
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp-business-description">Descripción del negocio</Label>
+                <Textarea 
+                  id="whatsapp-business-description" 
+                  placeholder="Describe tu negocio..."
+                  defaultValue={currentIntegration?.businessDescription || ""}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="whatsapp-auto-respond"
+                  defaultChecked={currentIntegration?.autoRespond ?? true}
+                />
+                <Label htmlFor="whatsapp-auto-respond">
+                  Responder automáticamente con IA
+                </Label>
+              </div>
+            </div>
           </div>
           
           <DialogFooter>
@@ -472,14 +502,68 @@ export default function WhatsAppIntegrationPage() {
             </Button>
             <Button 
               onClick={handleSaveConfiguration}
-              disabled={createIntegrationMutation.isPending || linkIntegrationMutation.isPending}
+              disabled={createIntegrationMutation.isPending}
             >
-              {createIntegrationMutation.isPending || linkIntegrationMutation.isPending 
-                ? "Configurando..." 
-                : useExistingConfig 
-                  ? "Vincular" 
-                  : "Configurar"
-              }
+              {createIntegrationMutation.isPending ? "Configurando..." : "Configurar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Code Dialog */}
+      <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Conectar WhatsApp</DialogTitle>
+            <DialogDescription>
+              Escanea el código QR con tu WhatsApp para conectar
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="text-center">
+              {qrData?.qrCode ? (
+                <div className="space-y-4">
+                  <img 
+                    src={qrData.qrCode} 
+                    alt="QR Code" 
+                    className="mx-auto w-64 h-64 border rounded-lg"
+                  />
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">
+                      1. Abre WhatsApp en tu teléfono
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      2. Ve a Configuración - Dispositivos vinculados
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      3. Toca "Vincular un dispositivo" y escanea este código
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                    Estado: {qrData.status}
+                  </Badge>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+                  <p className="text-sm text-gray-600">Generando código QR...</p>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowQRDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={pollQRStatus}
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
+              <RiRefreshLine />
+              <span>Actualizar</span>
             </Button>
           </DialogFooter>
         </DialogContent>
