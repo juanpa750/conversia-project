@@ -70,19 +70,23 @@ export default function WhatsAppCloudIntegration() {
   });
 
   // Get config validation
-  const { data: validation, refetch: refetchValidation } = useQuery({
+  const { data: validation, refetch: refetchValidation } = useQuery<{
+    isValid: boolean;
+    errors?: string[];
+  }>({
     queryKey: ['/api/whatsapp/cloud/config'],
     refetchInterval: 10000
   });
 
   useEffect(() => {
-    if (currentConfig) {
+    if (currentConfig && typeof currentConfig === 'object') {
+      const config = currentConfig as Record<string, any>;
       setConfig({
-        accessToken: currentConfig.whatsappAccessToken || '',
-        phoneNumberId: currentConfig.whatsappPhoneNumberId || '',
-        businessAccountId: currentConfig.whatsappBusinessAccountId || '',
-        verifyToken: currentConfig.whatsappVerifyToken || '',
-        monthlyFreeMessagesUsed: currentConfig.monthlyFreeMessagesUsed || 0,
+        accessToken: config.whatsappAccessToken || '',
+        phoneNumberId: config.whatsappPhoneNumberId || '',
+        businessAccountId: config.whatsappBusinessAccountId || '',
+        verifyToken: config.whatsappVerifyToken || '',
+        monthlyFreeMessagesUsed: config.monthlyFreeMessagesUsed || 0,
         freeMessagesLimit: 1000
       });
     }

@@ -783,6 +783,24 @@ Responde de manera natural y conversacional. Usa la información del producto pa
   // GET /api/whatsapp/cloud/status - Estado de conexión Cloud API
   app.get('/api/whatsapp/cloud/status', isAuthenticated, async (req: any, res) => {
     try {
+      const user = await simpleStorage.getUser(req.userId);
+      
+      if (!user?.whatsappAccessToken || !user?.whatsappPhoneNumberId) {
+        return res.json({ 
+          connected: false, 
+          error: 'WhatsApp credentials not configured' 
+        });
+      }
+
+      // Update WhatsApp API configuration with user's credentials
+      whatsappCloudAPI.config = {
+        accessToken: user.whatsappAccessToken,
+        phoneNumberId: user.whatsappPhoneNumberId,
+        verifyToken: user.whatsappVerifyToken || 'default_verify_token',
+        apiVersion: 'v21.0',
+        graphApiUrl: 'https://graph.facebook.com'
+      };
+
       const status = await whatsappCloudAPI.getConnectionStatus();
       res.json(status);
     } catch (error) {
@@ -812,8 +830,25 @@ Responde de manera natural y conversacional. Usa la información del producto pa
   // GET /api/whatsapp/cloud/config - Validar configuración
   app.get('/api/whatsapp/cloud/config', isAuthenticated, async (req: any, res) => {
     try {
-      const validation = whatsappCloudAPI.validateConfig();
-      res.json(validation);
+      const user = await simpleStorage.getUser(req.userId);
+      
+      const errors: string[] = [];
+      
+      if (!user?.whatsappAccessToken) {
+        errors.push('Access Token requerido');
+      }
+      
+      if (!user?.whatsappPhoneNumberId) {
+        errors.push('Phone Number ID requerido');
+      }
+      
+      if (!user?.whatsappVerifyToken) {
+        errors.push('Verify Token requerido');
+      }
+      
+      const isValid = errors.length === 0;
+      
+      res.json({ isValid, errors });
     } catch (error) {
       console.error('Error validating config:', error);
       res.status(500).json({ error: 'Failed to validate configuration' });

@@ -8,6 +8,7 @@ export interface ISimpleStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: any): Promise<User>;
+  updateUserWhatsAppConfig(id: string, config: any): Promise<User>;
 
   // WhatsApp connection operations
   getWhatsappConnection(userId: string): Promise<WhatsappConnection | undefined>;
@@ -57,6 +58,20 @@ export class SimpleStorage implements ISimpleStorage {
         role: userData.role || 'user'
       })
       .returning();
+    return user;
+  }
+
+  async updateUserWhatsAppConfig(id: string, config: any): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ ...config, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
     return user;
   }
 
