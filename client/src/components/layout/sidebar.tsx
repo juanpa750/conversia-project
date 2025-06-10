@@ -104,6 +104,18 @@ export function Sidebar() {
         </NavItem>
         
         <div className="mb-3 mt-6 px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
+          WhatsApp Master
+        </div>
+        
+        <NavItem 
+          href="/master/dashboard" 
+          icon={<RiTeamLine />} 
+          active={location.startsWith("/master")}
+        >
+          Dashboard Master
+        </NavItem>
+        
+        <div className="mb-3 mt-6 px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
           Configuración
         </div>
         
