@@ -8,7 +8,7 @@ async function testCompleteWhatsAppIntegration() {
     const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'prueba@botmaster.com', password: '123456' })
+      body: JSON.stringify({ email: 'prueba@conversia.com', password: '123456' })
     });
     
     const loginData = await loginResponse.json();
@@ -66,7 +66,7 @@ async function testCompleteWhatsAppIntegration() {
           body: JSON.stringify({
             integrationId: integration.id,
             to: '521234567890',
-            message: 'Hola! Este es un mensaje de prueba desde BotMaster 🤖'
+            message: 'Hola! Este es un mensaje de prueba desde ConversIA 🤖'
           })
         });
         

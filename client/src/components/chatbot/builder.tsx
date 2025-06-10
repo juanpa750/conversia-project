@@ -407,7 +407,6 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                 <TabsTrigger value="flow">Flujo</TabsTrigger>
                 <TabsTrigger value="instruction">Instrucción</TabsTrigger>
                 <TabsTrigger value="objective">Objetivo</TabsTrigger>
-                <TabsTrigger value="integrations">Integraciones</TabsTrigger>
               </TabsList>
             </div>
             
@@ -498,7 +497,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">Sin producto específico</SelectItem>
-                            {products?.map((product: any) => (
+                            {Array.isArray(products) && products.map((product: any) => (
                               <SelectItem key={product.id} value={product.id.toString()}>
                                 {product.name} - {product.price || 'Sin precio'}
                               </SelectItem>
@@ -891,135 +890,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
               </div>
             </TabsContent>
             
-            <TabsContent value="integrations" className="m-0 flex-1 outline-none">
-              <div className="max-h-[calc(100vh-12rem)] overflow-y-auto p-4">
-                <div className="space-y-6 pb-96">
-                  <div className="flex items-center gap-2">
-                    <RiWhatsappLine className="h-5 w-5" />
-                    <h3 className="text-lg font-medium">Conexión WhatsApp</h3>
-                  </div>
-                
-                  {/* WhatsApp Connection Status */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>📱 Estado de WhatsApp</CardTitle>
-                      <p className="text-sm text-gray-600">Gestiona la conexión de WhatsApp para este chatbot</p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                            <RiWhatsappLine className="h-6 w-6 text-white" />
-                          </div>
-                          <div>
-                            <h4 className="font-medium">WhatsApp Business</h4>
-                            <p className="text-sm text-gray-600">Conexión principal del negocio</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-sm font-medium text-green-600">Conectado</span>
-                          </div>
-                          <p className="text-xs text-gray-500">+52 XXX XXX XXXX</p>
-                        </div>
-                      </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <Button variant="outline" className="w-full">
-                          <RiSettings3Line className="mr-2 h-4 w-4" />
-                          Configurar
-                        </Button>
-                        <Button variant="outline" className="w-full">
-                          <RiTestTubeLine className="mr-2 h-4 w-4" />
-                          Probar Conexión
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Auto-activation Configuration */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>⚡ Activación Automática</CardTitle>
-                      <p className="text-sm text-gray-600">Configura cuándo este chatbot debe activarse automáticamente</p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 border rounded-lg">
-                          <div>
-                            <h4 className="font-medium">Activar por palabras clave</h4>
-                            <p className="text-sm text-gray-600">Se activa cuando detecta las palabras configuradas</p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <input type="checkbox" defaultChecked className="rounded" />
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between p-3 border rounded-lg">
-                          <div>
-                            <h4 className="font-medium">Respuesta automática</h4>
-                            <p className="text-sm text-gray-600">Responde automáticamente sin intervención humana</p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <input type="checkbox" defaultChecked className="rounded" />
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between p-3 border rounded-lg">
-                          <div>
-                            <h4 className="font-medium">Transferir a humano</h4>
-                            <p className="text-sm text-gray-600">Transfiere conversación si no puede resolver</p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <input type="checkbox" className="rounded" />
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Priority and Rules */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>🎯 Reglas de Prioridad</CardTitle>
-                      <p className="text-sm text-gray-600">Define la prioridad de este chatbot respecto a otros</p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="priority">Nivel de Prioridad</Label>
-                          <Select defaultValue="medium">
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar prioridad" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="high">Alta - Se activa primero</SelectItem>
-                              <SelectItem value="medium">Media - Prioridad normal</SelectItem>
-                              <SelectItem value="low">Baja - Se activa último</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="conflict-resolution">Resolución de Conflictos</Label>
-                          <Select defaultValue="priority">
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar método" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="priority">Por prioridad</SelectItem>
-                              <SelectItem value="keywords">Por cantidad de keywords</SelectItem>
-                              <SelectItem value="specificity">Por especificidad</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                </div>
-              </div>
-            </TabsContent>
           </Tabs>
         </div>
       </div>
