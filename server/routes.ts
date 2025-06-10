@@ -925,7 +925,7 @@ Responde de manera natural y conversacional. Usa la información del producto pa
     }
   });
 
-  // POST /api/master/add-whatsapp - Add client WhatsApp number
+  // POST /api/master/add-whatsapp - Add client WhatsApp number (AUTOMATED)
   app.post('/api/master/add-whatsapp', async (req, res) => {
     try {
       const { setupCode, phoneNumber, displayName } = req.body;
@@ -937,10 +937,49 @@ Responde de manera natural y conversacional. Usa la información del producto pa
       const result = await whatsappMasterAPI.addClientWhatsAppNumber(setupCode, phoneNumber, displayName);
 
       if (result.success) {
+        if (result.requiresVerification) {
+          res.json({
+            success: true,
+            phoneNumberId: result.phoneNumberId,
+            requiresVerification: true,
+            verificationId: result.verificationId,
+            message: 'Número agregado a Meta. Verifica el código SMS que recibirás',
+            nextStep: 'verification'
+          });
+        } else {
+          res.json({
+            success: true,
+            phoneNumberId: result.phoneNumberId,
+            message: 'Número de WhatsApp agregado exitosamente',
+            status: 'Tu WhatsApp ya está conectado y listo',
+            freeMessagesRemaining: 1000
+          });
+        }
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+
+    } catch (error) {
+      console.error('Error adding WhatsApp number:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  });
+
+  // POST /api/master/verify-phone - Verify phone with SMS code
+  app.post('/api/master/verify-phone', async (req, res) => {
+    try {
+      const { phoneNumberId, verificationCode } = req.body;
+      
+      if (!phoneNumberId || !verificationCode) {
+        return res.status(400).json({ error: 'Phone Number ID y código de verificación son requeridos' });
+      }
+
+      const result = await whatsappMasterAPI.completePhoneVerification(phoneNumberId, verificationCode);
+
+      if (result.success) {
         res.json({
           success: true,
-          phoneNumberId: result.phoneNumberId,
-          message: 'Número de WhatsApp agregado exitosamente',
+          message: 'WhatsApp verificado exitosamente',
           status: 'Tu WhatsApp ya está conectado y listo',
           freeMessagesRemaining: 1000
         });
@@ -949,7 +988,7 @@ Responde de manera natural y conversacional. Usa la información del producto pa
       }
 
     } catch (error) {
-      console.error('Error adding WhatsApp number:', error);
+      console.error('Error verifying phone:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   });

@@ -39,6 +39,103 @@ export class WhatsAppMasterAPI extends EventEmitter {
   }
 
   /**
+   * Automatically add client WhatsApp number to Meta Business Manager
+   */
+  async addClientNumberToMeta(phoneNumber: string, countryCode: string = '57'): Promise<{
+    success: boolean;
+    phoneNumberId?: string;
+    error?: string;
+  }> {
+    if (!process.env.WHATSAPP_BUSINESS_ACCOUNT_ID) {
+      return {
+        success: false,
+        error: 'Business Account ID not configured'
+      };
+    }
+
+    try {
+      // Clean phone number (remove any formatting)
+      const cleanNumber = phoneNumber.replace(/\D/g, '');
+      
+      // Add phone number to Business Manager
+      const response = await fetch(
+        `${this.config.graphApiUrl}/${this.config.apiVersion}/${process.env.WHATSAPP_BUSINESS_ACCOUNT_ID}/phone_numbers`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.config.accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            cc: countryCode,
+            phone_number: cleanNumber,
+            migrated_number: `+${countryCode}${cleanNumber}`
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.id) {
+        return {
+          success: true,
+          phoneNumberId: result.id
+        };
+      } else {
+        return {
+          success: false,
+          error: result.error?.message || 'Failed to add phone number to Meta'
+        };
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        error: `Network error: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Verify phone number with SMS code
+   */
+  async verifyPhoneNumber(phoneNumberId: string, verificationCode: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
+    try {
+      const response = await fetch(
+        `${this.config.graphApiUrl}/${this.config.apiVersion}/${phoneNumberId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.config.accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            code: verificationCode
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        return { success: true };
+      } else {
+        return {
+          success: false,
+          error: result.error?.message || 'Verification failed'
+        };
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        error: `Network error: ${error.message}`
+      };
+    }
+  }
+
+  /**
    * Generate unique setup code for new client
    */
   generateSetupCode(): string {
@@ -78,12 +175,14 @@ export class WhatsAppMasterAPI extends EventEmitter {
   }
 
   /**
-   * Add WhatsApp number to master account
+   * Add WhatsApp number to master account (FULLY AUTOMATED)
    */
   async addClientWhatsAppNumber(setupCode: string, phoneNumber: string, displayName: string): Promise<{
     success: boolean;
     phoneNumberId?: string;
     error?: string;
+    requiresVerification?: boolean;
+    verificationId?: string;
   }> {
     try {
       // Find client by setup code
@@ -93,38 +192,82 @@ export class WhatsAppMasterAPI extends EventEmitter {
         return { success: false, error: 'Código de configuración inválido' };
       }
 
-      // Simulate adding phone to Meta Business Manager
-      // In production, this would call Meta's API
-      const phoneNumberId = `phone_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      const businessAccountId = `business_${Date.now()}`;
+      // Step 1: Add phone number to Meta Business Manager
+      const metaResult = await this.addClientNumberToMeta(phoneNumber);
+      
+      if (!metaResult.success) {
+        return { 
+          success: false, 
+          error: `Error Meta API: ${metaResult.error}` 
+        };
+      }
 
-      // Save to whatsapp_numbers table
+      // Step 2: Save to whatsapp_numbers table
       await db.insert(whatsappNumbers).values({
         clientId: client.id,
         phoneNumber: phoneNumber,
-        phoneNumberId: phoneNumberId,
-        businessAccountId: businessAccountId,
+        phoneNumberId: metaResult.phoneNumberId!,
+        businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID || '',
         displayName: displayName,
-        verificationStatus: 'verified',
-        webhookConfigured: true
+        verificationStatus: 'pending_verification',
+        webhookConfigured: false
       });
 
-      // Update client with phone verification
+      // Step 3: Update client with phone info
       await db.update(users)
         .set({
-          phoneNumberId: phoneNumberId,
-          businessAccountId: businessAccountId,
-          phoneVerified: true
+          phoneNumberId: metaResult.phoneNumberId,
+          businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID || '',
+          phoneVerified: false // Will be true after SMS verification
         })
         .where(eq(users.id, client.id));
 
       return {
         success: true,
-        phoneNumberId: phoneNumberId
+        phoneNumberId: metaResult.phoneNumberId!,
+        requiresVerification: true,
+        verificationId: metaResult.phoneNumberId!
       };
 
     } catch (error) {
       console.error('Error adding WhatsApp number:', error);
+      return { success: false, error: 'Error interno del servidor' };
+    }
+  }
+
+  /**
+   * Complete phone verification with SMS code
+   */
+  async completePhoneVerification(phoneNumberId: string, verificationCode: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
+    try {
+      // Verify with Meta
+      const verifyResult = await this.verifyPhoneNumber(phoneNumberId, verificationCode);
+      
+      if (!verifyResult.success) {
+        return verifyResult;
+      }
+
+      // Update database records
+      await db.update(whatsappNumbers)
+        .set({
+          verificationStatus: 'verified',
+          webhookConfigured: true
+        })
+        .where(eq(whatsappNumbers.phoneNumberId, phoneNumberId));
+
+      await db.update(users)
+        .set({
+          phoneVerified: true
+        })
+        .where(eq(users.phoneNumberId, phoneNumberId));
+
+      return { success: true };
+
+    } catch (error) {
+      console.error('Error completing verification:', error);
       return { success: false, error: 'Error interno del servidor' };
     }
   }
