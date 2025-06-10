@@ -372,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify integration belongs to user
       const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);
-      if (!integration || integration.user_id !== req.userId) {
+      if (!integration || (integration.user_id !== req.userId && integration.userId !== req.userId)) {
         return res.status(404).json({ message: 'Integration not found' });
       }
 
@@ -402,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify integration belongs to user
       const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);
-      if (!integration || integration.user_id !== req.userId) {
+      if (!integration || (integration.user_id !== req.userId && integration.userId !== req.userId)) {
         return res.status(404).json({ message: 'Integration not found' });
       }
 

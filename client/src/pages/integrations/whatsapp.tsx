@@ -536,13 +536,16 @@ export default function WhatsAppIntegrationPage() {
           
           <div className="space-y-4">
             <div className="text-center">
-              {qrData?.qrCode ? (
+              {qrData?.qrCode && qrData.status === 'qr_ready' ? (
                 <div className="space-y-4">
                   <img 
                     src={qrData.qrCode} 
                     alt="QR Code" 
-                    className="mx-auto w-64 h-64 border rounded-lg"
-                    onError={() => console.error('Error loading QR image')}
+                    className="mx-auto w-64 h-64 border rounded-lg bg-white p-2"
+                    onError={(e) => {
+                      console.error('Error loading QR image:', e);
+                      console.log('QR Data:', qrData.qrCode?.substring(0, 100) + '...');
+                    }}
                     onLoad={() => console.log('QR image loaded successfully')}
                   />
                   <div className="space-y-2">
@@ -556,20 +559,39 @@ export default function WhatsAppIntegrationPage() {
                       3. Toca "Vincular un dispositivo" y escanea este código
                     </p>
                   </div>
-                  <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                    Estado: {qrData.status}
+                  <Badge variant="outline" className="bg-green-100 text-green-800">
+                    Código QR listo para escanear
+                  </Badge>
+                </div>
+              ) : qrData?.status === 'connecting' ? (
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="animate-pulse w-64 h-64 bg-gray-200 rounded-lg border flex items-center justify-center">
+                    <p className="text-gray-500">Conectando...</p>
+                  </div>
+                  <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+                    Conectando con WhatsApp...
+                  </Badge>
+                </div>
+              ) : qrData?.status === 'connected' ? (
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="w-64 h-64 bg-green-100 rounded-lg border flex items-center justify-center">
+                    <p className="text-green-600 font-semibold">¡Conectado!</p>
+                  </div>
+                  <Badge variant="outline" className="bg-green-100 text-green-800">
+                    WhatsApp conectado exitosamente
                   </Badge>
                 </div>
               ) : (
                 <div className="flex flex-col items-center space-y-4">
                   <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
                   <p className="text-sm text-gray-600">
-                    {qrData ? `Conectando... (${qrData.status})` : 'Generando código QR...'}
+                    Generando código QR...
                   </p>
                   {qrData && (
-                    <p className="text-xs text-gray-400">
-                      Debug: {JSON.stringify({ status: qrData.status, hasQR: !!qrData.qrCode })}
-                    </p>
+                    <div className="text-xs space-y-1">
+                      <p className="text-gray-400">Estado: {qrData.status}</p>
+                      <p className="text-gray-400">QR: {qrData.qrCode ? 'Disponible' : 'No disponible'}</p>
+                    </div>
                   )}
                 </div>
               )}
