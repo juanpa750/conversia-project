@@ -537,18 +537,21 @@ export default function WhatsAppIntegrationPage() {
           
           <div className="space-y-4">
             <div className="text-center">
-              {qrData?.qrCode && qrData.status === 'qr_ready' ? (
+              {qrData?.qrCode ? (
                 <div className="space-y-4">
-                  <img 
-                    src={qrData.qrCode} 
-                    alt="QR Code" 
-                    className="mx-auto w-64 h-64 border rounded-lg bg-white p-2"
-                    onError={(e) => {
-                      console.error('Error loading QR image:', e);
-                      console.log('QR Data:', qrData.qrCode?.substring(0, 100) + '...');
-                    }}
-                    onLoad={() => console.log('QR image loaded successfully')}
-                  />
+                  <div className="mx-auto w-64 h-64 border rounded-lg bg-white p-2 flex items-center justify-center">
+                    <img 
+                      src={qrData.qrCode} 
+                      alt="QR Code" 
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        console.error('Error loading QR image');
+                        console.log('QR Data length:', qrData.qrCode?.length);
+                        console.log('QR Data starts with:', qrData.qrCode?.substring(0, 50));
+                      }}
+                      onLoad={() => console.log('QR image loaded successfully')}
+                    />
+                  </div>
                   <div className="space-y-2">
                     <p className="text-sm text-gray-600">
                       1. Abre WhatsApp en tu teléfono
@@ -589,9 +592,12 @@ export default function WhatsAppIntegrationPage() {
                     Generando código QR...
                   </p>
                   {qrData && (
-                    <div className="text-xs space-y-1">
-                      <p className="text-gray-400">Estado: {qrData.status}</p>
-                      <p className="text-gray-400">QR: {qrData.qrCode ? 'Disponible' : 'No disponible'}</p>
+                    <div className="text-xs space-y-1 p-2 bg-gray-100 rounded">
+                      <p className="text-gray-600">Estado: <strong>{qrData.status}</strong></p>
+                      <p className="text-gray-600">QR: <strong>{qrData.qrCode ? 'Disponible' : 'No disponible'}</strong></p>
+                      {qrData.qrCode && (
+                        <p className="text-gray-600">Tamaño: <strong>{qrData.qrCode.length} caracteres</strong></p>
+                      )}
                     </div>
                   )}
                 </div>
