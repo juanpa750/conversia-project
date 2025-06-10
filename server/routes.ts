@@ -372,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify integration belongs to user
       const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);
-      if (!integration || integration.userId !== req.userId) {
+      if (!integration || integration.user_id !== req.userId) {
         return res.status(404).json({ message: 'Integration not found' });
       }
 
@@ -402,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify integration belongs to user
       const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);
-      if (!integration || integration.userId !== req.userId) {
+      if (!integration || integration.user_id !== req.userId) {
         return res.status(404).json({ message: 'Integration not found' });
       }
 
@@ -496,6 +496,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('WhatsApp disconnect error:', error);
       res.status(500).json({ message: 'Failed to disconnect WhatsApp' });
+    }
+  });
+
+  // Send message via WhatsApp
+  app.post("/api/whatsapp/send-message", isAuthenticated, async (req: any, res) => {
+    try {
+      const { integrationId, to, message } = req.body;
+      
+      // Verify integration belongs to user
+      const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);
+      if (!integration || integration.userId !== req.userId) {
+        return res.status(404).json({ message: 'Integration not found' });
+      }
+
+      const sessionId = `${req.userId}_${integrationId}`;
+      const result = await whatsappService.sendMessage(sessionId, to, message);
+      
+      if (result.success) {
+        res.json({ success: true, message: 'Message sent successfully' });
+      } else {
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error('Send message error:', error);
+      res.status(500).json({ message: 'Failed to send message' });
     }
   });
 
