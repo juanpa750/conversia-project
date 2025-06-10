@@ -147,7 +147,7 @@ export default function WhatsAppIntegrationPage() {
           console.log(`🔄 QR FETCH ATTEMPT ${retries}/${maxRetries}`);
           console.log('🔗 Integration ID:', integrationId);
           
-          const authToken = localStorage.getItem('token');
+          const authToken = localStorage.getItem('auth_token');
           console.log('🔑 Auth token present:', !!authToken);
           console.log('🔑 Token length:', authToken ? authToken.length : 0);
           
@@ -303,7 +303,7 @@ export default function WhatsAppIntegrationPage() {
     try {
       const response = await fetch(`http://localhost:5000/api/whatsapp/qr/${targetId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           'Content-Type': 'application/json'
         }
       });
