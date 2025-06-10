@@ -4,6 +4,7 @@ import { isAuthenticated, generateToken, hashPassword, comparePassword } from ".
 import { simpleStorage } from "./storage";
 import { whatsappService } from "./whatsappService";
 import { whatsappCloudAPI } from "./whatsappCloudAPI";
+import { whatsappMasterAPI } from "./whatsappMasterAPI";
 import { registerWhatsAppSimpleRoutes } from "./routes-whatsapp-simple";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
@@ -890,6 +891,158 @@ Responde de manera natural y conversacional. Usa la información del producto pa
     } catch (error) {
       console.error('Error updating WhatsApp config:', error);
       res.status(500).json({ error: 'Failed to update WhatsApp configuration' });
+    }
+  });
+
+  // MASTER API ROUTES - Multi-Client WhatsApp Management
+
+  // POST /api/master/register-client - Register new client
+  app.post('/api/master/register-client', async (req, res) => {
+    try {
+      const { name, email, businessName } = req.body;
+      
+      if (!name || !email || !businessName) {
+        return res.status(400).json({ error: 'Nombre, email y nombre del negocio son requeridos' });
+      }
+
+      const result = await whatsappMasterAPI.registerClient({
+        name,
+        email, 
+        businessName
+      });
+
+      res.json({
+        success: true,
+        setupCode: result.setupCode,
+        clientId: result.clientId,
+        message: 'Cliente registrado exitosamente',
+        nextStep: 'Agrega tu número de WhatsApp Business'
+      });
+
+    } catch (error) {
+      console.error('Error registering client:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  });
+
+  // POST /api/master/add-whatsapp - Add client WhatsApp number
+  app.post('/api/master/add-whatsapp', async (req, res) => {
+    try {
+      const { setupCode, phoneNumber, displayName } = req.body;
+      
+      if (!setupCode || !phoneNumber || !displayName) {
+        return res.status(400).json({ error: 'Código de configuración, número y nombre del negocio son requeridos' });
+      }
+
+      const result = await whatsappMasterAPI.addClientWhatsAppNumber(setupCode, phoneNumber, displayName);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          phoneNumberId: result.phoneNumberId,
+          message: 'Número de WhatsApp agregado exitosamente',
+          status: 'Tu WhatsApp ya está conectado y listo',
+          freeMessagesRemaining: 1000
+        });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+
+    } catch (error) {
+      console.error('Error adding WhatsApp number:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  });
+
+  // GET /api/master/metrics - Get all clients metrics
+  app.get('/api/master/metrics', async (req, res) => {
+    try {
+      const metrics = await whatsappMasterAPI.getAllClientsMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error('Error getting master metrics:', error);
+      res.status(500).json({ error: 'Error obteniendo métricas' });
+    }
+  });
+
+  // GET /api/master/client/:id/metrics - Get specific client metrics
+  app.get('/api/master/client/:id/metrics', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const metrics = await whatsappMasterAPI.getClientMetrics(id);
+      
+      if (metrics) {
+        res.json(metrics);
+      } else {
+        res.status(404).json({ error: 'Cliente no encontrado' });
+      }
+    } catch (error) {
+      console.error('Error getting client metrics:', error);
+      res.status(500).json({ error: 'Error obteniendo métricas del cliente' });
+    }
+  });
+
+  // GET /webhook/whatsapp - Verify webhook
+  app.get('/webhook/whatsapp', (req, res) => {
+    const mode = req.query['hub.mode'] as string;
+    const token = req.query['hub.verify_token'] as string;
+    const challenge = req.query['hub.challenge'] as string;
+
+    const verificationResult = whatsappMasterAPI.verifyWebhook(mode, token, challenge);
+    
+    if (verificationResult) {
+      res.status(200).send(verificationResult);
+    } else {
+      res.status(403).send('Forbidden');
+    }
+  });
+
+  // POST /webhook/whatsapp - Handle incoming messages (UNIFIED WEBHOOK)
+  app.post('/webhook/whatsapp', async (req, res) => {
+    try {
+      const body = req.body;
+      
+      if (body.object !== 'whatsapp_business_account') {
+        return res.status(404).send('Not Found');
+      }
+
+      // Process each entry
+      for (const entry of body.entry) {
+        const changes = entry.changes[0];
+        const value = changes.value;
+        
+        // Identify client by phone_number_id
+        const phoneNumberId = value.metadata.phone_number_id;
+        const client = await whatsappMasterAPI.findClientByPhoneId(phoneNumberId);
+        
+        if (!client) {
+          console.log(`Cliente no encontrado para phone_id: ${phoneNumberId}`);
+          continue;
+        }
+        
+        // Process incoming messages for this specific client
+        if (value.messages) {
+          for (const message of value.messages) {
+            await whatsappMasterAPI.processIncomingMessage(message, client);
+          }
+        }
+      }
+      
+      res.status(200).send('EVENT_RECEIVED');
+    } catch (error) {
+      console.error('Webhook error:', error);
+      res.status(500).send('Error processing webhook');
+    }
+  });
+
+  // GET /api/master/config/validate - Validate master configuration
+  app.get('/api/master/config/validate', async (req, res) => {
+    try {
+      const validation = whatsappMasterAPI.validateMasterConfig();
+      res.json(validation);
+    } catch (error) {
+      console.error('Error validating master config:', error);
+      res.status(500).json({ error: 'Error validando configuración' });
     }
   });
 

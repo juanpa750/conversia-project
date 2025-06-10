@@ -271,3 +271,5 @@ export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
 export type WhatsappMessage = typeof whatsappMessages.$inferSelect;
 export type InsertWhatsappMessage = z.infer<typeof insertWhatsappMessageSchema>;
+export type WhatsappNumber = typeof whatsappNumbers.$inferSelect;
+export type InsertWhatsappNumber = z.infer<typeof insertWhatsappNumberSchema>;
