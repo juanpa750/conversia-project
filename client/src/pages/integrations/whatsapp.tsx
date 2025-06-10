@@ -137,56 +137,66 @@ export default function WhatsAppIntegrationPage() {
       setShowQRDialog(true);
       setQrData(null); // Reset QR data
       
-      // Start immediate polling for QR code
-      let attempts = 0;
-      const maxAttempts = 10;
+      // Start QR fetching process
+      let retries = 0;
+      const maxRetries = 5;
       
-      const fetchQR = async () => {
-        attempts++;
+      const fetchQRWithRetries = async () => {
         try {
-          console.log(`Fetching QR attempt ${attempts}/${maxAttempts} for integration ${integrationId}`);
-          const response = await apiRequest("GET", `/api/whatsapp/qr/${integrationId}`, {});
-          const qrStatusData = response as unknown as QRStatus;
-          console.log('QR Response:', qrStatusData);
+          retries++;
+          console.log(`QR fetch attempt ${retries}/${maxRetries} for integration:`, integrationId);
           
-          setQrData(qrStatusData);
+          const authToken = localStorage.getItem('token');
+          if (!authToken) {
+            throw new Error('No auth token found');
+          }
           
-          if (qrStatusData.qrCode && qrStatusData.status === 'qr_ready') {
+          // Use apiRequest instead of direct fetch to ensure proper error handling
+          const qrData = await apiRequest("GET", `/api/whatsapp/qr/${integrationId}`, {});
+          console.log('QR API Response:', qrData);
+          
+          if (qrData && qrData.qrCode) {
+            console.log('QR Code received, length:', qrData.qrCode.length);
+            setQrData(qrData as QRStatus);
             toast({
               title: "Código QR generado",
               description: "Escanea el código QR con WhatsApp",
             });
-            // Start polling for connection status
+            // Start monitoring for connection
             pollQRStatus(integrationId);
             return;
           }
           
-          // If no QR yet and haven't reached max attempts, try again
-          if (attempts < maxAttempts) {
-            setTimeout(fetchQR, 1000);
+          // If no QR yet and still have retries, try again
+          if (retries < maxRetries) {
+            console.log('No QR yet, retrying in 1 second...');
+            setTimeout(fetchQRWithRetries, 1000);
           } else {
-            toast({
-              title: "Error",
-              description: "No se pudo generar el código QR después de varios intentos",
-              variant: "destructive",
-            });
+            throw new Error('Max retries reached without QR');
           }
+          
         } catch (error) {
-          console.error(`Error fetching QR (attempt ${attempts}):`, error);
-          if (attempts < maxAttempts) {
-            setTimeout(fetchQR, 1000);
+          console.error(`QR fetch error (attempt ${retries}):`, error);
+          
+          if (retries < maxRetries) {
+            setTimeout(fetchQRWithRetries, 1000);
           } else {
+            setQrData({ 
+              status: 'error', 
+              isConnected: false, 
+              error: error instanceof Error ? error.message : 'Error desconocido'
+            });
             toast({
               title: "Error",
-              description: "Error generando código QR",
+              description: "No se pudo generar el código QR",
               variant: "destructive",
             });
           }
         }
       };
       
-      // Start fetching after a short delay to allow session initialization
-      setTimeout(fetchQR, 1000);
+      // Start after allowing backend to initialize
+      setTimeout(fetchQRWithRetries, 1500);
     },
     onError: (error: any) => {
       toast({
@@ -245,39 +255,41 @@ export default function WhatsAppIntegrationPage() {
     }
   }, [qrStatus]);
 
-  // Manual polling function
+  // Simplified polling function
   const pollQRStatus = async (integrationId?: number) => {
     const targetId = integrationId || currentIntegration?.id;
-    if (!targetId) {
-      console.log('No integration ID for polling');
-      return;
-    }
+    if (!targetId) return;
     
     try {
-      console.log('Polling QR status for integration:', targetId);
-      const response = await apiRequest("GET", `/api/whatsapp/qr/${targetId}`, {});
-      const qrStatusData = response as unknown as QRStatus;
-      console.log('QR Status received:', qrStatusData);
-      setQrData(qrStatusData);
+      const response = await fetch(`http://localhost:5000/api/whatsapp/qr/${targetId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
-      if (qrStatusData.status === 'connected') {
-        toast({
-          title: "WhatsApp conectado",
-          description: "¡WhatsApp se ha conectado exitosamente!",
-        });
-        setShowQRDialog(false);
-        queryClient.invalidateQueries({ queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`] });
-      } else if (qrStatusData.status === 'qr_ready' || qrStatusData.status === 'connecting') {
-        // Continue polling
-        setTimeout(() => pollQRStatus(targetId), 2000);
+      if (response.ok) {
+        const qrStatusData = await response.json();
+        console.log('Polling status:', qrStatusData.status);
+        
+        if (qrStatusData.status === 'connected') {
+          setQrData(qrStatusData);
+          toast({
+            title: "WhatsApp conectado",
+            description: "¡WhatsApp se ha conectado exitosamente!",
+          });
+          setShowQRDialog(false);
+          queryClient.invalidateQueries({ queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`] });
+          return;
+        }
+        
+        // Continue polling if still waiting for connection
+        if (qrStatusData.status === 'qr_ready') {
+          setTimeout(() => pollQRStatus(targetId), 3000);
+        }
       }
     } catch (error) {
-      console.error('Error polling QR status:', error);
-      toast({
-        title: "Error",
-        description: "Error obteniendo código QR",
-        variant: "destructive",
-      });
+      console.error('Polling error:', error);
     }
   };
 
