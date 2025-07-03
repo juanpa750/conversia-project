@@ -6,6 +6,7 @@ import { whatsappService } from "./whatsappService";
 import { whatsappCloudAPI } from "./whatsappCloudAPI";
 import { whatsappMasterAPI } from "./whatsappMasterAPI";
 import { whatsappWebService } from "./whatsappWebService";
+import { whatsappWebSimulator } from "./whatsappWebSimulator";
 import { registerWhatsAppSimpleRoutes } from "./routes-whatsapp-simple";
 import { CRMService } from "./crmService";
 import { populateCRMTestData } from "./populateCRMData";
@@ -1221,19 +1222,32 @@ Responde de manera natural y conversacional. Usa la información del producto pa
   });
 
   // WhatsApp Web Routes
-  // POST /api/whatsapp-web/init-session - Initialize WhatsApp Web session
+  // POST /api/whatsapp-web/init-session - Initialize WhatsApp Web session (with fallback to simulator)
   app.post('/api/whatsapp-web/init-session', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.userId;
       console.log(`🚀 Initializing WhatsApp Web session for user: ${userId}`);
       
-      const result = await whatsappWebService.initializeSession(userId);
-      
-      res.json({ 
-        success: true, 
-        sessionId: result.sessionId,
-        message: 'Sesión inicializada. Esperando código QR...'
-      });
+      try {
+        // Intentar primero con WhatsApp Web real
+        const result = await whatsappWebService.initializeSession(userId);
+        res.json({ 
+          success: true, 
+          sessionId: result.sessionId,
+          message: 'Sesión inicializada. Esperando código QR...'
+        });
+      } catch (realError) {
+        console.log('🔄 WhatsApp Web real falló, usando simulador...');
+        
+        // Si falla, usar el simulador
+        const result = await whatsappWebSimulator.initializeSession(userId);
+        res.json({ 
+          success: true,
+          sessionId: result.sessionId,
+          isSimulated: true,
+          message: 'Modo demostración activado - Simulador de WhatsApp Web' 
+        });
+      }
     } catch (error) {
       console.error('Error initializing WhatsApp Web session:', error);
       res.status(500).json({ 
@@ -1247,7 +1261,17 @@ Responde de manera natural y conversacional. Usa la información del producto pa
   app.get('/api/whatsapp-web/status', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.userId;
-      const status = whatsappWebService.getSessionStatus(userId);
+      
+      // Intentar primero con WhatsApp Web real
+      let status = whatsappWebService.getSessionStatus(userId);
+      
+      // Si no hay sesión real, verificar simulador
+      if (status.status === 'disconnected') {
+        const simulatorStatus = whatsappWebSimulator.getSessionStatus(userId);
+        if (simulatorStatus.status !== 'disconnected') {
+          status = simulatorStatus;
+        }
+      }
       
       res.json(status);
     } catch (error) {
