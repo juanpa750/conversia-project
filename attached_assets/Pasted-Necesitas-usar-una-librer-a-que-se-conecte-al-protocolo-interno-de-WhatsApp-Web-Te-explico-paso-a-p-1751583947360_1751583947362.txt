@@ -1,0 +1,285 @@
+Necesitas usar una librería que se conecte al protocolo interno de WhatsApp Web. Te explico paso a paso:
+1. Librería Recomendada: whatsapp-web.js
+javascript// Instalación
+npm install whatsapp-web.js qrcode-terminal
+
+// Implementación básica
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
+
+const client = new Client({
+    authStrategy: new LocalAuth({
+        clientId: "cliente-123" // ID único por cliente
+    }),
+    puppeteer: {
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    }
+});
+
+// Generar QR para que el cliente escanee
+client.on('qr', (qr) => {
+    // Enviar este QR al frontend para que el cliente lo escanee
+    console.log('QR RECEIVED', qr);
+    // Puedes enviarlo por Socket.io a tu frontend
+    io.emit('qr-code', qr);
+});
+
+// Cuando se conecta exitosamente
+client.on('ready', () => {
+    console.log('Cliente conectado!');
+    // Guardar estado de conexión en tu base de datos
+});
+
+// Escuchar mensajes entrantes
+client.on('message', async (message) => {
+    // Aquí es donde entra tu IA
+    const response = await processWithAI(message.body);
+    
+    // Responder automáticamente
+    await message.reply(response);
+});
+2. Arquitectura Completa para Tu CRM
+typescript// server/services/whatsappWebService.ts
+import { Client, LocalAuth } from 'whatsapp-web.js';
+import { AIService } from './aiService';
+import { CRMService } from './crmService';
+
+export class WhatsAppWebService {
+    private clients: Map<string, Client> = new Map();
+    private aiService: AIService;
+    private crmService: CRMService;
+    
+    constructor() {
+        this.aiService = new AIService();
+        this.crmService = new CRMService();
+    }
+    
+    /**
+     * Inicializa una nueva sesión de WhatsApp Web para un cliente
+     * Este método genera el QR que el cliente debe escanear
+     */
+    async initializeWhatsAppSession(userId: string): Promise<string> {
+        const client = new Client({
+            authStrategy: new LocalAuth({
+                clientId: `user-${userId}`
+            }),
+            puppeteer: {
+                headless: true,
+                args: ['--no-sandbox']
+            }
+        });
+        
+        // Guardar referencia del cliente
+        this.clients.set(userId, client);
+        
+        return new Promise((resolve, reject) => {
+            // Escuchar el QR
+            client.on('qr', (qr) => {
+                resolve(qr); // Devolver el QR para mostrar en frontend
+            });
+            
+            // Cuando se conecta
+            client.on('ready', async () => {
+                await this.setupMessageHandlers(userId, client);
+                await this.updateUserStatus(userId, 'connected');
+            });
+            
+            // Manejar desconexión
+            client.on('disconnected', async () => {
+                await this.updateUserStatus(userId, 'disconnected');
+                this.clients.delete(userId);
+            });
+            
+            // Inicializar
+            client.initialize();
+            
+            // Timeout si no se conecta en 2 minutos
+            setTimeout(() => {
+                reject(new Error('Timeout esperando conexión'));
+            }, 120000);
+        });
+    }
+    
+    /**
+     * Configura los manejadores de mensajes con IA
+     */
+    private async setupMessageHandlers(userId: string, client: Client) {
+        client.on('message', async (message) => {
+            try {
+                // Evitar responder a mensajes propios
+                if (message.fromMe) return;
+                
+                // Obtener información del contacto
+                const contact = await this.getOrCreateContact(userId, message.from);
+                
+                // Obtener configuración del chatbot del usuario
+                const chatbotConfig = await this.getChatbotConfig(userId);
+                
+                // Procesar con IA
+                const aiResponse = await this.aiService.generateResponse({
+                    message: message.body,
+                    contactId: contact.id,
+                    chatbotConfig: chatbotConfig
+                });
+                
+                // Responder si la IA está activada
+                if (aiResponse && chatbotConfig.enabled) {
+                    await message.reply(aiResponse.text);
+                    
+                    // Guardar conversación en CRM
+                    await this.crmService.saveConversation({
+                        userId,
+                        contactId: contact.id,
+                        incomingMessage: message.body,
+                        aiResponse: aiResponse.text
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Error procesando mensaje:', error);
+            }
+        });
+    }
+    
+    /**
+     * Envía mensaje manual desde el CRM
+     */
+    async sendMessage(userId: string, phoneNumber: string, message: string) {
+        const client = this.clients.get(userId);
+        
+        if (!client) {
+            throw new Error('Cliente no conectado');
+        }
+        
+        // Formatear número para WhatsApp
+        const chatId = phoneNumber.includes('@') ? phoneNumber : `${phoneNumber}@c.us`;
+        
+        await client.sendMessage(chatId, message);
+    }
+    
+    /**
+     * Obtiene el estado de conexión
+     */
+    getConnectionStatus(userId: string): string {
+        const client = this.clients.get(userId);
+        return client ? 'connected' : 'disconnected';
+    }
+}
+3. Frontend para Mostrar el QR
+tsx// client/src/components/WhatsAppSetup.tsx
+import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode.react';
+import { useSocket } from '../hooks/useSocket';
+
+export const WhatsAppSetup: React.FC = () => {
+    const [qrCode, setQrCode] = useState<string>('');
+    const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
+    const socket = useSocket();
+    
+    useEffect(() => {
+        if (socket) {
+            // Escuchar el QR del servidor
+            socket.on('qr-code', (qr: string) => {
+                setQrCode(qr);
+                setStatus('connecting');
+            });
+            
+            // Escuchar cambios de estado
+            socket.on('whatsapp-status', (newStatus: string) => {
+                setStatus(newStatus as any);
+            });
+        }
+    }, [socket]);
+    
+    const handleConnect = async () => {
+        try {
+            // Solicitar inicio de sesión
+            const response = await fetch('/api/whatsapp/init-session', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.qr) {
+                setQrCode(data.qr);
+                setStatus('connecting');
+            }
+        } catch (error) {
+            console.error('Error iniciando sesión:', error);
+        }
+    };
+    
+    return (
+        <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+            <h2 className="text-2xl font-bold mb-4">Conectar WhatsApp</h2>
+            
+            {status === 'disconnected' && (
+                <div className="text-center">
+                    <p className="mb-4">Para activar la IA en WhatsApp, necesitas conectar tu cuenta.</p>
+                    <button 
+                        onClick={handleConnect}
+                        className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600"
+                    >
+                        Conectar WhatsApp
+                    </button>
+                </div>
+            )}
+            
+            {status === 'connecting' && qrCode && (
+                <div className="text-center">
+                    <p className="mb-4">Escanea este código QR con tu WhatsApp:</p>
+                    <div className="flex justify-center">
+                        <QRCode value={qrCode} size={256} />
+                    </div>
+                    <p className="mt-4 text-sm text-gray-600">
+                        1. Abre WhatsApp en tu teléfono<br/>
+                        2. Ve a Configuración > Dispositivos vinculados<br/>
+                        3. Toca "Vincular un dispositivo"<br/>
+                        4. Escanea este código QR
+                    </p>
+                </div>
+            )}
+            
+            {status === 'connected' && (
+                <div className="text-center">
+                    <div className="text-green-500 text-4xl mb-4">✓</div>
+                    <h3 className="text-xl font-semibold mb-2">¡Conectado!</h3>
+                    <p className="text-gray-600">
+                        Tu WhatsApp está conectado. La IA comenzará a responder automáticamente a los mensajes.
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+};
+4. Integración con tu Sistema de Pagos
+typescript// server/middleware/subscriptionMiddleware.ts
+export const requireActiveSubscription = async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user.id;
+    
+    // Verificar si el usuario tiene suscripción activa
+    const subscription = await db.query(`
+        SELECT subscription_status, subscription_expires_at 
+        FROM users 
+        WHERE id = $1
+    `, [userId]);
+    
+    if (!subscription.rows[0] || 
+        subscription.rows[0].subscription_status !== 'active' ||
+        new Date() > subscription.rows[0].subscription_expires_at) {
+        
+        return res.status(403).json({
+            error: 'Suscripción requerida',
+            message: 'Necesitas una suscripción activa para usar WhatsApp IA'
+        });
+    }
+    
+    next();
+};
+
+// Aplicar middleware a rutas de WhatsApp
+app.use('/api/whatsapp', requireActiveSubscription);
