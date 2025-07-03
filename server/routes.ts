@@ -5,6 +5,7 @@ import { simpleStorage } from "./storage";
 import { whatsappService } from "./whatsappService";
 import { whatsappCloudAPI } from "./whatsappCloudAPI";
 import { whatsappMasterAPI } from "./whatsappMasterAPI";
+import { whatsappWebService } from "./whatsappWebService";
 import { registerWhatsAppSimpleRoutes } from "./routes-whatsapp-simple";
 import { CRMService } from "./crmService";
 import { populateCRMTestData } from "./populateCRMData";
@@ -1216,6 +1217,92 @@ Responde de manera natural y conversacional. Usa la información del producto pa
     } catch (error) {
       console.error('Error populating CRM test data:', error);
       res.status(500).json({ error: 'Error al crear datos de prueba' });
+    }
+  });
+
+  // WhatsApp Web Routes
+  // POST /api/whatsapp-web/init-session - Initialize WhatsApp Web session
+  app.post('/api/whatsapp-web/init-session', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      console.log(`🚀 Initializing WhatsApp Web session for user: ${userId}`);
+      
+      const result = await whatsappWebService.initializeSession(userId);
+      
+      res.json({ 
+        success: true, 
+        sessionId: result.sessionId,
+        message: 'Sesión inicializada. Esperando código QR...'
+      });
+    } catch (error) {
+      console.error('Error initializing WhatsApp Web session:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Error inicializando sesión de WhatsApp' 
+      });
+    }
+  });
+
+  // GET /api/whatsapp-web/status - Get session status and QR
+  app.get('/api/whatsapp-web/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const status = whatsappWebService.getSessionStatus(userId);
+      
+      res.json(status);
+    } catch (error) {
+      console.error('Error getting WhatsApp Web status:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Error obteniendo estado de WhatsApp' 
+      });
+    }
+  });
+
+  // POST /api/whatsapp-web/send-message - Send manual message
+  app.post('/api/whatsapp-web/send-message', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const { phoneNumber, message } = req.body;
+
+      if (!phoneNumber || !message) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Número de teléfono y mensaje son requeridos' 
+        });
+      }
+
+      await whatsappWebService.sendMessage(userId, phoneNumber, message);
+      
+      res.json({ 
+        success: true, 
+        message: 'Mensaje enviado exitosamente' 
+      });
+    } catch (error) {
+      console.error('Error sending WhatsApp message:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Error enviando mensaje' 
+      });
+    }
+  });
+
+  // POST /api/whatsapp-web/disconnect - Disconnect session
+  app.post('/api/whatsapp-web/disconnect', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      await whatsappWebService.destroySession(userId);
+      
+      res.json({ 
+        success: true, 
+        message: 'Sesión de WhatsApp desconectada' 
+      });
+    } catch (error) {
+      console.error('Error disconnecting WhatsApp Web:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Error desconectando WhatsApp' 
+      });
     }
   });
 
