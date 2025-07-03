@@ -188,6 +188,42 @@ export const businessServices = pgTable("business_services", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Historial de conversaciones para CRM
+export const conversationHistory = pgTable("conversation_history", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  
+  // Información del contacto
+  contactPhone: varchar("contact_phone").notNull(),
+  contactName: varchar("contact_name"),
+  contactEmail: varchar("contact_email"),
+  
+  // Información del mensaje
+  messageType: varchar("message_type").notNull(), // 'incoming', 'outgoing', 'automated'
+  messageContent: text("message_content"),
+  chatbotId: integer("chatbot_id").references(() => chatbots.id),
+  productId: integer("product_id").references(() => businessProducts.id),
+  serviceId: integer("service_id").references(() => businessServices.id),
+  
+  // CRM y pipeline
+  leadStage: varchar("lead_stage").default('new_contact'), // 'new_contact', 'engaged', 'qualified', 'proposal_sent', 'sale_closed', 'lost'
+  estimatedValue: decimal("estimated_value", { precision: 10, scale: 2 }),
+  priority: varchar("priority").default('medium'), // 'low', 'medium', 'high'
+  
+  // Análisis de conversación
+  sentiment: varchar("sentiment"), // 'positive', 'neutral', 'negative'
+  intent: varchar("intent"), // 'information', 'purchase', 'support', 'complaint'
+  urgency: varchar("urgency").default('low'), // 'low', 'medium', 'high'
+  
+  // Metadatos
+  responseTime: integer("response_time"), // segundos
+  isRead: boolean("is_read").default(false),
+  tags: text("tags").array(),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Citas agendadas (para caso 2)
 export const appointments = pgTable("appointments", {
   id: serial("id").primaryKey(),
@@ -253,6 +289,7 @@ export const insertBusinessServiceSchema = createInsertSchema(businessServices);
 export const insertAppointmentSchema = createInsertSchema(appointments);
 export const insertWhatsappMessageSchema = createInsertSchema(whatsappMessages);
 export const insertWhatsappNumberSchema = createInsertSchema(whatsappNumbers);
+export const insertConversationHistorySchema = createInsertSchema(conversationHistory);
 
 // Tipos
 export type User = typeof users.$inferSelect;
@@ -273,3 +310,5 @@ export type WhatsappMessage = typeof whatsappMessages.$inferSelect;
 export type InsertWhatsappMessage = z.infer<typeof insertWhatsappMessageSchema>;
 export type WhatsappNumber = typeof whatsappNumbers.$inferSelect;
 export type InsertWhatsappNumber = z.infer<typeof insertWhatsappNumberSchema>;
+export type ConversationHistory = typeof conversationHistory.$inferSelect;
+export type InsertConversationHistory = z.infer<typeof insertConversationHistorySchema>;

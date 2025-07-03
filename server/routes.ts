@@ -6,6 +6,8 @@ import { whatsappService } from "./whatsappService";
 import { whatsappCloudAPI } from "./whatsappCloudAPI";
 import { whatsappMasterAPI } from "./whatsappMasterAPI";
 import { registerWhatsAppSimpleRoutes } from "./routes-whatsapp-simple";
+import { CRMService } from "./crmService";
+import { populateCRMTestData } from "./populateCRMData";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 
@@ -1082,6 +1084,138 @@ Responde de manera natural y conversacional. Usa la información del producto pa
     } catch (error) {
       console.error('Error validating master config:', error);
       res.status(500).json({ error: 'Error validando configuración' });
+    }
+  });
+
+  // ===== CRM ROUTES =====
+  
+  // GET /api/crm/metrics - Get CRM metrics
+  app.get('/api/crm/metrics', isAuthenticated, async (req: any, res) => {
+    try {
+      const dateRange = req.query.dateRange as string || 'last_30_days';
+      const metrics = await CRMService.getCRMMetrics(req.userId, dateRange);
+      res.json(metrics);
+    } catch (error) {
+      console.error('Error fetching CRM metrics:', error);
+      res.status(500).json({ error: 'Error al obtener métricas del CRM' });
+    }
+  });
+
+  // GET /api/crm/pipeline - Get sales pipeline
+  app.get('/api/crm/pipeline', isAuthenticated, async (req: any, res) => {
+    try {
+      const pipeline = await CRMService.getSalesPipeline(req.userId);
+      res.json(pipeline);
+    } catch (error) {
+      console.error('Error fetching sales pipeline:', error);
+      res.status(500).json({ error: 'Error al obtener pipeline de ventas' });
+    }
+  });
+
+  // GET /api/crm/contacts - Get contacts overview
+  app.get('/api/crm/contacts', isAuthenticated, async (req: any, res) => {
+    try {
+      const contacts = await CRMService.getContactsOverview(req.userId);
+      res.json(contacts);
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+      res.status(500).json({ error: 'Error al obtener contactos' });
+    }
+  });
+
+  // PUT /api/crm/contacts/:phone/stage - Update lead stage
+  app.put('/api/crm/contacts/:phone/stage', isAuthenticated, async (req: any, res) => {
+    try {
+      const { phone } = req.params;
+      const { stage, estimatedValue } = req.body;
+      
+      if (!stage) {
+        return res.status(400).json({ error: 'Etapa es requerida' });
+      }
+
+      const success = await CRMService.updateLeadStage(req.userId, phone, stage, estimatedValue);
+      
+      if (success) {
+        res.json({ success: true, message: 'Etapa actualizada exitosamente' });
+      } else {
+        res.status(500).json({ error: 'Error al actualizar etapa' });
+      }
+    } catch (error) {
+      console.error('Error updating lead stage:', error);
+      res.status(500).json({ error: 'Error al actualizar etapa del lead' });
+    }
+  });
+
+  // POST /api/crm/conversations - Log new conversation
+  app.post('/api/crm/conversations', isAuthenticated, async (req: any, res) => {
+    try {
+      const conversationData = {
+        ...req.body,
+        userId: req.userId
+      };
+
+      const success = await CRMService.logConversation(conversationData);
+      
+      if (success) {
+        res.json({ success: true, message: 'Conversación registrada exitosamente' });
+      } else {
+        res.status(500).json({ error: 'Error al registrar conversación' });
+      }
+    } catch (error) {
+      console.error('Error logging conversation:', error);
+      res.status(500).json({ error: 'Error al registrar conversación' });
+    }
+  });
+
+  // POST /api/crm/setup-table - Create conversation_history table (development only)
+  app.post('/api/crm/setup-table', isAuthenticated, async (req: any, res) => {
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS conversation_history (
+          id SERIAL PRIMARY KEY,
+          user_id VARCHAR NOT NULL,
+          contact_phone VARCHAR NOT NULL,
+          contact_name VARCHAR,
+          contact_email VARCHAR,
+          message_type VARCHAR NOT NULL,
+          message_content TEXT,
+          chatbot_id INTEGER,
+          product_id INTEGER,
+          service_id INTEGER,
+          lead_stage VARCHAR DEFAULT 'new_contact',
+          estimated_value DECIMAL(10,2),
+          priority VARCHAR DEFAULT 'medium',
+          sentiment VARCHAR,
+          intent VARCHAR,
+          urgency VARCHAR DEFAULT 'low',
+          response_time INTEGER,
+          is_read BOOLEAN DEFAULT false,
+          tags TEXT[],
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+      
+      res.json({ success: true, message: 'Tabla conversation_history creada exitosamente' });
+    } catch (error) {
+      console.error('Error creating table:', error);
+      res.status(500).json({ error: 'Error al crear tabla' });
+    }
+  });
+
+  // POST /api/crm/populate-test-data - Populate test data for CRM (development only)
+  app.post('/api/crm/populate-test-data', isAuthenticated, async (req: any, res) => {
+    try {
+      const result = await populateCRMTestData(req.userId);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(500).json(result);
+      }
+    } catch (error) {
+      console.error('Error populating CRM test data:', error);
+      res.status(500).json({ error: 'Error al crear datos de prueba' });
     }
   });
 

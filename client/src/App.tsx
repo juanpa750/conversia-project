@@ -18,6 +18,7 @@ import SubscriptionCheckout from "@/pages/subscription/checkout";
 import Settings from "@/pages/settings";
 import Support from "@/pages/support";
 import CRMDashboard from "@/pages/crm";
+import CRMDashboardNew from "@/pages/crm/dashboard";
 import WhatsAppConnect from "@/pages/integrations/whatsapp-connect";
 import WhatsAppBotConfig from "@/pages/integrations/whatsapp-bot";
 import WhatsAppIntegrationPage from "@/pages/integrations/whatsapp";
@@ -110,6 +111,11 @@ function Router() {
             </Layout>
           </Route>
           <Route path="/crm">
+            <Layout>
+              <CRMDashboardNew />
+            </Layout>
+          </Route>
+          <Route path="/crm/legacy">
             <Layout>
               <CRMDashboard />
             </Layout>
