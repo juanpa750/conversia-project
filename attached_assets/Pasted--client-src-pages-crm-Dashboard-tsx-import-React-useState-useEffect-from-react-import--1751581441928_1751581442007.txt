@@ -1,0 +1,157 @@
+// client/src/pages/crm/Dashboard.tsx
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { BarChart, LineChart, PieChart } from 'recharts';
+
+export const CRMDashboard: React.FC = () => {
+  const [dateRange, setDateRange] = useState('last_30_days');
+  
+  const { data: metrics, isLoading } = useQuery({
+    queryKey: ['crm-metrics', dateRange],
+    queryFn: () => fetchCRMMetrics(dateRange)
+  });
+  
+  const { data: contacts } = useQuery({
+    queryKey: ['contacts-overview'],
+    queryFn: fetchContactsOverview
+  });
+  
+  const { data: salesPipeline } = useQuery({
+    queryKey: ['sales-pipeline'],
+    queryFn: fetchSalesPipeline
+  });
+  
+  if (isLoading) return <LoadingSpinner />;
+  
+  return (
+    <div className="space-y-6">
+      {/* Métricas principales */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          title="Contactos Totales"
+          value={metrics?.totalContacts || 0}
+          change={metrics?.contactsChange || 0}
+          icon="users"
+        />
+        <MetricCard
+          title="Leads Calificados"
+          value={metrics?.qualifiedLeads || 0}
+          change={metrics?.leadsChange || 0}
+          icon="target"
+        />
+        <MetricCard
+          title="Ventas del Mes"
+          value={formatCurrency(metrics?.monthlySales || 0)}
+          change={metrics?.salesChange || 0}
+          icon="dollar-sign"
+        />
+        <MetricCard
+          title="Tasa de Conversión"
+          value={`${metrics?.conversionRate || 0}%`}
+          change={metrics?.conversionChange || 0}
+          icon="trending-up"
+        />
+      </div>
+      
+      {/* Gráficos */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Conversaciones por Día</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LineChart 
+              width={400} 
+              height={300} 
+              data={metrics?.dailyConversations || []}
+            >
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="count" stroke="#2563eb" />
+            </LineChart>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Distribución de Leads</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PieChart width={400} height={300}>
+              <Pie
+                data={metrics?.leadDistribution || []}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                fill="#8884d8"
+                label
+              />
+              <Tooltip />
+            </PieChart>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Pipeline de Ventas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Pipeline de Ventas</CardTitle>
+          <CardDescription>
+            Seguimiento de oportunidades por etapa
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SalesPipelineKanban pipeline={salesPipeline || []} />
+        </CardContent>
+      </Card>
+      
+      {/* Tabla de Contactos Recientes */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Contactos Recientes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ContactsTable contacts={contacts?.recent || []} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// Componente de Kanban para Pipeline
+const SalesPipelineKanban: React.FC<{ pipeline: any[] }> = ({ pipeline }) => {
+  const stages = [
+    { id: 'lead', name: 'Leads', color: 'bg-gray-100' },
+    { id: 'qualified_lead', name: 'Calificados', color: 'bg-blue-100' },
+    { id: 'proposal', name: 'Propuesta', color: 'bg-yellow-100' },
+    { id: 'negotiation', name: 'Negociación', color: 'bg-orange-100' },
+    { id: 'closed_won', name: 'Ganadas', color: 'bg-green-100' },
+    { id: 'closed_lost', name: 'Perdidas', color: 'bg-red-100' }
+  ];
+  
+  return (
+    <div className="flex space-x-4 overflow-x-auto">
+      {stages.map(stage => (
+        <div key={stage.id} className={`min-w-64 ${stage.color} p-4 rounded-lg`}>
+          <h3 className="font-semibold mb-3">{stage.name}</h3>
+          <div className="space-y-2">
+            {pipeline
+              .filter(item => item.stage === stage.id)
+              .map(item => (
+                <div key={item.id} className="bg-white p-3 rounded shadow-sm">
+                  <h4 className="font-medium">{item.title}</h4>
+                  <p className="text-sm text-gray-600">{item.contact_name}</p>
+                  <p className="text-sm font-medium text-green-600">
+                    {formatCurrency(item.estimated_value)}
+                  </p>
+                </div>
+              ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
