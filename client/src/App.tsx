@@ -23,7 +23,7 @@ import WhatsAppConnect from "@/pages/integrations/whatsapp-connect";
 import WhatsAppBotConfig from "@/pages/integrations/whatsapp-bot";
 import WhatsAppIntegrationPage from "@/pages/integrations/whatsapp";
 import WhatsAppCloudIntegration from "@/pages/integrations/whatsapp-cloud";
-import MasterDashboard from "@/pages/master/dashboard";
+import MasterDashboard from "@/pages/master/dashboard-simple";
 import MultiWhatsAppAccounts from "@/pages/whatsapp/multi-accounts";
 import WhatsAppSimpleConnect from "@/pages/whatsapp/simple-connect";
 import WhatsApp from "@/pages/WhatsApp";

@@ -1,5 +1,6 @@
 import whatsappWeb from 'whatsapp-web.js';
 const { Client, LocalAuth } = whatsappWeb;
+import { execSync } from 'child_process';
 import { storage } from './storage';
 import { enhancedAI } from './enhancedAIService';
 import { CRMService } from './crmService';
@@ -22,6 +23,20 @@ export class WhatsAppWebService extends EventEmitter {
   }
 
   /**
+   * Detecta automáticamente el path de Chromium en el sistema
+   */
+  private getChromiumPath(): string {
+    try {
+      const chromiumPath = execSync('which chromium', { encoding: 'utf8' }).trim();
+      console.log(`📍 Chromium found at: ${chromiumPath}`);
+      return chromiumPath;
+    } catch (error) {
+      console.warn('⚠️ Chromium not found, using default path');
+      return '/usr/bin/chromium-browser'; // fallback
+    }
+  }
+
+  /**
    * Inicializa una nueva sesión de WhatsApp Web para un usuario
    */
   async initializeSession(userId: string): Promise<{ success: boolean; sessionId: string }> {
@@ -38,6 +53,7 @@ export class WhatsAppWebService extends EventEmitter {
       }),
       puppeteer: {
         headless: true,
+        executablePath: this.getChromiumPath(),
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -53,7 +69,13 @@ export class WhatsAppWebService extends EventEmitter {
           '--disable-plugins',
           '--disable-background-timer-throttling',
           '--disable-backgrounding-occluded-windows',
-          '--disable-renderer-backgrounding'
+          '--disable-renderer-backgrounding',
+          '--disable-crash-reporter',
+          '--disable-in-process-stack-traces',
+          '--disable-logging',
+          '--disable-dev-shm-usage',
+          '--remote-debugging-port=9222',
+          '--user-data-dir=/tmp/chrome-user-data'
         ]
       }
     });
