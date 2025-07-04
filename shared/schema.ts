@@ -254,6 +254,19 @@ export const insertAppointmentSchema = createInsertSchema(appointments);
 export const insertWhatsappMessageSchema = createInsertSchema(whatsappMessages);
 export const insertWhatsappNumberSchema = createInsertSchema(whatsappNumbers);
 
+// Tabla de contactos para WhatsApp Web
+export const contacts = pgTable("contacts", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  phone: varchar("phone").notNull(),
+  name: varchar("name").notNull(),
+  source: varchar("source").default('whatsapp'),
+  lastMessageAt: timestamp("last_message_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertContactSchema = createInsertSchema(contacts);
+
 // Tipos
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
@@ -273,3 +286,5 @@ export type WhatsappMessage = typeof whatsappMessages.$inferSelect;
 export type InsertWhatsappMessage = z.infer<typeof insertWhatsappMessageSchema>;
 export type WhatsappNumber = typeof whatsappNumbers.$inferSelect;
 export type InsertWhatsappNumber = z.infer<typeof insertWhatsappNumberSchema>;
+export type Contact = typeof contacts.$inferSelect;
+export type InsertContact = z.infer<typeof insertContactSchema>;

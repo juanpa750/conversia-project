@@ -6,6 +6,7 @@ import { whatsappService } from "./whatsappService";
 import { whatsappCloudAPI } from "./whatsappCloudAPI";
 import { whatsappMasterAPI } from "./whatsappMasterAPI";
 import { registerWhatsAppSimpleRoutes } from "./routes-whatsapp-simple";
+import { whatsappWebService } from "./whatsappWebService";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 
@@ -1082,6 +1083,108 @@ Responde de manera natural y conversacional. Usa la información del producto pa
     } catch (error) {
       console.error('Error validating master config:', error);
       res.status(500).json({ error: 'Error validando configuración' });
+    }
+  });
+
+  // ===========================================
+  // WHATSAPP WEB ROUTES - whatsapp-web.js
+  // ===========================================
+
+  // POST /api/whatsapp-web/init-session - Initialize WhatsApp Web session
+  app.post('/api/whatsapp-web/init-session', isAuthenticated, async (req: any, res) => {
+    try {
+      const { chatbotId } = req.body;
+      
+      console.log(`🚀 Iniciando sesión WhatsApp Web para usuario: ${req.userId}`);
+      
+      const result = await whatsappWebService.initializeSession(req.userId, chatbotId);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          qrCode: result.qrCode,
+          message: 'Sesión iniciada. Escanea el código QR con tu WhatsApp.'
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error || 'Error iniciando sesión'
+        });
+      }
+    } catch (error) {
+      console.error('Error iniciando sesión WhatsApp Web:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  });
+
+  // GET /api/whatsapp-web/status - Get connection status
+  app.get('/api/whatsapp-web/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const status = whatsappWebService.getConnectionStatus(req.userId);
+      res.json({ status });
+    } catch (error) {
+      console.error('Error obteniendo estado WhatsApp Web:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  });
+
+  // POST /api/whatsapp-web/send-message - Send manual message
+  app.post('/api/whatsapp-web/send-message', isAuthenticated, async (req: any, res) => {
+    try {
+      const { phoneNumber, message } = req.body;
+      
+      if (!phoneNumber || !message) {
+        return res.status(400).json({
+          success: false,
+          error: 'Número de teléfono y mensaje son requeridos'
+        });
+      }
+      
+      const result = await whatsappWebService.sendMessage(req.userId, phoneNumber, message);
+      res.json(result);
+    } catch (error) {
+      console.error('Error enviando mensaje WhatsApp Web:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  });
+
+  // POST /api/whatsapp-web/disconnect - Disconnect session
+  app.post('/api/whatsapp-web/disconnect', isAuthenticated, async (req: any, res) => {
+    try {
+      await whatsappWebService.disconnectSession(req.userId);
+      res.json({
+        success: true,
+        message: 'Sesión desconectada exitosamente'
+      });
+    } catch (error) {
+      console.error('Error desconectando WhatsApp Web:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  });
+
+  // GET /api/whatsapp-web/sessions - Get all sessions (admin only)
+  app.get('/api/whatsapp-web/sessions', isAuthenticated, async (req: any, res) => {
+    try {
+      // Basic admin check (could be improved)
+      const user = await simpleStorage.getUser(req.userId);
+      if (user?.email !== 'admin@conversia.com') {
+        return res.status(403).json({ error: 'Acceso denegado' });
+      }
+      
+      const sessions = whatsappWebService.getAllSessions();
+      res.json(sessions);
+    } catch (error) {
+      console.error('Error obteniendo sesiones WhatsApp Web:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
     }
   });
 

@@ -33,6 +33,11 @@ export interface ISimpleStorage {
   getProduct(id: number): Promise<any>;
   updateProduct(id: number, updates: any): Promise<any>;
   getAppointments(userId: string): Promise<any[]>;
+  
+  // Contact operations for WhatsApp Web
+  getContactByPhone(userId: string, phone: string): Promise<any>;
+  createContact(contact: any): Promise<any>;
+  updateWhatsappIntegration(id: number, updates: any): Promise<any>;
 }
 
 export class SimpleStorage implements ISimpleStorage {
@@ -516,6 +521,72 @@ export class SimpleStorage implements ISimpleStorage {
       );
     } catch (error) {
       console.error('Error updating WhatsApp integration phone:', error);
+      throw error;
+    }
+  }
+
+  async updateWhatsappIntegration(id: number, updates: any): Promise<any> {
+    try {
+      const setClause = [];
+      const values = [];
+      
+      if (updates.status !== undefined) {
+        setClause.push('status = ?');
+        values.push(updates.status);
+      }
+      if (updates.connectedAt !== undefined) {
+        setClause.push('connected_at = ?');
+        values.push(updates.connectedAt);
+      }
+      if (updates.lastMessageAt !== undefined) {
+        setClause.push('last_message_at = ?');
+        values.push(updates.lastMessageAt);
+      }
+      
+      setClause.push('updated_at = NOW()');
+      values.push(id);
+      
+      const query = `UPDATE whatsapp_integrations SET ${setClause.join(', ')} WHERE id = ?`;
+      
+      await db.execute(sql`UPDATE whatsapp_integrations SET status = ${updates.status}, updated_at = NOW() WHERE id = ${id}`);
+      
+      return await this.getWhatsappIntegrationById(id);
+    } catch (error) {
+      console.error('Error updating WhatsApp integration:', error);
+      throw error;
+    }
+  }
+
+  // Contact operations for WhatsApp Web
+  async getContactByPhone(userId: string, phone: string): Promise<any> {
+    try {
+      const result = await db.execute(
+        sql`SELECT * FROM contacts WHERE user_id = ${userId} AND phone = ${phone} LIMIT 1`
+      );
+      return result.rows?.[0] || null;
+    } catch (error) {
+      console.error('Error getting contact by phone:', error);
+      return null;
+    }
+  }
+
+  async createContact(contact: any): Promise<any> {
+    try {
+      const result = await db.execute(sql`
+        INSERT INTO contacts (
+          user_id, phone, name, source, created_at
+        ) VALUES (
+          ${contact.userId},
+          ${contact.phone},
+          ${contact.name},
+          ${contact.source || 'whatsapp'},
+          NOW()
+        )
+        RETURNING *
+      `);
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error creating contact:', error);
       throw error;
     }
   }

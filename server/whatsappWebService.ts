@@ -1,445 +1,458 @@
-import QRCode from 'qrcode';
-import { storage } from './storage';
+import pkg from 'whatsapp-web.js';
+const { Client, LocalAuth, MessageMedia } = pkg;
+import qrcode from 'qrcode';
+import { enhancedAI } from './enhancedAIService';
+import { chatbotProductAI } from './chatbotProductAIService';
+import { advancedAIService } from './advancedAIService';
+import { simpleStorage } from './storage';
 import { EventEmitter } from 'events';
-import path from 'path';
-import fs from 'fs';
 
-interface WhatsAppWebSession {
-  userId: string;
-  status: 'disconnected' | 'qr_pending' | 'authenticating' | 'connected' | 'error';
+interface WhatsAppSession {
+  client: Client;
+  status: 'initializing' | 'qr_ready' | 'connecting' | 'connected' | 'disconnected' | 'error';
   qrCode?: string;
-  lastError?: string;
-  connectedAt?: Date;
-  phoneNumber?: string;
-  profileName?: string;
-  simulatedClient?: any;
+  lastActivity: Date;
+  userId: string;
+  chatbotId?: number;
 }
 
-class WhatsAppWebService extends EventEmitter {
-  private sessions: Map<string, WhatsAppWebSession> = new Map();
-  private aiService: any; // Importaremos el servicio de IA
+interface MessageContext {
+  userId: string;
+  chatbotId?: number;
+  contactPhone: string;
+  contactName?: string;
+  messageHistory: string[];
+}
 
+export class WhatsAppWebService extends EventEmitter {
+  private sessions: Map<string, WhatsAppSession> = new Map();
+  private messageHistory: Map<string, string[]> = new Map();
+  
   constructor() {
     super();
-    this.setupDirectories();
+    // Limpiar sesiones inactivas cada 30 minutos
+    setInterval(() => {
+      this.cleanupInactiveSessions();
+    }, 30 * 60 * 1000);
   }
 
-  private setupDirectories() {
-    const sessionDir = path.join(process.cwd(), '.wwebjs_auth');
-    if (!fs.existsSync(sessionDir)) {
-      fs.mkdirSync(sessionDir, { recursive: true });
-    }
-  }
-
-  async initializeSession(userId: string): Promise<void> {
-    if (this.sessions.has(userId)) {
-      await this.disconnectSession(userId);
-    }
-
-    const client = new Client({
-      authStrategy: new LocalAuth({
-        clientId: `user_${userId}`,
-        dataPath: path.join(process.cwd(), '.wwebjs_auth')
-      }),
-      puppeteer: {
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process',
-          '--disable-gpu'
-        ]
-      }
-    });
-
-    const session: WhatsAppWebSession = {
-      userId,
-      client,
-      status: 'disconnected'
-    };
-
-    this.sessions.set(userId, session);
-    this.setupClientEvents(session);
-
+  /**
+   * Inicializa una nueva sesión de WhatsApp Web para un usuario
+   */
+  async initializeSession(userId: string, chatbotId?: number): Promise<{ success: boolean; qrCode?: string; error?: string }> {
     try {
-      await client.initialize();
-    } catch (error: any) {
-      session.status = 'error';
-      session.lastError = error.message;
-      this.emit('session_error', userId, error.message);
-    }
-  }
+      console.log(`📱 Inicializando sesión WhatsApp para usuario: ${userId}`);
+      
+      // Cerrar sesión existente si la hay
+      await this.disconnectSession(userId);
+      
+      const client = new Client({
+        authStrategy: new LocalAuth({
+          clientId: `conversia-${userId}`,
+          dataPath: './whatsapp-sessions'
+        }),
+        puppeteer: {
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-gpu'
+          ]
+        }
+      });
 
-  private setupClientEvents(session: WhatsAppWebSession) {
-    const { client, userId } = session;
+      const session: WhatsAppSession = {
+        client,
+        status: 'initializing',
+        lastActivity: new Date(),
+        userId,
+        chatbotId
+      };
 
-    client.on('qr', async (qr) => {
-      try {
-        const qrCodeData = await QRCode.toDataURL(qr, {
-          width: 512,
-          margin: 2,
-          color: {
-            dark: '#000000',
-            light: '#FFFFFF'
+      this.sessions.set(userId, session);
+
+      return new Promise((resolve) => {
+        let resolved = false;
+
+        // Timeout de 2 minutos para generar QR
+        const timeout = setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            session.status = 'error';
+            this.sessions.delete(userId);
+            resolve({ success: false, error: 'Timeout esperando código QR' });
+          }
+        }, 120000);
+
+        // Escuchar eventos del cliente
+        client.on('qr', async (qr) => {
+          try {
+            console.log(`🔍 QR generado para usuario: ${userId}`);
+            
+            // Generar QR como imagen base64
+            const qrImage = await qrcode.toDataURL(qr, {
+              width: 300,
+              margin: 2,
+              color: {
+                dark: '#000000',
+                light: '#FFFFFF'
+              }
+            });
+
+            session.qrCode = qrImage;
+            session.status = 'qr_ready';
+            
+            // Emitir evento para frontend
+            this.emit('qr', { userId, qrCode: qrImage });
+            
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(timeout);
+              resolve({ success: true, qrCode: qrImage });
+            }
+          } catch (error) {
+            console.error('Error generando QR:', error);
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(timeout);
+              resolve({ success: false, error: 'Error generando código QR' });
+            }
           }
         });
-        
-        session.qrCode = qrCodeData;
-        session.status = 'qr_pending';
-        
-        this.emit('qr_code', userId, qrCodeData);
-        
-        // Actualizar estado en base de datos
-        await this.updateSessionStatus(userId, 'qr_pending');
-      } catch (error: any) {
-        session.status = 'error';
-        session.lastError = error.message;
-        this.emit('session_error', userId, error.message);
-      }
-    });
 
-    client.on('authenticated', () => {
-      session.status = 'authenticating';
-      this.emit('authenticated', userId);
-    });
-
-    client.on('ready', async () => {
-      try {
-        const info = client.info;
-        session.status = 'connected';
-        session.connectedAt = new Date();
-        session.phoneNumber = info.wid.user;
-        session.profileName = info.pushname;
-        session.qrCode = undefined;
-
-        this.emit('ready', userId, {
-          phoneNumber: session.phoneNumber,
-          profileName: session.profileName
+        client.on('ready', async () => {
+          console.log(`✅ WhatsApp conectado para usuario: ${userId}`);
+          session.status = 'connected';
+          session.lastActivity = new Date();
+          
+          // Configurar manejadores de mensajes
+          await this.setupMessageHandlers(userId, client);
+          
+          // Actualizar estado en base de datos
+          await this.updateConnectionStatus(userId, 'connected');
+          
+          // Emitir evento para frontend
+          this.emit('connected', { userId });
         });
 
-        // Actualizar en base de datos
-        await this.updateSessionStatus(userId, 'connected', {
-          phoneNumber: session.phoneNumber,
-          profileName: session.profileName,
-          connectedAt: session.connectedAt
+        client.on('disconnected', async (reason) => {
+          console.log(`❌ WhatsApp desconectado para usuario: ${userId}, razón: ${reason}`);
+          session.status = 'disconnected';
+          
+          // Actualizar estado en base de datos
+          await this.updateConnectionStatus(userId, 'disconnected');
+          
+          // Emitir evento para frontend
+          this.emit('disconnected', { userId, reason });
+          
+          // Limpiar sesión
+          this.sessions.delete(userId);
         });
 
-        console.log(`WhatsApp Web session ready for user ${userId}: ${session.profileName} (${session.phoneNumber})`);
-      } catch (error: any) {
-        session.status = 'error';
-        session.lastError = error.message;
-        this.emit('session_error', userId, error.message);
-      }
-    });
+        client.on('auth_failure', (msg) => {
+          console.log(`🚫 Fallo de autenticación para usuario: ${userId}, error: ${msg}`);
+          session.status = 'error';
+          
+          this.emit('auth_failure', { userId, error: msg });
+          
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+            resolve({ success: false, error: 'Fallo de autenticación' });
+          }
+        });
 
+        // Inicializar cliente
+        client.initialize();
+      });
+
+    } catch (error) {
+      console.error('Error inicializando sesión WhatsApp:', error);
+      return { success: false, error: 'Error interno del servidor' };
+    }
+  }
+
+  /**
+   * Configura los manejadores de mensajes con IA
+   */
+  private async setupMessageHandlers(userId: string, client: Client): Promise<void> {
     client.on('message', async (message) => {
       try {
-        // Solo procesar mensajes entrantes
-        if (!message.fromMe && !message.isStatus) {
-          await this.handleIncomingMessage(userId, message);
+        // Ignorar mensajes propios, de grupos y de estados
+        if (message.fromMe || message.from.includes('@g.us') || message.type === 'e2e_notification') return;
+        
+        console.log(`📨 Mensaje recibido de ${message.from}: ${message.body}`);
+        
+        // Obtener configuración del usuario
+        const session = this.sessions.get(userId);
+        if (!session) return;
+
+        // Crear o actualizar contacto
+        const contact = await this.getOrCreateContact(userId, message.from, 'Cliente WhatsApp');
+        
+        // Obtener historial de conversación
+        const historyKey = `${userId}-${message.from}`;
+        const history = this.messageHistory.get(historyKey) || [];
+        
+        // Agregar mensaje entrante al historial
+        history.push(`Cliente: ${message.body}`);
+        
+        // Mantener solo los últimos 10 mensajes
+        if (history.length > 10) {
+          history.splice(0, history.length - 10);
         }
-      } catch (error: any) {
-        console.error(`Error handling message for user ${userId}:`, error);
+        
+        this.messageHistory.set(historyKey, history);
+
+        // Obtener configuración del chatbot
+        const chatbotConfig = await this.getChatbotConfig(userId, session.chatbotId);
+        
+        if (!chatbotConfig || !chatbotConfig.autoRespond) {
+          console.log(`🤖 Auto-respuesta desactivada para usuario: ${userId}`);
+          return;
+        }
+
+        // Generar respuesta con IA
+        const aiResponse = await this.generateAIResponse({
+          userId,
+          chatbotId: session.chatbotId,
+          contactPhone: message.from,
+          contactName: contact?.name,
+          messageHistory: history
+        }, message.body);
+
+        if (aiResponse) {
+          // Enviar respuesta
+          await message.reply(aiResponse);
+          
+          // Agregar respuesta al historial
+          history.push(`ConversIA: ${aiResponse}`);
+          this.messageHistory.set(historyKey, history);
+          
+          // Guardar conversación en base de datos
+          await this.saveConversation(userId, contact.id, message.body, aiResponse);
+          
+          console.log(`🤖 Respuesta enviada: ${aiResponse.substring(0, 50)}...`);
+        }
+
+      } catch (error) {
+        console.error('Error procesando mensaje:', error);
       }
-    });
-
-    client.on('disconnected', async (reason) => {
-      session.status = 'disconnected';
-      session.qrCode = undefined;
-      
-      this.emit('disconnected', userId, reason);
-      await this.updateSessionStatus(userId, 'disconnected');
-      
-      console.log(`WhatsApp Web session disconnected for user ${userId}: ${reason}`);
-    });
-
-    client.on('auth_failure', async (message) => {
-      session.status = 'error';
-      session.lastError = 'Authentication failed';
-      
-      this.emit('auth_failure', userId, message);
-      await this.updateSessionStatus(userId, 'error', { lastError: 'Authentication failed' });
     });
   }
 
-  private async handleIncomingMessage(userId: string, message: any) {
+  /**
+   * Genera respuesta con IA usando los servicios existentes
+   */
+  private async generateAIResponse(context: MessageContext, messageBody: string): Promise<string | null> {
     try {
-      // Obtener configuración del usuario para respuesta automática
-      const user = await storage.getUser(userId);
-      if (!user) return;
-
-      // Obtener chatbots activos del usuario
-      const chatbots = await storage.getChatbotsByUser(userId);
-      const activeChatbot = chatbots.find(bot => bot.status === 'active');
-
-      if (!activeChatbot) return;
-
-      const contact = message.getContact();
-      const chat = await message.getChat();
-
-      // Guardar mensaje entrante en base de datos
-      await this.saveMessage(userId, {
-        messageId: message.id.id,
-        fromNumber: message.from,
-        toNumber: message.to,
-        content: message.body,
-        type: message.type,
-        direction: 'inbound',
-        timestamp: new Date(message.timestamp * 1000),
-        contactName: contact.name || contact.pushname || 'Unknown'
-      });
-
-      // Generar respuesta con IA
-      const aiResponse = await this.generateAIResponse(activeChatbot, message.body, {
-        contactName: contact.name || contact.pushname,
-        chatHistory: await this.getChatHistory(userId, message.from)
-      });
-
-      if (aiResponse) {
-        // Enviar respuesta
-        await this.sendMessage(userId, message.from, aiResponse);
+      // Intentar con chatbot específico si está configurado
+      if (context.chatbotId) {
+        const chatbotResponse = await chatbotProductAI.generateIntelligentResponse(
+          messageBody,
+          context.chatbotId.toString(),
+          context.messageHistory.join('\n')
+        );
+        
+        if (chatbotResponse && chatbotResponse.message) {
+          return chatbotResponse.message;
+        }
       }
 
-    } catch (error: any) {
-      console.error('Error handling incoming message:', error);
-    }
-  }
-
-  private async generateAIResponse(chatbot: any, userMessage: string, context: any): Promise<string | null> {
-    try {
-      // Importar dinámicamente el servicio de IA de Anthropic
-      const { default: Anthropic } = await import('@anthropic-ai/sdk');
+      // Fallback a IA mejorada
+      const enhancedResponse = await enhancedAI.generateResponse(
+        messageBody,
+        context.messageHistory.join('\n'),
+        context.userId,
+        'ConversIA'
+      );
       
-      if (!process.env.ANTHROPIC_API_KEY) {
-        console.warn('ANTHROPIC_API_KEY not configured, skipping AI response');
-        return null;
+      if (enhancedResponse && enhancedResponse.message) {
+        return enhancedResponse.message;
       }
 
-      const anthropic = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY,
-      });
+      // Fallback simple
+      return `Gracias por tu mensaje. Un representante te contactará pronto.`;
 
-      const systemPrompt = `Eres un asistente de WhatsApp para un negocio. 
-
-Información del chatbot:
-- Nombre: ${chatbot.name}
-- Personalidad: ${chatbot.aiPersonality || 'Amigable y profesional'}
-- Instrucciones: ${chatbot.aiInstructions || 'Ayuda a los clientes con sus consultas'}
-- Objetivo de conversación: ${chatbot.conversationObjective || 'Brindar excelente servicio al cliente'}
-
-Contexto del cliente:
-- Nombre: ${context.contactName || 'Cliente'}
-
-IMPORTANTE:
-- Responde en español
-- Sé conciso y útil
-- Mantén un tono profesional pero amigable
-- Si no puedes ayudar, ofrece derivar a un humano
-- No inventes información que no tienes`;
-
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514', // the newest Anthropic model is "claude-sonnet-4-20250514" which was released May 14, 2025. Use this by default unless user has already selected claude-3-7-sonnet-20250219
-        max_tokens: 300,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: userMessage
-          }
-        ]
-      });
-
-      return response.content[0]?.text || null;
-    } catch (error: any) {
-      console.error('Error generating AI response:', error);
+      return null;
+    } catch (error) {
+      console.error('Error generando respuesta IA:', error);
       return null;
     }
   }
 
-  async sendMessage(userId: string, to: string, message: string): Promise<boolean> {
-    const session = this.sessions.get(userId);
-    if (!session || session.status !== 'connected') {
-      return false;
-    }
-
+  /**
+   * Envía mensaje manual desde el CRM
+   */
+  async sendMessage(userId: string, phoneNumber: string, message: string): Promise<{ success: boolean; error?: string }> {
     try {
-      await session.client.sendMessage(to, message);
+      const session = this.sessions.get(userId);
       
-      // Guardar mensaje enviado
-      await this.saveMessage(userId, {
-        messageId: `sent_${Date.now()}`,
-        fromNumber: session.phoneNumber || '',
-        toNumber: to,
-        content: message,
-        type: 'text',
-        direction: 'outbound',
-        timestamp: new Date()
-      });
-
-      return true;
-    } catch (error: any) {
-      console.error(`Error sending message for user ${userId}:`, error);
-      return false;
-    }
-  }
-
-  async sendMedia(userId: string, to: string, mediaPath: string, caption?: string): Promise<boolean> {
-    const session = this.sessions.get(userId);
-    if (!session || session.status !== 'connected') {
-      return false;
-    }
-
-    try {
-      const media = MessageMedia.fromFilePath(mediaPath);
-      await session.client.sendMessage(to, media, { caption });
-      
-      return true;
-    } catch (error: any) {
-      console.error(`Error sending media for user ${userId}:`, error);
-      return false;
-    }
-  }
-
-  private async saveMessage(userId: string, messageData: any) {
-    try {
-      // Crear conversación si no existe
-      const existingConversation = await storage.getConversationByContactPhone(userId, messageData.fromNumber === messageData.toNumber ? messageData.toNumber : messageData.fromNumber);
-      
-      let conversationId;
-      if (!existingConversation) {
-        // Crear nuevo contacto y conversación
-        const contactData = {
-          userId,
-          name: messageData.contactName || 'WhatsApp Contact',
-          phone: messageData.direction === 'inbound' ? messageData.fromNumber : messageData.toNumber,
-          email: null,
-          source: 'whatsapp' as const,
-          status: 'active' as const
-        };
-        
-        const contact = await storage.createContact(contactData);
-        
-        const conversationData = {
-          contactId: contact.id,
-          chatbotId: 1, // Default chatbot
-          status: 'active',
-          lastMessage: messageData.content,
-          lastMessageTime: messageData.timestamp
-        };
-        
-        const conversation = await storage.createConversation(conversationData);
-        conversationId = conversation.id;
-      } else {
-        conversationId = existingConversation.id;
-        
-        // Actualizar última actividad
-        await storage.updateConversation(conversationId, {
-          lastMessage: messageData.content,
-          lastMessageTime: messageData.timestamp
-        });
+      if (!session || session.status !== 'connected') {
+        return { success: false, error: 'WhatsApp no está conectado' };
       }
 
-      // Guardar mensaje
-      await storage.createMessage({
-        conversationId,
-        text: messageData.content,
-        isFromContact: messageData.direction === 'inbound',
-        createdAt: messageData.timestamp
-      });
-
-    } catch (error: any) {
-      console.error('Error saving message:', error);
-    }
-  }
-
-  private async getChatHistory(userId: string, phoneNumber: string): Promise<any[]> {
-    try {
-      const conversation = await storage.getConversationByContactPhone(userId, phoneNumber);
-      if (!conversation) return [];
+      // Formatear número para WhatsApp
+      const chatId = phoneNumber.includes('@') ? phoneNumber : `${phoneNumber}@c.us`;
       
-      return await storage.getMessagesByConversation(conversation.id, 10);
+      await session.client.sendMessage(chatId, message);
+      
+      // Actualizar historial
+      const historyKey = `${userId}-${chatId}`;
+      const history = this.messageHistory.get(historyKey) || [];
+      history.push(`ConversIA: ${message}`);
+      this.messageHistory.set(historyKey, history);
+      
+      console.log(`📤 Mensaje enviado a ${phoneNumber}: ${message.substring(0, 50)}...`);
+      
+      return { success: true };
     } catch (error) {
-      return [];
+      console.error('Error enviando mensaje:', error);
+      return { success: false, error: 'Error enviando mensaje' };
     }
   }
 
-  private async updateSessionStatus(userId: string, status: string, additionalData?: any) {
-    try {
-      // Aquí actualizarías la base de datos con el estado de la sesión
-      // Por ahora solo log
-      console.log(`Session status updated for user ${userId}: ${status}`, additionalData);
-    } catch (error: any) {
-      console.error('Error updating session status:', error);
-    }
-  }
-
+  /**
+   * Desconecta sesión de WhatsApp
+   */
   async disconnectSession(userId: string): Promise<void> {
     const session = this.sessions.get(userId);
-    if (!session) return;
-
-    try {
-      if (session.client) {
+    
+    if (session) {
+      try {
         await session.client.destroy();
+      } catch (error) {
+        console.error('Error desconectando sesión:', error);
       }
-    } catch (error: any) {
-      console.error(`Error disconnecting session for user ${userId}:`, error);
+      
+      this.sessions.delete(userId);
+      await this.updateConnectionStatus(userId, 'disconnected');
     }
-
-    this.sessions.delete(userId);
-    await this.updateSessionStatus(userId, 'disconnected');
   }
 
-  getSessionStatus(userId: string): any {
+  /**
+   * Obtiene el estado de conexión
+   */
+  getConnectionStatus(userId: string): string {
     const session = this.sessions.get(userId);
-    if (!session) {
-      return { status: 'disconnected' };
+    return session ? session.status : 'disconnected';
+  }
+
+  /**
+   * Obtiene o crea contacto
+   */
+  private async getOrCreateContact(userId: string, phoneNumber: string, name?: string): Promise<any> {
+    try {
+      // Limpiar número de teléfono
+      const cleanPhone = phoneNumber.replace('@c.us', '').replace('@s.whatsapp.net', '');
+      
+      // Buscar contacto existente
+      let contact = await simpleStorage.getContactByPhone(userId, cleanPhone);
+      
+      if (!contact) {
+        // Crear nuevo contacto
+        contact = await simpleStorage.createContact({
+          userId,
+          phone: cleanPhone,
+          name: name || `Contacto ${cleanPhone}`,
+          source: 'whatsapp',
+          createdAt: new Date().toISOString()
+        });
+      }
+      
+      return contact;
+    } catch (error) {
+      console.error('Error gestionando contacto:', error);
+      return { id: null, name: 'Desconocido' };
     }
-
-    return {
-      status: session.status,
-      qrCode: session.qrCode,
-      phoneNumber: session.phoneNumber,
-      profileName: session.profileName,
-      connectedAt: session.connectedAt,
-      lastError: session.lastError
-    };
   }
 
-  async getQRCode(userId: string): Promise<string | null> {
-    const session = this.sessions.get(userId);
-    return session?.qrCode || null;
+  /**
+   * Obtiene configuración del chatbot
+   */
+  private async getChatbotConfig(userId: string, chatbotId?: number): Promise<any> {
+    try {
+      if (chatbotId) {
+        return await simpleStorage.getChatbot(chatbotId);
+      }
+      
+      // Obtener chatbot activo del usuario
+      const chatbots = await simpleStorage.getChatbots(userId);
+      return chatbots.find(c => c.status === 'active') || null;
+    } catch (error) {
+      console.error('Error obteniendo configuración chatbot:', error);
+      return null;
+    }
   }
 
-  async restartSession(userId: string): Promise<void> {
-    await this.disconnectSession(userId);
-    await this.initializeSession(userId);
+  /**
+   * Guarda conversación en base de datos
+   */
+  private async saveConversation(userId: string, contactId: any, incomingMessage: string, aiResponse: string): Promise<void> {
+    try {
+      // Implementar guardado de conversación cuando tengamos la tabla
+      console.log(`💾 Guardando conversación: ${contactId} - ${incomingMessage.substring(0, 30)}...`);
+    } catch (error) {
+      console.error('Error guardando conversación:', error);
+    }
   }
 
-  // Limpiar sesiones al cerrar la aplicación
-  async cleanup(): Promise<void> {
-    const userIds = Array.from(this.sessions.keys());
-    await Promise.all(userIds.map(userId => this.disconnectSession(userId)));
+  /**
+   * Actualiza estado de conexión en base de datos
+   */
+  private async updateConnectionStatus(userId: string, status: string): Promise<void> {
+    try {
+      // Actualizar estado en integraciones WhatsApp
+      const integrations = await simpleStorage.getWhatsappIntegrations(userId);
+      
+      for (const integration of integrations) {
+        await simpleStorage.updateWhatsappIntegration(integration.id, {
+          status,
+          connectedAt: status === 'connected' ? new Date().toISOString() : null,
+          lastMessageAt: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Error actualizando estado de conexión:', error);
+    }
+  }
+
+  /**
+   * Limpia sesiones inactivas
+   */
+  private cleanupInactiveSessions(): void {
+    const now = new Date();
+    const maxInactiveTime = 60 * 60 * 1000; // 1 hora
+    
+    for (const [userId, session] of this.sessions.entries()) {
+      if (now.getTime() - session.lastActivity.getTime() > maxInactiveTime) {
+        console.log(`🧹 Limpiando sesión inactiva para usuario: ${userId}`);
+        this.disconnectSession(userId);
+      }
+    }
+  }
+
+  /**
+   * Obtiene información de todas las sesiones
+   */
+  getAllSessions(): any[] {
+    const sessions = [];
+    for (const [userId, session] of this.sessions) {
+      sessions.push({
+        userId,
+        status: session.status,
+        lastActivity: session.lastActivity,
+        chatbotId: session.chatbotId
+      });
+    }
+    return sessions;
   }
 }
 
-// Instancia singleton del servicio
+// Instancia singleton
 export const whatsappWebService = new WhatsAppWebService();
-
-// Cleanup al cerrar la aplicación
-process.on('SIGINT', async () => {
-  console.log('Cleaning up WhatsApp Web sessions...');
-  await whatsappWebService.cleanup();
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  console.log('Cleaning up WhatsApp Web sessions...');
-  await whatsappWebService.cleanup();
-  process.exit(0);
-});
-
-export default whatsappWebService;

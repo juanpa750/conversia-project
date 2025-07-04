@@ -39,6 +39,7 @@ import {
   RiAddLine,
   RiSettings3Line,
 } from "@/lib/icons";
+import WhatsAppWebSetup from "@/components/WhatsAppWebSetup";
 
 interface WhatsAppIntegration {
   id: number;
@@ -426,6 +427,67 @@ export default function WhatsAppIntegrationPage() {
           </p>
         </div>
       </div>
+
+      {/* WhatsApp Web Integration - Nueva funcionalidad */}
+      <Card className="mb-6 border-green-200">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <RiWhatsappLine className="text-green-600" />
+            <span>WhatsApp Web (Nuevo) - Conexión Rápida</span>
+            <Badge className="bg-green-100 text-green-800">Recomendado</Badge>
+          </CardTitle>
+          <CardDescription>
+            Conecta tu WhatsApp personal o comercial de forma instantánea con solo escanear un código QR. 
+            Esta es la forma más rápida de activar la IA en tu WhatsApp.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <WhatsAppWebSetup 
+                chatbotId={Number(chatbotId)}
+                onConnectionChange={(connected) => {
+                  if (connected) {
+                    toast({
+                      title: "🎉 WhatsApp Conectado",
+                      description: "Tu IA ya está activa y responderá a los mensajes automáticamente.",
+                      duration: 5000,
+                    });
+                  }
+                }}
+              />
+            </div>
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-900">✨ Ventajas de WhatsApp Web:</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-start space-x-2">
+                  <span className="text-green-500 mt-0.5">✓</span>
+                  <span><strong>Configuración instantánea:</strong> Solo escanea el QR y listo</span>
+                </li>
+                <li className="flex items-start space-x-2">
+                  <span className="text-green-500 mt-0.5">✓</span>
+                  <span><strong>Sin límites de API:</strong> Usa tu WhatsApp personal sin restricciones</span>
+                </li>
+                <li className="flex items-start space-x-2">
+                  <span className="text-green-500 mt-0.5">✓</span>
+                  <span><strong>Respuestas instantáneas:</strong> La IA responde en tiempo real</span>
+                </li>
+                <li className="flex items-start space-x-2">
+                  <span className="text-green-500 mt-0.5">✓</span>
+                  <span><strong>Gratuito:</strong> No requiere configuración de Meta Business</span>
+                </li>
+              </ul>
+              
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-xs text-blue-800">
+                  <strong>💡 Recomendación:</strong> Usa WhatsApp Web para probar tu chatbot de inmediato. 
+                  Cuando necesites mayor volumen, puedes configurar la API de Meta Business más abajo.
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Current Integration Status */}
       <Card className="mb-6">
