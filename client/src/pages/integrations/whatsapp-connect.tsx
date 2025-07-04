@@ -93,7 +93,7 @@ export default function WhatsAppConnect() {
                   <div className="text-center space-y-2">
                     <h3 className="font-medium text-lg">Escanea este código QR</h3>
                     <p className="text-sm text-gray-500 max-w-md">
-                      Abre WhatsApp en tu teléfono, ve a Configuración - Dispositivos vinculados - 
+                      Abre WhatsApp en tu teléfono, ve a Configuración &gt; Dispositivos vinculados &gt; 
                       Vincular un dispositivo, y escanea este código QR.
                     </p>
                   </div>
@@ -176,7 +176,7 @@ export default function WhatsAppConnect() {
                   <p className="font-medium">Escanear el código QR</p>
                 </div>
                 <p className="text-sm text-gray-500 ml-9">
-                  Abre WhatsApp Business, ve a Configuracion y luego Dispositivos vinculados y escanea el codigo QR.
+                  Abre WhatsApp Business, ve a Configuración &gt; Dispositivos vinculados y escanea el código QR.
                 </p>
               </div>
               

@@ -43,8 +43,6 @@ export const users = pgTable("users", {
   whatsappVerifyToken: varchar("whatsapp_verify_token"),
   monthlyFreeMessagesUsed: integer("monthly_free_messages_used").default(0),
   freeMessagesResetDate: timestamp("free_messages_reset_date"),
-  // WhatsApp Configuration for generic chatbot
-  whatsappConfig: jsonb("whatsapp_config"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

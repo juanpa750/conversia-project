@@ -29,7 +29,6 @@ import WhatsAppSimpleConnect from "@/pages/whatsapp/simple-connect";
 import WhatsApp from "@/pages/WhatsApp";
 import WhatsAppAIDemo from "@/pages/demo/whatsapp-ai-demo";
 import WhatsAppWeb from "@/pages/whatsapp-web";
-import WhatsAppConfigPage from "@/pages/whatsapp-config";
 import AIAdvanced from "@/pages/ai-advanced";
 import ConversationControl from "@/pages/ai-advanced/conversation-control";
 import Marketing from "@/pages/marketing";
@@ -248,16 +247,6 @@ function Router() {
           <Route path="/whatsapp-web">
             <Layout>
               <WhatsAppWeb />
-            </Layout>
-          </Route>
-          <Route path="/integrations/whatsapp-web">
-            <Layout>
-              <WhatsAppWeb />
-            </Layout>
-          </Route>
-          <Route path="/integrations/whatsapp-web/config">
-            <Layout>
-              <WhatsAppConfigPage />
             </Layout>
           </Route>
           <Route path="/ai-advanced">

@@ -404,19 +404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get QR code for WhatsApp connection
   app.get("/api/whatsapp/qr/:integrationId", isAuthenticated, async (req: any, res) => {
     try {
-      const integrationIdParam = req.params.integrationId;
-      
-      // Handle case where integrationId is not available yet
-      if (integrationIdParam === 'none' || integrationIdParam === 'null' || integrationIdParam === 'undefined') {
-        return res.status(400).json({ message: 'Integration ID not available yet' });
-      }
-      
-      const integrationId = parseInt(integrationIdParam);
-      
-      // Check if parsing failed
-      if (isNaN(integrationId)) {
-        return res.status(400).json({ message: 'Invalid integration ID' });
-      }
+      const integrationId = parseInt(req.params.integrationId);
       
       // Verify integration belongs to user
       const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);
@@ -1343,64 +1331,6 @@ Responde de manera natural y conversacional. Usa la información del producto pa
   });
 
   // Ruta para crear integración de WhatsApp específica por chatbot
-  app.post('/api/whatsapp/integrations/create-integration', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.userId;
-      const { chatbotId } = req.body;
-      
-      console.log(`📱 Creating WhatsApp integration for chatbot: ${chatbotId}`);
-      
-      // Crear la integración en la base de datos
-      const integration = await simpleStorage.createWhatsappIntegration({
-        userId,
-        phoneNumber: '', // Se actualizará cuando se conecte
-        displayName: `Chatbot ${chatbotId || 'General'}`,
-        businessDescription: 'Número de WhatsApp conectado automáticamente',
-        chatbotId: chatbotId || null,
-        productId: null,
-        priority: 1,
-        autoRespond: true,
-        operatingHours: null,
-        status: 'connecting',
-        isActive: true
-      });
-
-      // Inicializar sesión de WhatsApp
-      const sessionId = `${userId}_${integration.id}`;
-      
-      try {
-        const result = await whatsappService.initializeSession(sessionId);
-        
-        if (result.success) {
-          await simpleStorage.updateWhatsappIntegrationStatus(integration.id, 'initializing');
-          
-          res.json({
-            success: true,
-            id: integration.id,
-            sessionId,
-            message: 'Integración creada e inicializada exitosamente'
-          });
-        } else {
-          throw new Error(result.error || 'Error inicializando sesión');
-        }
-      } catch (whatsappError: any) {
-        // Si falla WhatsApp real, actualizar estado
-        await simpleStorage.updateWhatsappIntegrationStatus(integration.id, 'disconnected');
-        res.status(500).json({
-          success: false,
-          error: 'Error inicializando WhatsApp: ' + (whatsappError?.message || 'Error desconocido')
-        });
-      }
-    } catch (error) {
-      console.error('Error creating WhatsApp integration:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Error creando integración de WhatsApp'
-      });
-    }
-  });
-
-  // Ruta original para compatibilidad
   app.post('/api/whatsapp/integrations', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.userId;
@@ -1435,59 +1365,6 @@ Responde de manera natural y conversacional. Usa la información del producto pa
         success: false,
         error: 'Error creando integración de WhatsApp'
       });
-    }
-  });
-
-  // WhatsApp Configuration Routes
-  app.get("/api/whatsapp/config", isAuthenticated, async (req: any, res) => {
-    try {
-      // Get current WhatsApp configuration for user
-      const user = await simpleStorage.getUser(req.userId);
-      
-      if (!user?.whatsappConfig) {
-        // Return default configuration
-        const defaultConfig = {
-          businessName: '',
-          businessDescription: '',
-          greeting: '¡Hola! 👋 Soy el asistente virtual. ¿En qué puedo ayudarte hoy?',
-          fallbackMessage: 'Disculpa, no entendí tu consulta. ¿Podrías ser más específico?',
-          workingHours: {
-            enabled: false,
-            start: '09:00',
-            end: '18:00',
-            timezone: 'America/Mexico_City',
-            message: 'Gracias por contactarnos. Nuestro horario de atención es de {start} a {end}. Te responderemos pronto.'
-          },
-          responseStyle: 'friendly',
-          autoResponse: true,
-          responseDelay: 2,
-          maxMessageLength: 1000,
-        };
-        return res.json(defaultConfig);
-      }
-      
-      res.json(user.whatsappConfig);
-    } catch (error) {
-      console.error('Error getting WhatsApp config:', error);
-      res.status(500).json({ message: 'Failed to get WhatsApp configuration' });
-    }
-  });
-
-  app.post("/api/whatsapp/config", isAuthenticated, async (req: any, res) => {
-    try {
-      const config = req.body;
-      
-      // Update user's WhatsApp configuration
-      const updatedUser = await simpleStorage.updateUserWhatsAppConfig(req.userId, config);
-      
-      res.json({
-        success: true,
-        message: 'WhatsApp configuration updated successfully',
-        config: updatedUser.whatsappConfig
-      });
-    } catch (error) {
-      console.error('Error updating WhatsApp config:', error);
-      res.status(500).json({ message: 'Failed to update WhatsApp configuration' });
     }
   });
 

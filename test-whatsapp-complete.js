@@ -3,36 +3,17 @@ import fetch from 'node-fetch';
 async function testCompleteWhatsAppWorkflow() {
   console.log('🔍 Prueba completa de funcionalidad WhatsApp...');
   
-  let token = null;
-  
   try {
     // Login
     const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'admin@conversia.com', password: 'admin123' })
+      body: JSON.stringify({ email: 'prueba@conversia.com', password: '123456' })
     });
     
-    if (!loginResponse.ok) {
-      console.log('❌ Login falló, intentando con usuario por defecto...');
-      const defaultLoginResponse = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'admin@example.com', password: 'admin123' })
-      });
-      
-      if (!defaultLoginResponse.ok) {
-        throw new Error('No se pudo hacer login con ningún usuario');
-      }
-      
-      const defaultLoginData = await defaultLoginResponse.json();
-      token = defaultLoginData.token;
-      console.log('✅ Login exitoso con usuario por defecto');
-    } else {
-      const loginData = await loginResponse.json();
-      token = loginData.token;
-      console.log('✅ Login exitoso');
-    }
+    const loginData = await loginResponse.json();
+    const token = loginData.token;
+    console.log('✅ Login exitoso');
     
     // Verificar integración actual
     const integrationResponse = await fetch('http://localhost:5000/api/whatsapp/integrations/chatbot/26', {

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Link } from 'wouter';
 import { 
   RiWhatsappLine, 
   RiCheckLine,
@@ -258,25 +257,9 @@ export default function WhatsAppWebPage() {
               <p className="text-gray-600 mb-4">
                 Tu WhatsApp está conectado y funcionando. Los mensajes serán procesados automáticamente por la IA.
               </p>
-              <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 mb-4">
+              <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
                 <RiSettings3Line className="w-4 h-4" />
                 <span>Los mensajes entrantes se procesarán automáticamente</span>
-              </div>
-              
-              <div className="flex justify-center space-x-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => disconnectMutation.mutate()}
-                  disabled={disconnectMutation.isPending}
-                >
-                  {disconnectMutation.isPending ? 'Desconectando...' : 'Desconectar WhatsApp'}
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link href="/integrations/whatsapp-web/config">
-                    <RiSettings3Line className="w-4 h-4 mr-2" />
-                    Configuración
-                  </Link>
-                </Button>
               </div>
             </div>
           </CardContent>

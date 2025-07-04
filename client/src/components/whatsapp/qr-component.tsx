@@ -25,53 +25,57 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get WhatsApp Web status - different endpoints for chatbot vs general
+  // Get WhatsApp Web status
   const { data: status, isLoading, refetch } = useQuery<WhatsAppStatus>({
-    queryKey: chatbotId ? 
-      [`/api/whatsapp/qr/${integrationId || 'none'}`] : 
-      ['/api/whatsapp-web/status'],
+    queryKey: ['/api/whatsapp-web/status'],
     refetchInterval: qrPolling ? 3000 : false,
     retry: false,
-    enabled: chatbotId ? (integrationId !== null && integrationId !== undefined) : true,
   });
 
-  // Initialize session mutation for chatbot-specific integration
+  // Initialize session mutation
   const initMutation = useMutation({
     mutationFn: async () => {
-      if (chatbotId) {
-        // For chatbot-specific integration
-        return await apiRequest('POST', '/api/whatsapp/integrations/create-integration', {
-          chatbotId: parseInt(chatbotId)
-        });
-      } else {
-        // For general WhatsApp connection
-        return await apiRequest('POST', '/api/whatsapp-web/init-session', {});
-      }
+      return await apiRequest('POST', '/api/whatsapp-web/init-session', {});
     },
     onSuccess: (response: any) => {
       toast({
-        title: 'Sesion iniciada',
-        description: 'Generando codigo QR para WhatsApp...',
+        title: 'Sesión iniciada',
+        description: 'Generando código QR para WhatsApp...',
       });
+      setQrPolling(true);
+      refetch();
       
-      if (response.id) {
-        setIntegrationId(response.id);
-        setQrPolling(true);
-        // Refetch with the new integration ID
-        setTimeout(() => refetch(), 500);
-      } else {
-        // For general WhatsApp connection, start polling immediately
-        setQrPolling(true);
-        refetch();
+      if (response.sessionId) {
+        // Create integration record
+        createIntegrationMutation.mutate({
+          sessionId: response.sessionId,
+          chatbotId
+        });
       }
     },
     onError: (error: any) => {
-      setQrPolling(false);
       toast({
         title: 'Error',
-        description: error.message || 'Error iniciando sesion de WhatsApp',
+        description: error.message || 'Error iniciando sesión de WhatsApp',
         variant: 'destructive',
       });
+    },
+  });
+
+  // Create integration mutation
+  const createIntegrationMutation = useMutation({
+    mutationFn: async (data: { sessionId: string; chatbotId?: string }) => {
+      return await apiRequest('POST', '/api/whatsapp/integrations', {
+        sessionId: data.sessionId,
+        chatbotId: data.chatbotId
+      });
+    },
+    onSuccess: (response: any) => {
+      setIntegrationId(response.id);
+      console.log('✅ Integration created:', response);
+    },
+    onError: (error: any) => {
+      console.error('❌ Error creating integration:', error);
     },
   });
 
@@ -80,8 +84,8 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
     if (status?.status === 'connected' && integrationId) {
       setQrPolling(false);
       toast({
-        title: 'WhatsApp conectado!',
-        description: 'Tu numero de WhatsApp esta ahora conectado y listo para usar.',
+        title: '¡WhatsApp conectado!',
+        description: 'Tu número de WhatsApp está ahora conectado y listo para usar.',
       });
       
       // Call success callback
@@ -117,8 +121,8 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
         <Alert className="bg-orange-50 border-orange-200">
           <RiQrCodeLine className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
-            <strong>Modo Demo:</strong> Este es un simulador para demostracion. 
-            En produccion se conectara a WhatsApp real.
+            <strong>Modo Demo:</strong> Este es un simulador para demostración. 
+            En producción se conectará a WhatsApp real.
           </AlertDescription>
         </Alert>
       )}
@@ -154,10 +158,10 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
         <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300 text-center">
           <div className="mb-3">
             <Badge variant="secondary" className="mb-2">
-              Codigo QR Activo
+              Código QR Activo
             </Badge>
             <p className="text-sm text-gray-600 mb-3">
-              Escanea este codigo con WhatsApp en tu telefono
+              Escanea este código con WhatsApp en tu teléfono
             </p>
           </div>
           
@@ -170,18 +174,18 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
           </div>
           
           <div className="text-xs text-gray-500 space-y-1">
-            <p>1. Abre WhatsApp en tu telefono</p>
-            <p>2. Ve a Configuracion y luego Dispositivos vinculados</p>
+            <p>1. Abre WhatsApp en tu teléfono</p>
+            <p>2. Ve a Configuración {'>'} Dispositivos vinculados</p>
             <p>3. Toca "Vincular un dispositivo"</p>
-            <p>4. Escanea este codigo QR</p>
+            <p>4. Escanea este código QR</p>
           </div>
         </div>
       ) : status?.status === 'connected' ? (
         <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-center">
           <RiCheckboxCircleLine className="h-8 w-8 text-green-600 mx-auto mb-2" />
-          <p className="font-medium text-green-800">WhatsApp Conectado!</p>
+          <p className="font-medium text-green-800">¡WhatsApp Conectado!</p>
           <p className="text-sm text-green-600">
-            Tu numero esta listo para recibir y responder mensajes automaticamente
+            Tu número está listo para recibir y responder mensajes automáticamente
           </p>
         </div>
       ) : status?.status === 'connecting' ? (
@@ -189,7 +193,7 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-600 mx-auto mb-2"></div>
           <p className="font-medium text-yellow-800">Conectando...</p>
           <p className="text-sm text-yellow-600">
-            Procesando la conexion con WhatsApp
+            Procesando la conexión con WhatsApp
           </p>
         </div>
       ) : (
@@ -200,11 +204,11 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
             className="w-full"
           >
             <RiQrCodeLine className="h-4 w-4 mr-2" />
-            {initMutation.isPending ? 'Iniciando...' : 'Generar Codigo QR'}
+            {initMutation.isPending ? 'Iniciando...' : 'Generar Código QR'}
           </Button>
           
           <p className="text-xs text-gray-500 mt-2">
-            Haz clic para generar un codigo QR y conectar tu WhatsApp
+            Haz clic para generar un código QR y conectar tu WhatsApp
           </p>
         </div>
       )}
