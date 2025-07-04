@@ -27,7 +27,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { WhatsAppQRComponent } from '@/components/whatsapp/qr-component';
 
 const initialNodes: Node[] = [
   {
@@ -57,11 +56,6 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   const [aiInstructions, setAiInstructions] = useState('');
   const [aiPersonality, setAiPersonality] = useState('');
   const [conversationObjective, setConversationObjective] = useState('');
-  
-  // Estados para WhatsApp
-  const [whatsappOption, setWhatsappOption] = useState<'existing' | 'new'>('existing');
-  const [selectedWhatsappId, setSelectedWhatsappId] = useState<string>('');
-  const [whatsappStatus, setWhatsappStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
 
   const { toast } = useToast();
 
@@ -124,11 +118,6 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   // Obtener productos disponibles
   const { data: products } = useQuery({
     queryKey: ['/api/products'],
-  });
-
-  // Obtener integraciones de WhatsApp disponibles
-  const { data: whatsappIntegrations = [] } = useQuery<any[]>({
-    queryKey: ['/api/whatsapp/integrations'],
   });
 
   // Reset initialization when chatbot ID changes
@@ -418,7 +407,6 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                 <TabsTrigger value="flow">Flujo</TabsTrigger>
                 <TabsTrigger value="instruction">Instrucción</TabsTrigger>
                 <TabsTrigger value="objective">Objetivo</TabsTrigger>
-                <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
               </TabsList>
             </div>
             
@@ -902,189 +890,6 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
               </div>
             </TabsContent>
             
-            <TabsContent value="whatsapp" className="m-0 flex-1 outline-none">
-              <div className="max-h-[calc(100vh-12rem)] overflow-y-auto p-4">
-                <div className="space-y-6 pb-96">
-                  <div className="flex items-center gap-2">
-                    <RiWhatsappLine className="h-5 w-5" />
-                    <h3 className="text-lg font-medium">Configuración de WhatsApp</h3>
-                  </div>
-
-                  {/* Selección de Número de WhatsApp */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>📱 Número de WhatsApp</CardTitle>
-                      <p className="text-sm text-gray-600">
-                        Cada chatbot puede usar un número de WhatsApp específico para respuestas personalizadas
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="existing-whatsapp"
-                            name="whatsapp-option"
-                            value="existing"
-                            checked={whatsappOption === 'existing'}
-                            onChange={(e) => setWhatsappOption(e.target.value as 'existing' | 'new')}
-                            className="h-4 w-4 text-blue-600"
-                          />
-                          <Label htmlFor="existing-whatsapp" className="font-medium">
-                            Usar número existente
-                          </Label>
-                        </div>
-                        
-                        {whatsappOption === 'existing' && (
-                          <div className="ml-6 space-y-3">
-                            <Select value={selectedWhatsappId} onValueChange={setSelectedWhatsappId}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Seleccionar número de WhatsApp" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {whatsappIntegrations.length === 0 ? (
-                                  <SelectItem value="" disabled>
-                                    No hay números configurados
-                                  </SelectItem>
-                                ) : (
-                                  whatsappIntegrations.map((integration: any) => (
-                                    <SelectItem key={integration.id} value={integration.id.toString()}>
-                                      {integration.phoneNumber || `Número ${integration.id}`}
-                                      {integration.isConnected && (
-                                        <Badge variant="default" className="ml-2 text-xs">
-                                          Conectado
-                                        </Badge>
-                                      )}
-                                    </SelectItem>
-                                  ))
-                                )}
-                              </SelectContent>
-                            </Select>
-                            
-                            {selectedWhatsappId && (
-                              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                                  <span className="text-sm font-medium text-green-800">
-                                    Número seleccionado correctamente
-                                  </span>
-                                </div>
-                                <p className="text-xs text-green-600 mt-1">
-                                  Este chatbot usará las respuestas personalizadas para este número
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="new-whatsapp"
-                            name="whatsapp-option"
-                            value="new"
-                            checked={whatsappOption === 'new'}
-                            onChange={(e) => setWhatsappOption(e.target.value as 'existing' | 'new')}
-                            className="h-4 w-4 text-blue-600"
-                          />
-                          <Label htmlFor="new-whatsapp" className="font-medium">
-                            Conectar nuevo número
-                          </Label>
-                        </div>
-                        
-                        {whatsappOption === 'new' && (
-                          <div className="ml-6 space-y-3">
-                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                              <h4 className="font-medium text-blue-900 mb-2">
-                                Conectar Nuevo Número de WhatsApp
-                              </h4>
-                              <p className="text-sm text-blue-700 mb-3">
-                                Escanea el código QR con tu WhatsApp para conectar un número dedicado a este chatbot
-                              </p>
-                              
-                              <div className="space-y-3">
-                                <WhatsAppQRComponent 
-                                  chatbotId={chatbotId}
-                                  onConnectionSuccess={(integrationId: number) => {
-                                    setSelectedWhatsappId(integrationId.toString());
-                                    setWhatsappOption('existing');
-                                    setWhatsappStatus('connected');
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Información del Número Conectado */}
-                  {selectedWhatsappId && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>✅ Estado de Conexión</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div>
-                              <div className="font-medium">Número asignado</div>
-                              <div className="text-sm text-gray-600">
-                                {whatsappIntegrations.find((i: any) => i.id.toString() === selectedWhatsappId)?.phoneNumber || 'Número configurado'}
-                              </div>
-                            </div>
-                            <Badge variant="default">
-                              Activo
-                            </Badge>
-                          </div>
-                          
-                          <div className="text-sm text-gray-600">
-                            <strong>Funcionamiento:</strong> Este chatbot responderá automáticamente a los mensajes 
-                            recibidos en este número usando las configuraciones de IA personalizadas que has definido.
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Instrucciones */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>📋 Cómo Funciona</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3 text-sm text-gray-600">
-                        <div className="flex items-start space-x-2">
-                          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-blue-600 font-semibold text-xs">1</span>
-                          </div>
-                          <div>
-                            <strong>Número Dedicado:</strong> Cada chatbot puede tener su propio número de WhatsApp
-                          </div>
-                        </div>
-                        <div className="flex items-start space-x-2">
-                          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-blue-600 font-semibold text-xs">2</span>
-                          </div>
-                          <div>
-                            <strong>Respuestas Personalizadas:</strong> La IA se adapta al objetivo específico del chatbot
-                          </div>
-                        </div>
-                        <div className="flex items-start space-x-2">
-                          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-blue-600 font-semibold text-xs">3</span>
-                          </div>
-                          <div>
-                            <strong>Automático:</strong> Los mensajes se procesan automáticamente según la configuración
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </TabsContent>
 
           </Tabs>
         </div>

@@ -55,9 +55,7 @@ import {
   RiFileSettingsLine,
   RiArrowRightSLine,
   RiArrowLeftSLine,
-  RiVipCrown2Line,
-  RiPlayLine,
-  RiPauseLine
+  RiVipCrown2Line
 } from 'react-icons/ri';
 
 export {
@@ -117,7 +115,5 @@ export {
   RiFileSettingsLine,
   RiArrowRightSLine,
   RiArrowLeftSLine,
-  RiVipCrown2Line,
-  RiPlayLine,
-  RiPauseLine
+  RiVipCrown2Line
 };

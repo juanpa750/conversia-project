@@ -649,22 +649,22 @@ export default function WhatsAppIntegrationPage() {
 
       {/* QR Code Dialog */}
       <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-center">Conectar WhatsApp</DialogTitle>
-            <DialogDescription className="text-center">
+            <DialogTitle>Conectar WhatsApp</DialogTitle>
+            <DialogDescription>
               Escanea el código QR con tu WhatsApp para conectar
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="text-center">
               {qrData?.qrCode ? (
                 <div className="space-y-4">
-                  <div className="mx-auto w-80 h-80 border-2 border-green-200 rounded-xl bg-white p-4 flex items-center justify-center shadow-lg">
+                  <div className="mx-auto w-64 h-64 border rounded-lg bg-white p-2 flex items-center justify-center">
                     <img 
                       src={qrData.qrCode} 
-                      alt="QR Code WhatsApp" 
+                      alt="QR Code" 
                       className="w-full h-full object-contain"
                       onError={(e) => {
                         console.error('Error loading QR image');
@@ -674,81 +674,49 @@ export default function WhatsAppIntegrationPage() {
                       onLoad={() => console.log('QR image loaded successfully')}
                     />
                   </div>
-                  <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold text-gray-900 mb-2">Instrucciones:</h3>
-                    <div className="space-y-2 text-sm text-gray-700">
-                      <div className="flex items-start space-x-2">
-                        <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
-                        <p>Abre WhatsApp en tu teléfono</p>
-                      </div>
-                      <div className="flex items-start space-x-2">
-                        <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
-                        <p>Ve a <strong>Configuración</strong> → <strong>Dispositivos vinculados</strong></p>
-                      </div>
-                      <div className="flex items-start space-x-2">
-                        <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
-                        <p>Toca <strong>"Vincular un dispositivo"</strong> y escanea este código</p>
-                      </div>
-                    </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">
+                      1. Abre WhatsApp en tu teléfono
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      2. Ve a Configuración - Dispositivos vinculados
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      3. Toca "Vincular un dispositivo" y escanea este código
+                    </p>
                   </div>
-                  <Badge variant="outline" className="bg-green-100 text-green-800 text-sm px-4 py-2">
-                    ✓ Código QR listo para escanear
+                  <Badge variant="outline" className="bg-green-100 text-green-800">
+                    Código QR listo para escanear
                   </Badge>
                 </div>
               ) : qrData?.status === 'connecting' ? (
                 <div className="flex flex-col items-center space-y-4">
-                  <div className="animate-pulse w-80 h-80 bg-gray-200 rounded-xl border-2 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2" />
-                      <p className="text-gray-500 font-medium">Conectando...</p>
-                    </div>
+                  <div className="animate-pulse w-64 h-64 bg-gray-200 rounded-lg border flex items-center justify-center">
+                    <p className="text-gray-500">Conectando...</p>
                   </div>
-                  <Badge variant="outline" className="bg-yellow-100 text-yellow-800 text-sm px-4 py-2">
-                    🔄 Conectando con WhatsApp...
+                  <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+                    Conectando con WhatsApp...
                   </Badge>
                 </div>
               ) : qrData?.status === 'connected' ? (
                 <div className="flex flex-col items-center space-y-4">
-                  <div className="w-80 h-80 bg-green-100 rounded-xl border-2 border-green-300 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <RiCheckLine className="w-8 h-8 text-white" />
-                      </div>
-                      <p className="text-green-600 font-semibold text-lg">¡Conectado!</p>
-                    </div>
+                  <div className="w-64 h-64 bg-green-100 rounded-lg border flex items-center justify-center">
+                    <p className="text-green-600 font-semibold">¡Conectado!</p>
                   </div>
-                  <Badge variant="outline" className="bg-green-100 text-green-800 text-sm px-4 py-2">
-                    ✓ WhatsApp conectado exitosamente
-                  </Badge>
-                </div>
-              ) : qrData?.error ? (
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="w-80 h-80 bg-red-50 rounded-xl border-2 border-red-200 flex items-center justify-center">
-                    <div className="text-center p-4">
-                      <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-white font-bold text-2xl">!</span>
-                      </div>
-                      <p className="text-red-600 font-semibold mb-2">Error al generar QR</p>
-                      <p className="text-red-500 text-sm">{qrData.error}</p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="bg-red-100 text-red-800 text-sm px-4 py-2">
-                    ❌ Error en la conexión
+                  <Badge variant="outline" className="bg-green-100 text-green-800">
+                    WhatsApp conectado exitosamente
                   </Badge>
                 </div>
               ) : (
                 <div className="flex flex-col items-center space-y-4">
-                  <div className="w-80 h-80 bg-gray-50 rounded-xl border-2 border-gray-200 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4" />
-                      <p className="text-gray-600 font-medium">Generando código QR...</p>
-                      <p className="text-gray-500 text-sm mt-2">Esto puede tomar unos segundos</p>
-                    </div>
-                  </div>
+                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+                  <p className="text-sm text-gray-600">
+                    Generando código QR...
+                  </p>
                   {qrData && (
-                    <div className="text-xs space-y-1 p-3 bg-gray-100 rounded-lg border">
+                    <div className="text-xs space-y-1 p-2 bg-gray-100 rounded">
                       <p className="text-gray-600">Estado: <strong>{qrData.status}</strong></p>
-                      <p className="text-gray-600">QR: <strong>{qrData.qrCode ? 'Disponible' : 'Generando...'}</strong></p>
+                      <p className="text-gray-600">QR: <strong>{qrData.qrCode ? 'Disponible' : 'No disponible'}</strong></p>
                       {qrData.qrCode && (
                         <p className="text-gray-600">Tamaño: <strong>{qrData.qrCode.length} caracteres</strong></p>
                       )}
@@ -759,34 +727,23 @@ export default function WhatsAppIntegrationPage() {
             </div>
           </div>
           
-          <DialogFooter className="flex justify-between">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setShowQRDialog(false)}>
               Cancelar
             </Button>
-            <div className="flex space-x-2">
-              <Button 
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (currentIntegration?.id) {
-                    pollQRStatus(currentIntegration.id);
-                  }
-                }}
-                variant="outline"
-                className="flex items-center space-x-2"
-              >
-                <RiCheckLine />
-                <span>Actualizar</span>
-              </Button>
-              {qrData?.status === 'connected' && (
-                <Button 
-                  onClick={() => setShowQRDialog(false)}
-                  className="flex items-center space-x-2"
-                >
-                  <RiCheckLine />
-                  <span>Continuar</span>
-                </Button>
-              )}
-            </div>
+            <Button 
+              onClick={(e) => {
+                e.preventDefault();
+                if (currentIntegration?.id) {
+                  pollQRStatus(currentIntegration.id);
+                }
+              }}
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
+              <RiCheckLine />
+              <span>Actualizar</span>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

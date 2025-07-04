@@ -23,6 +23,21 @@
   --destructive-foreground: 60 9.1% 97.8%;
   --ring: 20 14.3% 4.1%;
   --radius: 0.5rem;
+  
+  --chart-1: 207 90% 54%;
+  --chart-2: 262 83% 58%;
+  --chart-3: 48 96% 53%;
+  --chart-4: 142 71% 45%;
+  --chart-5: 0 84% 60%;
+  
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 20 14.3% 4.1%;
+  --sidebar-primary: 207 90% 54%;
+  --sidebar-primary-foreground: 211 100% 99%;
+  --sidebar-accent: 210 40% 96.1%;
+  --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+  --sidebar-border: 20 5.9% 90%;
+  --sidebar-ring: 20 14.3% 4.1%;
 }
 
 .dark {
@@ -45,9 +60,73 @@
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
   --ring: 240 4.9% 83.9%;
+  --radius: 0.5rem;
+  
+  --chart-1: 207 90% 54%;
+  --chart-2: 262 83% 58%;
+  --chart-3: 48 96% 53%;
+  --chart-4: 142 71% 45%;
+  --chart-5: 0 84% 60%;
+  
+  --sidebar-background: 240 10% 3.9%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 207 90% 54%;
+  --sidebar-primary-foreground: 211 100% 99%;
+  --sidebar-accent: 240 3.7% 15.9%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-border: 240 3.7% 15.9%;
+  --sidebar-ring: 240 4.9% 83.9%;
 }
 
-body {
-  font-feature-settings: "rlig" 1, "calt" 1;
-  font-family: "Inter", sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+}
+
+@layer components {
+  .chart-bar {
+    @apply h-2 overflow-hidden rounded-full bg-gray-100;
+  }
+  
+  .chart-bar-fill {
+    @apply h-full rounded-full;
+  }
+  
+  .draggable {
+    @apply cursor-grab;
+  }
+  
+  .draggable:active {
+    @apply cursor-grabbing;
+  }
+  
+  .drop-zone {
+    @apply transition-all duration-200;
+  }
+  
+  .drop-zone.active {
+    @apply bg-primary/10;
+  }
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  @apply h-2 w-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply rounded bg-gray-300;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
 }

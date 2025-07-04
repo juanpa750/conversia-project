@@ -1,31 +1,10 @@
-# ConversIA - Plataforma SaaS Avanzada de Chatbots para WhatsApp
+# ConversIA - WhatsApp Chatbot Platform
 
 ## Overview
 
-ConversIA es una plataforma SaaS empresarial para gestión de chatbots inteligentes de WhatsApp con IA avanzada, CRM integrado, sistema de pagos y manejo multi-número en tiempo real. 
+ConversIA is a comprehensive WhatsApp chatbot platform designed for businesses to create, manage, and analyze chatbots. It enables businesses to automate customer service, boost sales, and improve client relationships through WhatsApp chatbots.
 
-La aplicación sigue una arquitectura moderna web con frontend React TypeScript, backend Node.js Express, base de datos PostgreSQL con Drizzle ORM, y funcionalidades empresariales como autenticación multi-factor, dashboard ejecutivo, y analytics en tiempo real.
-
-## Recent Changes (January 2025)
-
-### ✅ Arquitectura Modular Implementada
-- **Fecha**: 4 de enero 2025
-- **Estado**: Completamente funcional
-- Resueltos errores críticos de sintaxis JavaScript que impedían la carga
-- Implementada nueva estructura modular con componentes React limpios
-- Integración exitosa de Tailwind CSS y React Query v5
-
-### ✅ Interface de Usuario Completa
-- Interfaz de navegación con 5 secciones principales: Dashboard, Chatbots, WhatsApp, CRM, Analytics
-- Sistema de navegación con pestañas interactivas y diseño responsivo
-- Dashboard ejecutivo con métricas en tiempo real simuladas
-- Gestión visual de conexiones WhatsApp multi-sesión
-
-### ✅ Funcionalidades Demostradas
-- **WhatsApp**: Gestión de hasta 50 sesiones simultáneas con QR codes
-- **CRM**: Pipeline de ventas, métricas de contactos, leads calificados
-- **Analytics**: Embudo de conversión, rendimiento por chatbot, horarios de actividad
-- **Chatbots**: Builder visual, templates por industria, IA conversacional
+The application follows a modern web architecture with a React frontend and Node.js Express backend. It uses Drizzle ORM with PostgreSQL for data storage and includes Stripe integration for subscription management.
 
 ## User Preferences
 

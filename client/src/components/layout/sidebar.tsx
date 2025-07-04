@@ -104,16 +104,8 @@ export function Sidebar() {
         </NavItem>
         
         <div className="mb-3 mt-6 px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
-          WhatsApp
+          WhatsApp Master
         </div>
-        
-        <NavItem 
-          href="/whatsapp-web" 
-          icon={<RiWhatsappLine />} 
-          active={location.startsWith("/whatsapp-web")}
-        >
-          Conectar WhatsApp
-        </NavItem>
         
         <NavItem 
           href="/master/dashboard" 
