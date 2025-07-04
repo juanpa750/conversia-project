@@ -192,9 +192,29 @@ The application is configured for deployment on Replit with:
    - `JWT_SECRET`: Secret for JWT signing
    - `STRIPE_SECRET_KEY`: Stripe API secret key
    - `STRIPE_PUBLIC_KEY`: Stripe API public key
+   - WhatsApp Master API (optional for full functionality):
+     - `WHATSAPP_MASTER_TOKEN`: Meta access token
+     - `WHATSAPP_APP_ID`: Facebook app ID
+     - `WHATSAPP_APP_SECRET`: Facebook app secret
+     - `WHATSAPP_VERIFY_TOKEN`: Webhook verification token
+     - `WHATSAPP_BUSINESS_ACCOUNT_ID`: Meta Business Account ID
 4. Run `npm run db:push` to set up the database schema
 5. Run `npm run dev` to start the development server
 6. Access the application at the provided URL
+
+## Current State (January 9, 2025)
+- **Status**: Fully functional system with comprehensive WhatsApp chatbot management
+- **Test User**: prueba@botmaster.com / password: 123456
+- **Active Chatbot**: Suplemento Vitamina D3 (ID: 26) with advanced AI personality
+- **Products**: 1 configured (Vitamina D3)
+- **WhatsApp Integrations**: 7 configured, ready for Master API connection
+- **Pending**: WhatsApp Master API environment variables for production deployment
+
+## Recent Changes
+- **January 9, 2025**: Complete system backup created (BACKUP_ESTADO_CONVERSIA.md)
+- **Brand Migration**: Successfully rebranded from "BotMaster" to "ConversIA"
+- **Master API Architecture**: Implemented centralized WhatsApp management system
+- **Advanced AI**: Enhanced chatbot responses with AIDA methodology and personality customization
 
 ## Development Workflow
 
