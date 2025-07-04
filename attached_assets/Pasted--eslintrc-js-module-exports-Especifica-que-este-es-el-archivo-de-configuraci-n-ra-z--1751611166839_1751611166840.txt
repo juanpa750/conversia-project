@@ -1,0 +1,212 @@
+// .eslintrc.js
+module.exports = {
+  // Especifica que este es el archivo de configuración raíz
+  root: true,
+  
+  // Configuración del parser y opciones de parseo
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    ecmaVersion: 2021, // Versión de ECMAScript a usar
+    sourceType: 'module', // Permite usar import/export
+    ecmaFeatures: {
+      jsx: true, // Habilita parsing de JSX
+      globalReturn: false, // No permite return en scope global
+      impliedStrict: true, // Modo estricto implícito
+      experimentalObjectRestSpread: true // Soporte para spread operator
+    },
+    // CONFIGURACIÓN CRÍTICA PARA CARACTERES ESPECIALES
+    project: './tsconfig.json', // Usa la configuración de TypeScript
+    tsconfigRootDir: __dirname, // Directorio raíz para tsconfig
+    createDefaultProgram: false, // No crear programa por defecto
+    extraFileExtensions: ['.vue', '.json'], // Extensiones adicionales
+    // Configuración específica para manejo de Unicode
+    loc: true, // Incluir información de localización
+    range: true, // Incluir rangos de tokens
+    tokens: true, // Incluir tokens en el AST
+    comments: true, // Incluir comentarios en el AST
+    errorRecovery: true, // Recuperación de errores para caracteres especiales
+    allowReserved: false, // No permitir palabras reservadas como identificadores
+    strictMode: true // Modo estricto activado
+  },
+  
+  // Entornos donde correrá el código
+  env: {
+    browser: true, // Entorno del navegador
+    node: true, // Entorno Node.js
+    es2021: true, // Características ES2021
+    jest: true, // Entorno de testing con Jest
+    'react-native/react-native': true // React Native si lo usas
+  },
+  
+  // Variables globales disponibles
+  globals: {
+    __dirname: true, // Directorio actual
+    __filename: true, // Nombre del archivo actual
+    Buffer: true, // Buffer de Node.js
+    process: true, // Proceso de Node.js
+    console: true, // Console para logging
+    module: true, // Sistema de módulos
+    require: true, // Función require
+    exports: true, // Exports de módulos
+    // Variables globales para React
+    React: true,
+    ReactDOM: true,
+    // Variables globales para testing
+    describe: true,
+    it: true,
+    expect: true,
+    beforeEach: true,
+    afterEach: true
+  },
+  
+  // Configuraciones base a extender
+  extends: [
+    'eslint:recommended', // Reglas básicas recomendadas
+    '@typescript-eslint/recommended', // Reglas TypeScript recomendadas
+    'plugin:react/recommended', // Reglas React recomendadas
+    'plugin:react-hooks/recommended', // Reglas para React Hooks
+    'plugin:jsx-a11y/recommended', // Reglas de accesibilidad
+    'plugin:import/recommended', // Reglas para imports
+    'plugin:import/typescript' // Reglas específicas para imports TypeScript
+  ],
+  
+  // Plugins adicionales
+  plugins: [
+    '@typescript-eslint', // Plugin TypeScript
+    'react', // Plugin React
+    'react-hooks', // Plugin React Hooks
+    'jsx-a11y', // Plugin accesibilidad
+    'import', // Plugin imports
+    'react-native' // Plugin React Native (si lo usas)
+  ],
+  
+  // Configuración específica para diferentes tipos de archivos
+  overrides: [
+    {
+      // Configuración específica para archivos TypeScript
+      files: ['*.ts', '*.tsx'],
+      rules: {
+        // Reglas específicas para TypeScript
+        '@typescript-eslint/no-unused-vars': ['error', { 
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_' 
+        }],
+        '@typescript-eslint/explicit-function-return-type': 'off',
+        '@typescript-eslint/explicit-module-boundary-types': 'off',
+        '@typescript-eslint/no-explicit-any': 'warn',
+        '@typescript-eslint/no-non-null-assertion': 'warn'
+      }
+    },
+    {
+      // Configuración específica para archivos JavaScript
+      files: ['*.js', '*.jsx'],
+      rules: {
+        // Reglas más permisivas para JavaScript
+        '@typescript-eslint/no-var-requires': 'off',
+        '@typescript-eslint/explicit-function-return-type': 'off'
+      }
+    }
+  ],
+  
+  // Configuración de reglas principales
+  rules: {
+    // REGLAS CRÍTICAS PARA CARACTERES ESPECIALES
+    'no-irregular-whitespace': 'error', // Detecta caracteres de espacio irregulares
+    'no-control-regex': 'error', // Detecta caracteres de control en regex
+    'no-misleading-character-class': 'error', // Detecta clases de caracteres problemáticas
+    'unicode-bom': ['error', 'never'], // No permitir BOM Unicode
+    
+    // Reglas generales de JavaScript
+    'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+    'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
+    'no-unused-vars': 'off', // Desactivado en favor de la regla TypeScript
+    'no-undef': 'off', // TypeScript maneja esto mejor
+    'prefer-const': 'error', // Preferir const cuando sea posible
+    'no-var': 'error', // No usar var
+    'object-shorthand': 'error', // Usar shorthand para objetos
+    'prefer-arrow-callback': 'error', // Preferir arrow functions
+    
+    // Reglas específicas para React
+    'react/react-in-jsx-scope': 'off', // No necesario con React 17+
+    'react/prop-types': 'off', // TypeScript maneja esto
+    'react/display-name': 'off', // No necesario para componentes funcionales
+    'react/jsx-uses-react': 'off', // No necesario con React 17+
+    'react/jsx-uses-vars': 'error', // Marcar variables JSX como usadas
+    'react/jsx-key': 'error', // Requerir key en elementos de lista
+    'react/no-unescaped-entities': 'warn', // Advertir sobre entidades no escapadas
+    'react/jsx-no-duplicate-props': 'error', // No permitir props duplicadas
+    'react/jsx-no-undef': 'error', // No permitir variables no definidas en JSX
+    'react/self-closing-comp': 'error', // Preferir auto-cierre para componentes sin hijos
+    
+    // Reglas para React Hooks
+    'react-hooks/rules-of-hooks': 'error', // Verificar reglas de hooks
+    'react-hooks/exhaustive-deps': 'warn', // Verificar dependencias de hooks
+    
+    // Reglas para imports
+    'import/no-unresolved': 'off', // TypeScript maneja esto
+    'import/named': 'off', // TypeScript maneja esto
+    'import/default': 'off', // TypeScript maneja esto
+    'import/no-named-as-default': 'off', // Permite flexibilidad en imports
+    'import/no-named-as-default-member': 'off', // Permite flexibilidad en imports
+    'import/order': ['error', {
+      'groups': [
+        'builtin', // Módulos built-in de Node.js
+        'external', // Módulos externos
+        'internal', // Módulos internos
+        'parent', // Módulos padre
+        'sibling', // Módulos hermanos
+        'index' // Archivos index
+      ],
+      'newlines-between': 'always' // Líneas nuevas entre grupos
+    }],
+    
+    // Reglas de accesibilidad
+    'jsx-a11y/anchor-is-valid': 'off', // Permite flexibilidad con Next.js Link
+    'jsx-a11y/click-events-have-key-events': 'warn', // Eventos de teclado para clicks
+    'jsx-a11y/no-static-element-interactions': 'warn', // Interacciones en elementos estáticos
+    
+    // Reglas para TypeScript
+    '@typescript-eslint/no-unused-vars': ['error', { 
+      argsIgnorePattern: '^_', // Ignorar argumentos que empiecen con _
+      varsIgnorePattern: '^_' // Ignorar variables que empiecen con _
+    }],
+    '@typescript-eslint/explicit-function-return-type': 'off', // No requerir tipos de retorno explícitos
+    '@typescript-eslint/explicit-module-boundary-types': 'off', // No requerir tipos en boundaries
+    '@typescript-eslint/no-explicit-any': 'warn', // Advertir sobre uso de any
+    '@typescript-eslint/no-non-null-assertion': 'warn', // Advertir sobre non-null assertions
+    '@typescript-eslint/prefer-as-const': 'error', // Preferir as const
+    '@typescript-eslint/no-unnecessary-type-assertion': 'error', // No type assertions innecesarias
+    '@typescript-eslint/ban-ts-comment': 'warn' // Advertir sobre comentarios @ts-ignore
+  },
+  
+  // Configuración específica para resolución de módulos
+  settings: {
+    react: {
+      version: 'detect' // Detectar versión de React automáticamente
+    },
+    'import/resolver': {
+      typescript: {
+        alwaysTryTypes: true, // Siempre intentar resolver tipos
+        project: './tsconfig.json' // Usar configuración TypeScript
+      },
+      node: {
+        extensions: ['.js', '.jsx', '.ts', '.tsx'] // Extensiones a resolver
+      }
+    },
+    'import/extensions': ['.js', '.jsx', '.ts', '.tsx'], // Extensiones para imports
+    'import/parsers': {
+      '@typescript-eslint/parser': ['.ts', '.tsx'] // Parser para TypeScript
+    }
+  },
+  
+  // Configuración para ignorar ciertos patrones
+  ignorePatterns: [
+    'node_modules/', // Ignorar dependencias
+    'dist/', // Ignorar archivos compilados
+    'build/', // Ignorar build
+    'coverage/', // Ignorar cobertura
+    '*.min.js', // Ignorar archivos minificados
+    '*.bundle.js', // Ignorar bundles
+    '.eslintrc.js' // Ignorar este archivo
+  ]
+};
