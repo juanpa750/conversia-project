@@ -25,17 +25,28 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get WhatsApp Web status
+  // Get WhatsApp Web status - different endpoints for chatbot vs general
   const { data: status, isLoading, refetch } = useQuery<WhatsAppStatus>({
-    queryKey: ['/api/whatsapp-web/status'],
+    queryKey: chatbotId ? 
+      [`/api/whatsapp/qr/${integrationId}`] : 
+      ['/api/whatsapp-web/status'],
     refetchInterval: qrPolling ? 3000 : false,
     retry: false,
+    enabled: chatbotId ? !!integrationId : true,
   });
 
-  // Initialize session mutation
+  // Initialize session mutation for chatbot-specific integration
   const initMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('POST', '/api/whatsapp-web/init-session', {});
+      if (chatbotId) {
+        // For chatbot-specific integration
+        return await apiRequest('POST', '/api/whatsapp/integrations/create-integration', {
+          chatbotId: parseInt(chatbotId)
+        });
+      } else {
+        // For general WhatsApp connection
+        return await apiRequest('POST', '/api/whatsapp-web/init-session', {});
+      }
     },
     onSuccess: (response: any) => {
       toast({
@@ -43,15 +54,12 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
         description: 'Generando código QR para WhatsApp...',
       });
       setQrPolling(true);
-      refetch();
       
-      if (response.sessionId) {
-        // Create integration record
-        createIntegrationMutation.mutate({
-          sessionId: response.sessionId,
-          chatbotId
-        });
+      if (response.id) {
+        setIntegrationId(response.id);
       }
+      
+      refetch();
     },
     onError: (error: any) => {
       toast({
@@ -62,22 +70,7 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
     },
   });
 
-  // Create integration mutation
-  const createIntegrationMutation = useMutation({
-    mutationFn: async (data: { sessionId: string; chatbotId?: string }) => {
-      return await apiRequest('POST', '/api/whatsapp/integrations', {
-        sessionId: data.sessionId,
-        chatbotId: data.chatbotId
-      });
-    },
-    onSuccess: (response: any) => {
-      setIntegrationId(response.id);
-      console.log('✅ Integration created:', response);
-    },
-    onError: (error: any) => {
-      console.error('❌ Error creating integration:', error);
-    },
-  });
+
 
   // Monitor status changes
   useEffect(() => {
