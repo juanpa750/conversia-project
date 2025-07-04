@@ -36,7 +36,9 @@ function App() {
                 <Switch>
                   <Route path="/" component={Dashboard} />
                   <Route path="/chatbots" component={Chatbots} />
-                  <Route path="/chatbots/builder/:id?" component={ChatbotBuilderPage} />
+                  <Route path="/chatbots/builder/:id?" 
+                    component={(props: any) => <ChatbotBuilderPage {...props} />} 
+                  />
                   <Route path="/clients" component={Clients} />
                   <Route path="/analytics" component={Analytics} />
                   <Route path="/settings" component={Settings} />

@@ -1,10 +1,10 @@
-# ConversIA - WhatsApp Chatbot Platform
+# ConversIA - Plataforma SaaS Avanzada de Chatbots para WhatsApp
 
 ## Overview
 
-ConversIA is a comprehensive WhatsApp chatbot platform designed for businesses to create, manage, and analyze chatbots. It enables businesses to automate customer service, boost sales, and improve client relationships through WhatsApp chatbots.
+ConversIA es una plataforma SaaS empresarial para gestión de chatbots inteligentes de WhatsApp con IA avanzada, CRM integrado, sistema de pagos y manejo multi-número en tiempo real. 
 
-The application follows a modern web architecture with a React frontend and Node.js Express backend. It uses Drizzle ORM with PostgreSQL for data storage and includes Stripe integration for subscription management.
+La aplicación sigue una arquitectura moderna web con frontend React TypeScript, backend Node.js Express, base de datos PostgreSQL con Drizzle ORM, y funcionalidades empresariales como autenticación multi-factor, dashboard ejecutivo, y analytics en tiempo real.
 
 ## User Preferences
 
