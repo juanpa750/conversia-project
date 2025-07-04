@@ -292,15 +292,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         autoRespond,
         operatingHours,
         chatbotId,
-        productId
+        productId,
+        sessionId
       } = req.body;
 
+      // Si es una creación rápida desde el chatbot builder (solo con sessionId y chatbotId)
+      if (sessionId && chatbotId && !phoneNumber) {
+        console.log(`📱 Creating WhatsApp integration for user: ${req.userId}, chatbot: ${chatbotId}`);
+        
+        const integration = await simpleStorage.createWhatsappIntegration({
+          userId: req.userId,
+          phoneNumber: '', // Se actualizará cuando se conecte
+          displayName: `Chatbot ${chatbotId}`,
+          businessDescription: 'Número de WhatsApp conectado automáticamente',
+          chatbotId: parseInt(chatbotId),
+          productId: null,
+          priority: 1,
+          autoRespond: true,
+          operatingHours: null,
+          status: 'connecting',
+          isActive: true
+        });
+        
+        return res.json({
+          success: true,
+          id: integration.id,
+          sessionId: sessionId,
+          message: 'Integración creada exitosamente'
+        });
+      }
+
+      // Creación completa con todos los datos
       const integrationData = {
         userId: req.userId,
-        phoneNumber,
-        displayName,
-        businessDescription,
-        chatbotId: parseInt(chatbotId),
+        phoneNumber: phoneNumber || '',
+        displayName: displayName || 'WhatsApp Integration',
+        businessDescription: businessDescription || '',
+        chatbotId: chatbotId ? parseInt(chatbotId) : null,
         productId: productId ? parseInt(productId) : null,
         priority: 1,
         autoRespond: autoRespond ?? true,
@@ -1330,43 +1358,7 @@ Responde de manera natural y conversacional. Usa la información del producto pa
     }
   });
 
-  // Ruta para crear integración de WhatsApp específica por chatbot
-  app.post('/api/whatsapp/integrations', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.userId;
-      const { sessionId, chatbotId } = req.body;
-      
-      console.log(`📱 Creating WhatsApp integration for user: ${userId}, chatbot: ${chatbotId}`);
-      
-      // Crear la integración en la base de datos
-      const integration = await simpleStorage.createWhatsappIntegration({
-        userId,
-        phoneNumber: '', // Se actualizará cuando se conecte
-        displayName: `Chatbot ${chatbotId || 'General'}`,
-        businessDescription: 'Número de WhatsApp conectado automáticamente',
-        chatbotId: chatbotId || null,
-        productId: null,
-        priority: 1,
-        autoRespond: true,
-        operatingHours: null,
-        status: 'connecting',
-        isActive: true
-      });
-      
-      res.json({
-        success: true,
-        id: integration.id,
-        sessionId: integration.sessionId,
-        message: 'Integración creada exitosamente'
-      });
-    } catch (error) {
-      console.error('Error creating WhatsApp integration:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Error creando integración de WhatsApp'
-      });
-    }
-  });
+
 
   const httpServer = createServer(app);
   return httpServer;
