@@ -75,6 +75,8 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
     },
   });
 
+
+
   // Monitor status changes
   useEffect(() => {
     if (status?.status === 'connected' && integrationId) {
@@ -117,8 +119,8 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
         <Alert className="bg-orange-50 border-orange-200">
           <RiQrCodeLine className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
-            <strong>Modo Demo:</strong> Este es un simulador para demostracion. 
-            En produccion se conectara a WhatsApp real.
+            <strong>Modo Demo:</strong> Este es un simulador para demostración. 
+            En producción se conectará a WhatsApp real.
           </AlertDescription>
         </Alert>
       )}
@@ -154,10 +156,10 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
         <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300 text-center">
           <div className="mb-3">
             <Badge variant="secondary" className="mb-2">
-              Codigo QR Activo
+              Código QR Activo
             </Badge>
             <p className="text-sm text-gray-600 mb-3">
-              Escanea este codigo con WhatsApp en tu telefono
+              Escanea este código con WhatsApp en tu teléfono
             </p>
           </div>
           
@@ -170,18 +172,18 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
           </div>
           
           <div className="text-xs text-gray-500 space-y-1">
-            <p>1. Abre WhatsApp en tu telefono</p>
-            <p>2. Ve a Configuracion &gt; Dispositivos vinculados</p>
+            <p>1. Abre WhatsApp en tu teléfono</p>
+            <p>2. Ve a Configuración {'>'} Dispositivos vinculados</p>
             <p>3. Toca "Vincular un dispositivo"</p>
-            <p>4. Escanea este codigo QR</p>
+            <p>4. Escanea este código QR</p>
           </div>
         </div>
       ) : status?.status === 'connected' ? (
         <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-center">
           <RiCheckboxCircleLine className="h-8 w-8 text-green-600 mx-auto mb-2" />
-          <p className="font-medium text-green-800">WhatsApp Conectado!</p>
+          <p className="font-medium text-green-800">¡WhatsApp Conectado!</p>
           <p className="text-sm text-green-600">
-            Tu numero esta listo para recibir y responder mensajes automaticamente
+            Tu número está listo para recibir y responder mensajes automáticamente
           </p>
         </div>
       ) : status?.status === 'connecting' ? (
@@ -189,7 +191,7 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-600 mx-auto mb-2"></div>
           <p className="font-medium text-yellow-800">Conectando...</p>
           <p className="text-sm text-yellow-600">
-            Procesando la conexion con WhatsApp
+            Procesando la conexión con WhatsApp
           </p>
         </div>
       ) : (
@@ -200,11 +202,11 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
             className="w-full"
           >
             <RiQrCodeLine className="h-4 w-4 mr-2" />
-            {initMutation.isPending ? 'Iniciando...' : 'Generar Codigo QR'}
+            {initMutation.isPending ? 'Iniciando...' : 'Generar Código QR'}
           </Button>
           
           <p className="text-xs text-gray-500 mt-2">
-            Haz clic para generar un codigo QR y conectar tu WhatsApp
+            Haz clic para generar un código QR y conectar tu WhatsApp
           </p>
         </div>
       )}
