@@ -404,7 +404,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get QR code for WhatsApp connection
   app.get("/api/whatsapp/qr/:integrationId", isAuthenticated, async (req: any, res) => {
     try {
-      const integrationId = parseInt(req.params.integrationId);
+      const integrationIdParam = req.params.integrationId;
+      
+      // Handle case where integrationId is not available yet
+      if (integrationIdParam === 'none' || integrationIdParam === 'null' || integrationIdParam === 'undefined') {
+        return res.status(400).json({ message: 'Integration ID not available yet' });
+      }
+      
+      const integrationId = parseInt(integrationIdParam);
+      
+      // Check if parsing failed
+      if (isNaN(integrationId)) {
+        return res.status(400).json({ message: 'Invalid integration ID' });
+      }
       
       // Verify integration belongs to user
       const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);

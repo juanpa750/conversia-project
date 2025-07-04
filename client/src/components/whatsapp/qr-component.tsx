@@ -28,11 +28,11 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
   // Get WhatsApp Web status - different endpoints for chatbot vs general
   const { data: status, isLoading, refetch } = useQuery<WhatsAppStatus>({
     queryKey: chatbotId ? 
-      [`/api/whatsapp/qr/${integrationId}`] : 
+      [`/api/whatsapp/qr/${integrationId || 'none'}`] : 
       ['/api/whatsapp-web/status'],
     refetchInterval: qrPolling ? 3000 : false,
     retry: false,
-    enabled: chatbotId ? !!integrationId : true,
+    enabled: chatbotId ? (integrationId !== null && integrationId !== undefined) : true,
   });
 
   // Initialize session mutation for chatbot-specific integration
@@ -53,15 +53,20 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
         title: 'Sesión iniciada',
         description: 'Generando código QR para WhatsApp...',
       });
-      setQrPolling(true);
       
       if (response.id) {
         setIntegrationId(response.id);
+        setQrPolling(true);
+        // Refetch with the new integration ID
+        setTimeout(() => refetch(), 500);
+      } else {
+        // For general WhatsApp connection, start polling immediately
+        setQrPolling(true);
+        refetch();
       }
-      
-      refetch();
     },
     onError: (error: any) => {
+      setQrPolling(false);
       toast({
         title: 'Error',
         description: error.message || 'Error iniciando sesión de WhatsApp',
