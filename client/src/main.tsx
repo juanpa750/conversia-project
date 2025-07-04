@@ -28,29 +28,26 @@ function App() {
     <TooltipProvider>
       <div className="min-h-screen bg-background">
         <Switch>
-          <Route path="/auth/login" component={Login} />
-          <Route path="/auth/register" component={Register} />
-          <Route path="/:rest*">
-            {() => (
-              <Layout>
-                <Switch>
-                  <Route path="/" component={Dashboard} />
-                  <Route path="/chatbots" component={Chatbots} />
-                  <Route path="/chatbots/builder/:id?" 
-                    component={(props: any) => <ChatbotBuilderPage {...props} />} 
-                  />
-                  <Route path="/clients" component={Clients} />
-                  <Route path="/analytics" component={Analytics} />
-                  <Route path="/settings" component={Settings} />
-                  <Route path="/support" component={Support} />
-                  <Route path="/crm" component={CRMDashboard} />
-                  <Route path="/whatsapp-connect" component={WhatsAppConnect} />
-                  <Route path="/master" component={MasterDashboard} />
-                  <Route path="/whatsapp" component={WhatsApp} />
-                  <Route component={NotFound} />
-                </Switch>
-              </Layout>
-            )}
+          <Route path="/login" component={Login} />
+          <Route path="/register" component={Register} />
+          <Route>
+            <Layout>
+              <Switch>
+                <Route path="/" component={Dashboard} />
+                <Route path="/dashboard" component={Dashboard} />
+                <Route path="/chatbots" component={Chatbots} />
+                <Route path="/chatbots/builder" component={ChatbotBuilderPage} />
+                <Route path="/clients" component={Clients} />
+                <Route path="/analytics" component={Analytics} />
+                <Route path="/settings" component={Settings} />
+                <Route path="/support" component={Support} />
+                <Route path="/crm" component={CRMDashboard} />
+                <Route path="/whatsapp-connect" component={WhatsAppConnect} />
+                <Route path="/master" component={MasterDashboard} />
+                <Route path="/whatsapp" component={WhatsApp} />
+                <Route component={NotFound} />
+              </Switch>
+            </Layout>
           </Route>
         </Switch>
         <Toaster />
@@ -60,11 +57,11 @@ function App() {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <LanguageProvider>
-    <ThemeProvider defaultTheme="light">
-      <QueryClientProvider client={queryClient}>
+  <QueryClientProvider client={queryClient}>
+    <LanguageProvider>
+      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
         <App />
-      </QueryClientProvider>
-    </ThemeProvider>
-  </LanguageProvider>
+      </ThemeProvider>
+    </LanguageProvider>
+  </QueryClientProvider>
 );
