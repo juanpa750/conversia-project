@@ -171,7 +171,7 @@ export function WhatsAppQRComponent({ chatbotId, onConnectionSuccess }: WhatsApp
           
           <div className="text-xs text-gray-500 space-y-1">
             <p>1. Abre WhatsApp en tu telefono</p>
-            <p>2. Ve a Configuracion &gt; Dispositivos vinculados</p>
+            <p>2. Ve a Configuracion y luego Dispositivos vinculados</p>
             <p>3. Toca "Vincular un dispositivo"</p>
             <p>4. Escanea este codigo QR</p>
           </div>

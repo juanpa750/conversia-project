@@ -20,6 +20,8 @@ import {
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/use-auth-simple";
+// import { useLanguage } from "@/contexts/LanguageContext";
 
 interface NavItemProps {
   href: string;
@@ -28,26 +30,22 @@ interface NavItemProps {
   active?: boolean;
 }
 
-function NavItem({ href, icon, children, active = false }: NavItemProps) {
+function NavItem({ href, icon, children, active }: NavItemProps) {
   return (
-    <Link href={href}>
-      <a
-        className={cn(
-          "flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors",
-          active
-            ? "bg-primary text-primary-foreground"
-            : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-        )}
-      >
-        <span className="mr-3 flex-shrink-0">{icon}</span>
-        {children}
-      </a>
+    <Link href={href} className={cn(
+      "flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50",
+      active && "border-r-4 border-primary bg-primary-50 text-gray-900"
+    )}>
+      <span className={cn("mr-3", active && "text-primary")}>{icon}</span>
+      <span>{children}</span>
     </Link>
   );
 }
 
 export function Sidebar() {
   const [location] = useLocation();
+  const { user, logout } = useAuth();
+  // const { t } = useLanguage();
 
   return (
     <div className="flex h-full w-64 flex-shrink-0 flex-col border-r border-gray-200 bg-white">
@@ -97,77 +95,85 @@ export function Sidebar() {
         
         <NavItem 
           href="/analytics" 
-          icon={<RiBarChart2Line />}
+          icon={<RiBarChart2Line />} 
           active={location.startsWith("/analytics")}
         >
           Analytics
         </NavItem>
-
-        <div className="mt-6 mb-3 px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
-          Herramientas
-        </div>
-
-        <NavItem 
-          href="/whatsapp" 
-          icon={<RiWhatsappLine />}
-          active={location.startsWith("/whatsapp")}
-        >
+        
+        <div className="mb-3 mt-6 px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
           WhatsApp
-        </NavItem>
-
-        <NavItem 
-          href="/ai-flows" 
-          icon={<RiBrainLine />}
-          active={location.startsWith("/ai-flows")}
-        >
-          Flujos IA
-        </NavItem>
-
-        <NavItem 
-          href="/templates" 
-          icon={<RiGalleryLine />}
-          active={location.startsWith("/templates")}
-        >
-          Plantillas
-        </NavItem>
-
-        <NavItem 
-          href="/appointments" 
-          icon={<RiCalendarLine />}
-          active={location.startsWith("/appointments")}
-        >
-          Citas
-        </NavItem>
-
-        <div className="mt-6 mb-3 px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
-          Configuracion
         </div>
-
+        
+        <NavItem 
+          href="/whatsapp-web" 
+          icon={<RiWhatsappLine />} 
+          active={location.startsWith("/whatsapp-web")}
+        >
+          Conectar WhatsApp
+        </NavItem>
+        
+        <NavItem 
+          href="/master/dashboard" 
+          icon={<RiTeamLine />} 
+          active={location.startsWith("/master")}
+        >
+          Dashboard Master
+        </NavItem>
+        
+        <div className="mb-3 mt-6 px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
+          Configuración
+        </div>
+        
         <NavItem 
           href="/settings" 
-          icon={<RiSettings3Line />}
+          icon={<RiSettings3Line />} 
           active={location.startsWith("/settings")}
         >
-          Configuracion
+          Ajustes
+        </NavItem>
+        
+        <NavItem 
+          href="/support" 
+          icon={<RiCustomerService2Line />} 
+          active={location.startsWith("/support")}
+        >
+          Soporte
         </NavItem>
       </nav>
       
-      {/* User Profile */}
+      {/* User profile */}
       <div className="border-t border-gray-200 p-4">
         <div className="flex items-center">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src="/avatar.jpg" />
-            <AvatarFallback>U</AvatarFallback>
+          <Avatar className="h-10 w-10 border border-gray-200">
+            <AvatarImage 
+              src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5" 
+              alt="Profile photo" 
+            />
+            <AvatarFallback>
+              {user?.firstName?.charAt(0) || user?.email?.charAt(0) || "U"}
+            </AvatarFallback>
           </Avatar>
-          <div className="ml-3 flex-1">
-            <p className="text-sm font-medium text-gray-900">Usuario</p>
-            <p className="text-xs text-gray-500">Plan Basico</p>
+          <div className="ml-3">
+            <p className="text-sm font-medium text-gray-900">
+              {user?.firstName ? `${user.firstName} ${user.lastName || ''}` : user?.email}
+            </p>
+            <p className="text-xs text-gray-500">Plan Premium</p>
           </div>
-          <Button variant="ghost" size="sm">
-            <RiLogoutBoxRLine className="h-4 w-4" />
-          </Button>
+          <div className="ml-auto">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-gray-400 hover:text-gray-500"
+              onClick={logout}
+            >
+              <RiLogoutBoxRLine />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
+export default Sidebar;
