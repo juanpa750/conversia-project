@@ -8,8 +8,6 @@ import "./index.css";
 
 // Import pages
 import Dashboard from "./pages/dashboard";
-import ChatbotConfig from "./pages/chatbot-config";
-import WhatsAppPage from "./pages/WhatsApp";
 import NotFound from "./pages/not-found";
 
 // Import components  
@@ -28,8 +26,6 @@ function App() {
               <Switch>
                 <Route path="/" component={Dashboard} />
                 <Route path="/dashboard" component={Dashboard} />
-                <Route path="/chatbot-config" component={ChatbotConfig} />
-                <Route path="/whatsapp" component={WhatsAppPage} />
                 <Route component={NotFound} />
               </Switch>
             </main>
