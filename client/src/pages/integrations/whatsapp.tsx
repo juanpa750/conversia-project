@@ -39,7 +39,7 @@ import {
   RiAddLine,
   RiSettings3Line,
 } from "@/lib/icons";
-import WhatsAppWebSetup from "@/components/WhatsAppWebSetup";
+
 
 interface WhatsAppIntegration {
   id: number;
@@ -428,66 +428,7 @@ export default function WhatsAppIntegrationPage() {
         </div>
       </div>
 
-      {/* WhatsApp Web Integration - Nueva funcionalidad */}
-      <Card className="mb-6 border-green-200">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <RiWhatsappLine className="text-green-600" />
-            <span>WhatsApp Web (Nuevo) - Conexión Rápida</span>
-            <Badge className="bg-green-100 text-green-800">Recomendado</Badge>
-          </CardTitle>
-          <CardDescription>
-            Conecta tu WhatsApp personal o comercial de forma instantánea con solo escanear un código QR. 
-            Esta es la forma más rápida de activar la IA en tu WhatsApp.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <WhatsAppWebSetup 
-                chatbotId={Number(chatbotId)}
-                onConnectionChange={(connected) => {
-                  if (connected) {
-                    toast({
-                      title: "🎉 WhatsApp Conectado",
-                      description: "Tu IA ya está activa y responderá a los mensajes automáticamente.",
-                      duration: 5000,
-                    });
-                  }
-                }}
-              />
-            </div>
-            <div className="space-y-4">
-              <h3 className="font-semibold text-gray-900">✨ Ventajas de WhatsApp Web:</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li className="flex items-start space-x-2">
-                  <span className="text-green-500 mt-0.5">✓</span>
-                  <span><strong>Configuración instantánea:</strong> Solo escanea el QR y listo</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <span className="text-green-500 mt-0.5">✓</span>
-                  <span><strong>Sin límites de API:</strong> Usa tu WhatsApp personal sin restricciones</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <span className="text-green-500 mt-0.5">✓</span>
-                  <span><strong>Respuestas instantáneas:</strong> La IA responde en tiempo real</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <span className="text-green-500 mt-0.5">✓</span>
-                  <span><strong>Gratuito:</strong> No requiere configuración de Meta Business</span>
-                </li>
-              </ul>
-              
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-xs text-blue-800">
-                  <strong>💡 Recomendación:</strong> Usa WhatsApp Web para probar tu chatbot de inmediato. 
-                  Cuando necesites mayor volumen, puedes configurar la API de Meta Business más abajo.
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* Current Integration Status */}
       <Card className="mb-6">
@@ -711,11 +652,14 @@ export default function WhatsAppIntegrationPage() {
 
       {/* QR Code Dialog */}
       <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Conectar WhatsApp</DialogTitle>
+            <DialogTitle className="flex items-center space-x-2">
+              <RiWhatsappLine className="text-green-600 w-6 h-6" />
+              <span>Conectar WhatsApp Web</span>
+            </DialogTitle>
             <DialogDescription>
-              Escanea el código QR con tu WhatsApp para conectar
+              Escanea este código QR con tu WhatsApp para conectar tu número y activar las respuestas automáticas con IA
             </DialogDescription>
           </DialogHeader>
           
@@ -723,10 +667,10 @@ export default function WhatsAppIntegrationPage() {
             <div className="text-center">
               {qrData?.qrCode ? (
                 <div className="space-y-4">
-                  <div className="mx-auto w-64 h-64 border rounded-lg bg-white p-2 flex items-center justify-center">
+                  <div className="mx-auto w-80 h-80 border-2 rounded-xl bg-white p-4 flex items-center justify-center shadow-lg">
                     <img 
                       src={qrData.qrCode} 
-                      alt="QR Code" 
+                      alt="Código QR de WhatsApp Web" 
                       className="w-full h-full object-contain"
                       onError={(e) => {
                         console.error('Error loading QR image');
@@ -736,16 +680,31 @@ export default function WhatsAppIntegrationPage() {
                       onLoad={() => console.log('QR image loaded successfully')}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-600">
-                      1. Abre WhatsApp en tu teléfono
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      2. Ve a Configuración - Dispositivos vinculados
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      3. Toca "Vincular un dispositivo" y escanea este código
-                    </p>
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-900">Instrucciones paso a paso:</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-start space-x-3">
+                        <span className="flex-shrink-0 w-6 h-6 bg-green-100 text-green-800 rounded-full flex items-center justify-center text-xs font-medium">1</span>
+                        <p className="text-gray-700">Abre WhatsApp en tu teléfono móvil</p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <span className="flex-shrink-0 w-6 h-6 bg-green-100 text-green-800 rounded-full flex items-center justify-center text-xs font-medium">2</span>
+                        <p className="text-gray-700">Ve a <strong>Configuración</strong> → <strong>Dispositivos vinculados</strong></p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <span className="flex-shrink-0 w-6 h-6 bg-green-100 text-green-800 rounded-full flex items-center justify-center text-xs font-medium">3</span>
+                        <p className="text-gray-700">Toca <strong>"Vincular un dispositivo"</strong> y escanea este código QR</p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <span className="flex-shrink-0 w-6 h-6 bg-green-100 text-green-800 rounded-full flex items-center justify-center text-xs font-medium">4</span>
+                        <p className="text-gray-700">Una vez conectado, tu chatbot con IA responderá automáticamente</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-xs text-blue-800">
+                        <strong>💡 Tip:</strong> Mantén este diálogo abierto hasta que veas "¡Conectado!" en la pantalla.
+                      </p>
+                    </div>
                   </div>
                   <Badge variant="outline" className="bg-green-100 text-green-800">
                     Código QR listo para escanear
@@ -770,17 +729,19 @@ export default function WhatsAppIntegrationPage() {
                   </Badge>
                 </div>
               ) : (
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-                  <p className="text-sm text-gray-600">
-                    Generando código QR...
-                  </p>
-                  {qrData && (
-                    <div className="text-xs space-y-1 p-2 bg-gray-100 rounded">
-                      <p className="text-gray-600">Estado: <strong>{qrData.status}</strong></p>
-                      <p className="text-gray-600">QR: <strong>{qrData.qrCode ? 'Disponible' : 'No disponible'}</strong></p>
-                      {qrData.qrCode && (
-                        <p className="text-gray-600">Tamaño: <strong>{qrData.qrCode.length} caracteres</strong></p>
+                <div className="flex flex-col items-center space-y-6">
+                  <div className="mx-auto w-80 h-80 border-2 rounded-xl bg-gray-50 p-4 flex flex-col items-center justify-center shadow-lg">
+                    <div className="animate-spin w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full mb-4" />
+                    <p className="text-gray-600 font-medium">Generando código QR...</p>
+                    <p className="text-sm text-gray-500 mt-2">Esto puede tomar unos segundos</p>
+                  </div>
+                  {qrData?.status && (
+                    <div className="text-center space-y-2">
+                      <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                        Estado: {qrData.status === 'initializing' ? 'Inicializando' : qrData.status}
+                      </Badge>
+                      {qrData.status === 'connecting' && (
+                        <p className="text-sm text-gray-600">Conectando con WhatsApp Web...</p>
                       )}
                     </div>
                   )}
