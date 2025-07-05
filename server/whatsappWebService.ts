@@ -7,6 +7,8 @@ import { advancedAIService } from './advancedAIService';
 import { simpleStorage } from './storage';
 import { EventEmitter } from 'events';
 import { execSync } from 'child_process';
+import puppeteer from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 
 interface WhatsAppSession {
   client: Client;
@@ -31,6 +33,9 @@ export class WhatsAppWebService extends EventEmitter {
   
   constructor() {
     super();
+    // Configurar puppeteer con stealth plugin
+    puppeteer.use(StealthPlugin());
+    
     // Limpiar sesiones inactivas cada 30 minutos
     setInterval(() => {
       this.cleanupInactiveSessions();
@@ -77,14 +82,25 @@ export class WhatsAppWebService extends EventEmitter {
             '--disable-dev-shm-usage',
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
-            '--no-zygote',
+            '--no-zygote', 
             '--single-process',
             '--disable-gpu',
             '--disable-background-timer-throttling',
             '--disable-backgrounding-occluded-windows',
             '--disable-renderer-backgrounding',
             '--disable-web-security',
-            '--disable-features=TranslateUI'
+            '--disable-features=TranslateUI',
+            '--disable-features=VizDisplayCompositor',
+            '--disable-blink-features=AutomationControlled',
+            '--disable-ipc-flooding-protection',
+            '--disable-extensions',
+            '--disable-default-apps',
+            '--disable-sync',
+            '--disable-translate',
+            '--hide-scrollbars',
+            '--mute-audio',
+            '--no-default-browser-check',
+            '--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
           ]
         }
       });
@@ -115,20 +131,32 @@ export class WhatsAppWebService extends EventEmitter {
         // Escuchar eventos del cliente
         client.on('qr', async (qr) => {
           try {
-            console.log(`🔍 QR generado para usuario: ${userId}`);
+            console.log(`🔍 QR recibido para usuario: ${userId}`);
+            console.log(`📄 QR string length: ${qr.length}`);
+            console.log(`📄 QR prefix: ${qr.substring(0, 50)}...`);
             
-            // Generar QR como imagen base64
+            // Validar que el QR sea válido
+            if (!qr || qr.length < 10) {
+              throw new Error('QR string inválido o muy corto');
+            }
+            
+            // Generar QR como imagen base64 con configuración optimizada
             const qrImage = await qrcode.toDataURL(qr, {
-              width: 300,
-              margin: 2,
+              width: 512,  // Tamaño más grande para mejor escaneado
+              margin: 4,   // Margen más grande
               color: {
                 dark: '#000000',
                 light: '#FFFFFF'
-              }
+              },
+              errorCorrectionLevel: 'M'  // Nivel de corrección de errores medio
             });
+
+            console.log(`✅ QR imagen generada: ${qrImage.length} caracteres`);
+            console.log(`📊 Imagen base64 prefix: ${qrImage.substring(0, 50)}...`);
 
             session.qrCode = qrImage;
             session.status = 'qr_ready';
+            session.lastActivity = new Date();
             
             // Emitir evento para frontend
             this.emit('qr', { userId, qrCode: qrImage });
@@ -136,10 +164,11 @@ export class WhatsAppWebService extends EventEmitter {
             if (!resolved) {
               resolved = true;
               clearTimeout(timeout);
+              console.log(`🎯 Resolviendo promesa con QR exitoso para: ${userId}`);
               resolve({ success: true, qrCode: qrImage });
             }
           } catch (error) {
-            console.error('Error generando QR:', error);
+            console.error('❌ Error generando QR:', error);
             if (!resolved) {
               resolved = true;
               clearTimeout(timeout);
