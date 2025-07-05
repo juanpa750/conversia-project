@@ -11,6 +11,7 @@ import Chatbots from "@/pages/chatbots";
 import ChatbotBuilderPage from "@/pages/chatbots/builder";
 import ChatbotTemplates from "@/pages/chatbots/templates";
 import ProductConfig from "@/pages/chatbots/product-config";
+import ChatbotSettingsPage from "@/pages/chatbots/settings";
 import Clients from "@/pages/clients";
 import Analytics from "@/pages/analytics";
 import SubscriptionPlans from "@/pages/subscription/plans";
@@ -101,6 +102,13 @@ function Router() {
             {(params) => (
               <Layout>
                 <ProductConfig chatbotId={params.id} />
+              </Layout>
+            )}
+          </Route>
+          <Route path="/chatbots/:id/settings">
+            {(params) => (
+              <Layout>
+                <ChatbotSettingsPage />
               </Layout>
             )}
           </Route>

@@ -202,20 +202,23 @@ The application is configured for deployment on Replit with:
 5. Run `npm run dev` to start the development server
 6. Access the application at the provided URL
 
-## Current State (January 9, 2025)
-- **Status**: Fully functional WhatsApp Web system with improved QR code interface
+## Current State (January 5, 2025)
+- **Status**: Individual WhatsApp configuration per chatbot implemented with enhanced stealth technology
 - **Test User**: prueba@botmaster.com / password: 123456
-- **Active Chatbot**: Suplemento Vitamina D3 (ID: 26) with advanced AI personality
-- **Products**: 1 configured (Vitamina D3)
-- **WhatsApp Integration**: WhatsApp Web with QR code scanning (working)
-- **System Dependencies**: Chromium installed and configured for Puppeteer
+- **Active Chatbots**: Suplemento Vitamina D3 (ID: 26), Kit Diosa Negra (ID: 24) with dedicated WhatsApp numbers
+- **Products**: Multiple configured with individual AI personalities
+- **WhatsApp Integration**: Enhanced WhatsApp Web with per-chatbot number assignment
+- **New Architecture**: Each chatbot can have its own WhatsApp number with specific AI responses
+- **System Dependencies**: Puppeteer with stealth plugin for improved QR generation
 
 ## Recent Changes
-- **January 9, 2025 (Evening)**: Complete cleanup of obsolete WhatsApp Master API system
-- **WhatsApp Web Focus**: Eliminated all Meta Cloud API references, simplified to WhatsApp Web only
-- **QR Code Improvements**: Enhanced interface with step-by-step instructions and better visual design
-- **System Dependencies**: Fixed Chromium path detection for QR code generation
-- **UI Cleanup**: Removed duplicate QR components, streamlined integration flow
+- **January 5, 2025 (Evening)**: Implemented individual WhatsApp configuration per chatbot
+- **Enhanced Stealth**: Added puppeteer-extra-plugin-stealth for better QR code compatibility
+- **New Configuration UI**: Added chatbot settings page with WhatsApp, AI, and General tabs
+- **Individual Number Assignment**: Each chatbot can use existing numbers or connect new ones
+- **Backend API Enhancement**: New endpoints for chatbot-specific WhatsApp management
+- **Database Structure**: Enhanced WhatsApp integrations to support per-chatbot assignment
+- **UI Improvements**: Settings button added to chatbot list for easy configuration access
 
 ## Development Workflow
 

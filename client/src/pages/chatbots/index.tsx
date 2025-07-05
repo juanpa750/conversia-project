@@ -50,6 +50,7 @@ import {
   RiEditLine,
   RiDeleteBinLine,
 } from "@/lib/icons";
+import { RiSettings4Line } from "react-icons/ri";
 
 interface Chatbot {
   id: string;
@@ -434,6 +435,16 @@ export function Chatbots() {
                 >
                   <Link href={`/integrations/whatsapp?chatbot=${chatbot.id}`}>
                     <RiWhatsappLine className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-blue-600 hover:text-blue-700"
+                  asChild
+                >
+                  <Link href={`/chatbots/${chatbot.id}/settings`}>
+                    <RiSettings4Line className="h-4 w-4" />
                   </Link>
                 </Button>
                 <DropdownMenu>

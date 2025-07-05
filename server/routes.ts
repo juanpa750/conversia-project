@@ -348,6 +348,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Connect WhatsApp for a specific chatbot
+  app.post("/api/whatsapp/connect/chatbot/:chatbotId", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbotId = parseInt(req.params.chatbotId);
+      
+      // Verify chatbot belongs to user
+      const chatbot = await simpleStorage.getChatbot(chatbotId);
+      if (!chatbot || chatbot.userId !== req.userId) {
+        return res.status(404).json({ message: 'Chatbot not found' });
+      }
+
+      // Create new WhatsApp integration for this specific chatbot
+      const integration = await simpleStorage.createWhatsappIntegration({
+        userId: req.userId,
+        chatbotId: chatbotId,
+        phoneNumber: `pending_${Date.now()}`, // Temporary until QR is scanned
+        isConnected: false,
+        status: 'connecting'
+      });
+
+      const sessionId = `${req.userId}_${integration.id}`;
+      
+      // Initialize WhatsApp session
+      const qrCode = await whatsappService.initializeSession(sessionId);
+      
+      if (qrCode) {
+        // Update integration with session info
+        await simpleStorage.updateWhatsappIntegration(integration.id, {
+          status: 'qr_ready'
+        });
+        
+        res.json({
+          success: true,
+          sessionId,
+          integrationId: integration.id,
+          qrCode,
+          message: 'QR code generated. Scan with WhatsApp to connect.'
+        });
+      } else {
+        res.status(500).json({ message: 'Failed to generate QR code' });
+      }
+    } catch (error) {
+      console.error('Connect chatbot WhatsApp error:', error);
+      res.status(500).json({ message: 'Failed to connect WhatsApp for chatbot' });
+    }
+  });
+
+  // Assign existing WhatsApp number to a chatbot
+  app.post("/api/whatsapp/assign", isAuthenticated, async (req: any, res) => {
+    try {
+      const { chatbotId, phoneNumber } = req.body;
+      
+      // Verify chatbot belongs to user
+      const chatbot = await simpleStorage.getChatbotById(chatbotId, req.userId);
+      if (!chatbot) {
+        return res.status(404).json({ message: 'Chatbot not found' });
+      }
+
+      // Find the integration with this phone number
+      const existingIntegration = await simpleStorage.getWhatsappIntegrationByPhone(phoneNumber, req.userId);
+      if (!existingIntegration) {
+        return res.status(404).json({ message: 'WhatsApp number not found' });
+      }
+
+      // Check if it's already assigned to another chatbot
+      if (existingIntegration.chatbotId && existingIntegration.chatbotId !== chatbotId) {
+        return res.status(400).json({ message: 'This number is already assigned to another chatbot' });
+      }
+
+      // Assign the integration to this chatbot
+      await simpleStorage.updateWhatsappIntegration(existingIntegration.id, {
+        chatbotId: chatbotId
+      });
+
+      res.json({
+        success: true,
+        message: 'WhatsApp number assigned to chatbot successfully'
+      });
+    } catch (error) {
+      console.error('Assign WhatsApp error:', error);
+      res.status(500).json({ message: 'Failed to assign WhatsApp number' });
+    }
+  });
+
+  // Get WhatsApp integration for specific chatbot
+  app.get("/api/whatsapp/integrations/chatbot/:chatbotId", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbotId = parseInt(req.params.chatbotId);
+      
+      // Verify chatbot belongs to user
+      const chatbot = await simpleStorage.getChatbotById(chatbotId, req.userId);
+      if (!chatbot) {
+        return res.status(404).json({ message: 'Chatbot not found' });
+      }
+
+      // Get WhatsApp integration for this chatbot
+      const integration = await simpleStorage.getWhatsappIntegrationByChatbot(chatbotId, req.userId);
+      
+      if (!integration) {
+        return res.status(404).json({ message: 'No WhatsApp integration found for this chatbot' });
+      }
+
+      res.json(integration);
+    } catch (error) {
+      console.error('Get chatbot WhatsApp integration error:', error);
+      res.status(500).json({ message: 'Failed to get WhatsApp integration' });
+    }
+  });
+
   // Delete WhatsApp integration
   app.delete("/api/whatsapp/integrations/:id", isAuthenticated, async (req: any, res) => {
     try {
