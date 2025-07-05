@@ -1,3 +1,13 @@
+/**
+ * ⚠️  OBSOLETO - WhatsApp Master API
+ * 
+ * Este archivo contiene la implementación de WhatsApp Master API que ya no se utiliza.
+ * El sistema ahora usa WhatsApp Web (whatsapp-web.js) en lugar de Meta Cloud API.
+ * 
+ * Se mantiene por referencia histórica pero NO se usa en producción.
+ * Fecha de deprecación: Enero 2025
+ */
+
 import { EventEmitter } from 'events';
 import { whatsappNumbers, users, type WhatsappNumber, type User } from '@shared/schema';
 import { db } from './db';

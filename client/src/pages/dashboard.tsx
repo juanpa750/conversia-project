@@ -8,7 +8,8 @@ import {
   RiArrowRightLine,
   RiSparklingLine,
   RiLightbulbLine,
-  RiShieldCheckLine
+  RiShieldCheckLine,
+  RiSmartphoneLine
 } from 'react-icons/ri';
 
 export default function Dashboard() {
@@ -137,30 +138,30 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Configuración avanzada */}
+          {/* WhatsApp Web Setup */}
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <RiLightbulbLine className="w-5 h-5 text-blue-500" />
-                Configuración Avanzada
+                <RiWhatsappLine className="w-5 h-5 text-green-500" />
+                WhatsApp Web
               </CardTitle>
               <CardDescription>
-                Para usuarios que necesitan integración completa con WhatsApp Business API
+                Conecta tu número WhatsApp personal o comercial con código QR
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                  <RiShieldCheckLine className="w-4 h-4 text-blue-500" />
-                  Integración con WhatsApp Business API
+                  <RiShieldCheckLine className="w-4 h-4 text-green-500" />
+                  Conexión directa con QR
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                  <RiShieldCheckLine className="w-4 h-4 text-blue-500" />
-                  Webhooks y configuración personalizada
+                  <RiShieldCheckLine className="w-4 h-4 text-green-500" />
+                  Respuestas automáticas con IA
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                  <RiShieldCheckLine className="w-4 h-4 text-blue-500" />
-                  Para desarrolladores y usuarios técnicos
+                  <RiShieldCheckLine className="w-4 h-4 text-green-500" />
+                  Fácil configuración sin APIs
                 </div>
               </div>
               <Button 
@@ -168,7 +169,7 @@ export default function Dashboard() {
                 className="w-full mt-4"
                 onClick={() => window.location.href = '/whatsapp'}
               >
-                Configuración Avanzada
+                Conectar WhatsApp Web
               </Button>
             </CardContent>
           </Card>
