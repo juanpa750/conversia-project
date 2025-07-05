@@ -123,7 +123,7 @@ export const chatbots = pgTable("chatbots", {
 export const whatsappIntegrations = pgTable("whatsapp_integrations", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
-  chatbotId: integer("chatbot_id").notNull().references(() => chatbots.id, { onDelete: 'cascade' }),
+  chatbotId: integer("chatbot_id").references(() => chatbots.id, { onDelete: 'set null' }),
   productId: integer("product_id"),
   
   // WhatsApp configuration
