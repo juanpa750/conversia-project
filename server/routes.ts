@@ -1164,6 +1164,32 @@ Responde de manera natural y conversacional. Usa la información del producto pa
     }
   });
 
+  // Disconnect WhatsApp from chatbot
+  app.post("/api/whatsapp/disconnect", isAuthenticated, async (req: any, res) => {
+    try {
+      const { integrationId } = req.body;
+      
+      // Verify integration belongs to user
+      const integration = await simpleStorage.getWhatsappIntegrationById(integrationId);
+      if (!integration || integration.user_id !== req.userId) {
+        return res.status(404).json({ message: 'WhatsApp integration not found' });
+      }
+
+      // Remove chatbot assignment
+      await simpleStorage.updateWhatsappIntegration(integrationId, {
+        chatbotId: null
+      });
+
+      res.json({
+        success: true,
+        message: 'WhatsApp disconnected from chatbot successfully'
+      });
+    } catch (error) {
+      console.error('Disconnect WhatsApp error:', error);
+      res.status(500).json({ message: 'Failed to disconnect WhatsApp' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

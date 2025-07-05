@@ -430,6 +430,46 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
     }
   };
 
+  const handleDisconnectWhatsApp = async () => {
+    if (!whatsappData) return;
+    
+    try {
+      await apiRequest('POST', '/api/whatsapp/disconnect', {
+        integrationId: (whatsappData as any).id
+      });
+      
+      toast({
+        title: "Desconectado",
+        description: "El número de WhatsApp se ha desconectado del chatbot",
+      });
+      
+      queryClient.invalidateQueries({ queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`] });
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo desconectar el número de WhatsApp",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRefreshStatus = async () => {
+    try {
+      queryClient.invalidateQueries({ queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`] });
+      toast({
+        title: "Estado actualizado",
+        description: "Se ha actualizado el estado de la conexión",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       addKeyword();
@@ -976,11 +1016,30 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {whatsappData ? (
-                        <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50">
-                          <div>
-                            <p className="font-medium text-green-800">✅ Conectado</p>
-                            <p className="text-sm text-green-600">Número: {(whatsappData as any).phoneNumber}</p>
-                            <p className="text-sm text-gray-600">Estado: {(whatsappData as any).status}</p>
+                        <div className="p-4 border rounded-lg bg-green-50">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-green-800">✅ Conectado</p>
+                              <p className="text-sm text-green-600">Número: {(whatsappData as any).phoneNumber}</p>
+                              <p className="text-sm text-gray-600">Estado: {(whatsappData as any).status}</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleDisconnectWhatsApp()}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                Desconectar
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleRefreshStatus()}
+                              >
+                                Actualizar Estado
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ) : (
