@@ -957,6 +957,36 @@ Responde de manera natural y conversacional. Usa la información del producto pa
     }
   });
 
+  // POST /api/whatsapp-web/start - Alias for init-session (backward compatibility)
+  app.post('/api/whatsapp-web/start', isAuthenticated, async (req: any, res) => {
+    try {
+      const { chatbotId } = req.body;
+      
+      console.log(`🚀 Iniciando sesión WhatsApp Web para usuario: ${req.userId}`);
+      
+      const result = await whatsappWebService.initializeSession(req.userId, chatbotId);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          qrCode: result.qrCode,
+          message: 'Sesión iniciada. Escanea el código QR con tu WhatsApp.'
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error || 'Error iniciando sesión'
+        });
+      }
+    } catch (error) {
+      console.error('Error iniciando sesión WhatsApp Web:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  });
+
   // GET /api/whatsapp-web/status - Get connection status
   app.get('/api/whatsapp-web/status', isAuthenticated, async (req: any, res) => {
     try {

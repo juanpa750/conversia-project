@@ -6,6 +6,7 @@ import { chatbotProductAI } from './chatbotProductAIService';
 import { advancedAIService } from './advancedAIService';
 import { simpleStorage } from './storage';
 import { EventEmitter } from 'events';
+import { execSync } from 'child_process';
 
 interface WhatsAppSession {
   client: Client;
@@ -37,6 +38,22 @@ export class WhatsAppWebService extends EventEmitter {
   }
 
   /**
+   * Detecta automáticamente el path de Chromium en el sistema
+   */
+  private getChromiumPath(): string | undefined {
+    try {
+      const chromiumPath = execSync('which chromium', { encoding: 'utf8' }).trim();
+      if (chromiumPath) {
+        console.log(`🔍 Chromium encontrado en: ${chromiumPath}`);
+        return chromiumPath;
+      }
+    } catch (error) {
+      console.log(`⚠️  No se pudo encontrar Chromium: ${error}`);
+    }
+    return undefined;
+  }
+
+  /**
    * Inicializa una nueva sesión de WhatsApp Web para un usuario
    */
   async initializeSession(userId: string, chatbotId?: number): Promise<{ success: boolean; qrCode?: string; error?: string }> {
@@ -53,6 +70,7 @@ export class WhatsAppWebService extends EventEmitter {
         }),
         puppeteer: {
           headless: true,
+          executablePath: this.getChromiumPath(),
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -61,7 +79,12 @@ export class WhatsAppWebService extends EventEmitter {
             '--no-first-run',
             '--no-zygote',
             '--single-process',
-            '--disable-gpu'
+            '--disable-gpu',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--disable-web-security',
+            '--disable-features=TranslateUI'
           ]
         }
       });
