@@ -492,46 +492,7 @@ export class SimpleStorage implements ISimpleStorage {
     }
   }
 
-  async getWhatsappIntegrationByChatbot(chatbotId: number, userId: string): Promise<any> {
-    try {
-      const result = await db.execute(sql`
-        SELECT * FROM whatsapp_integrations 
-        WHERE chatbot_id = ${chatbotId} AND user_id = ${userId}
-        ORDER BY created_at DESC
-        LIMIT 1
-      `);
-      const row = result.rows?.[0];
-      if (!row) return null;
-      
-      return {
-        id: row.id,
-        phoneNumber: row.phone_number,
-        displayName: row.display_name,
-        businessDescription: row.business_description,
-        status: row.status,
-        isConnected: row.status === 'connected',
-        chatbotId: row.chatbot_id,
-        productId: row.product_id,
-        priority: row.priority,
-        autoRespond: row.auto_respond,
-        operatingHours: (() => {
-          try {
-            if (typeof row.operating_hours === 'string') {
-              return JSON.parse(row.operating_hours);
-            }
-            return row.operating_hours || {};
-          } catch (e) {
-            return {};
-          }
-        })(),
-        createdAt: row.created_at,
-        user_id: row.user_id
-      };
-    } catch (error) {
-      console.error('Error fetching WhatsApp integration by chatbot:', error);
-      return null;
-    }
-  }
+
 
   async getWhatsappIntegrationByPhone(phoneNumber: string, userId: string): Promise<any> {
     try {
@@ -574,31 +535,7 @@ export class SimpleStorage implements ISimpleStorage {
     }
   }
 
-  async updateWhatsappIntegration(id: number, updates: any): Promise<any> {
-    try {
-      const result = await db.execute(sql`
-        UPDATE whatsapp_integrations 
-        SET 
-          phone_number = COALESCE(${updates.phoneNumber}, phone_number),
-          display_name = COALESCE(${updates.displayName}, display_name),
-          business_description = COALESCE(${updates.businessDescription}, business_description),
-          chatbot_id = COALESCE(${updates.chatbotId}, chatbot_id),
-          product_id = COALESCE(${updates.productId}, product_id),
-          priority = COALESCE(${updates.priority}, priority),
-          auto_respond = COALESCE(${updates.autoRespond}, auto_respond),
-          operating_hours = COALESCE(${updates.operatingHours ? JSON.stringify(updates.operatingHours) : null}, operating_hours),
-          status = COALESCE(${updates.status}, status),
-          is_active = COALESCE(${updates.isActive}, is_active),
-          updated_at = NOW()
-        WHERE id = ${id}
-        RETURNING *
-      `);
-      return result.rows[0];
-    } catch (error) {
-      console.error('Error updating WhatsApp integration:', error);
-      throw error;
-    }
-  }
+
 
   async deleteWhatsappIntegration(id: number): Promise<void> {
     try {
@@ -635,28 +572,26 @@ export class SimpleStorage implements ISimpleStorage {
 
   async updateWhatsappIntegration(id: number, updates: any): Promise<any> {
     try {
-      const setClause = [];
-      const values = [];
+      let query = 'UPDATE whatsapp_integrations SET ';
+      const sets = [];
       
       if (updates.status !== undefined) {
-        setClause.push('status = ?');
-        values.push(updates.status);
+        sets.push(`status = '${updates.status}'`);
       }
-      if (updates.connectedAt !== undefined) {
-        setClause.push('connected_at = ?');
-        values.push(updates.connectedAt);
+      if (updates.chatbotId !== undefined) {
+        sets.push(`chatbot_id = ${updates.chatbotId}`);
       }
-      if (updates.lastMessageAt !== undefined) {
-        setClause.push('last_message_at = ?');
-        values.push(updates.lastMessageAt);
+      if (updates.phoneNumber !== undefined) {
+        sets.push(`phone_number = '${updates.phoneNumber}'`);
+      }
+      if (updates.displayName !== undefined) {
+        sets.push(`display_name = '${updates.displayName}'`);
       }
       
-      setClause.push('updated_at = NOW()');
-      values.push(id);
+      sets.push('updated_at = NOW()');
+      query += sets.join(', ') + ` WHERE id = ${id}`;
       
-      const query = `UPDATE whatsapp_integrations SET ${setClause.join(', ')} WHERE id = ?`;
-      
-      await db.execute(sql`UPDATE whatsapp_integrations SET status = ${updates.status}, updated_at = NOW() WHERE id = ${id}`);
+      await db.execute(sql.raw(query));
       
       return await this.getWhatsappIntegrationById(id);
     } catch (error) {

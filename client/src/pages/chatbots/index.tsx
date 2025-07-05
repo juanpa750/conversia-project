@@ -437,16 +437,7 @@ export function Chatbots() {
                     <RiWhatsappLine className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-blue-600 hover:text-blue-700"
-                  asChild
-                >
-                  <Link href={`/chatbots/${chatbot.id}/settings`}>
-                    <RiSettings4Line className="h-4 w-4" />
-                  </Link>
-                </Button>
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="text-gray-500">

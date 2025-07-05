@@ -56,6 +56,12 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   const [aiInstructions, setAiInstructions] = useState('');
   const [aiPersonality, setAiPersonality] = useState('');
   const [conversationObjective, setConversationObjective] = useState('');
+  
+  // Estados para WhatsApp
+  const [whatsappIntegration, setWhatsappIntegration] = useState<any>(null);
+  const [availableNumbers, setAvailableNumbers] = useState<any[]>([]);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [qrCode, setQrCode] = useState<string>('');
 
   const { toast } = useToast();
 
@@ -118,6 +124,17 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
   // Obtener productos disponibles
   const { data: products } = useQuery({
     queryKey: ['/api/products'],
+  });
+
+  // Fetch WhatsApp integration for this chatbot
+  const { data: whatsappData } = useQuery({
+    queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`],
+    enabled: !!chatbotId,
+  });
+
+  // Fetch available WhatsApp numbers
+  const { data: whatsappNumbers = [] } = useQuery({
+    queryKey: ['/api/whatsapp/integrations'],
   });
 
   // Reset initialization when chatbot ID changes
@@ -361,6 +378,58 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
     }
   };
 
+  // WhatsApp functions
+  const connectNewWhatsApp = async () => {
+    if (!chatbotId) {
+      toast({
+        title: "Error",
+        description: "Debes guardar el chatbot primero",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsConnecting(true);
+    try {
+      const response = await apiRequest('POST', `/api/whatsapp/connect/chatbot/${chatbotId}`);
+      setQrCode((response as any).qrCode);
+      toast({
+        title: "QR generado",
+        description: "Escanea el código QR con tu WhatsApp",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo conectar WhatsApp",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const assignExistingNumber = async (phoneNumber: string) => {
+    if (!chatbotId) return;
+
+    try {
+      await apiRequest('POST', '/api/whatsapp/assign', {
+        chatbotId: parseInt(chatbotId),
+        phoneNumber
+      });
+      toast({
+        title: "Número asignado",
+        description: "El número de WhatsApp se ha asignado al chatbot",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/whatsapp/integrations/chatbot/${chatbotId}`] });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo asignar el número",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       addKeyword();
@@ -407,6 +476,7 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
                 <TabsTrigger value="flow">Flujo</TabsTrigger>
                 <TabsTrigger value="instruction">Instrucción</TabsTrigger>
                 <TabsTrigger value="objective">Objetivo</TabsTrigger>
+                <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
               </TabsList>
             </div>
             
@@ -890,6 +960,151 @@ export function ChatbotBuilder({ chatbotId }: ChatbotBuilderProps = {}) {
               </div>
             </TabsContent>
             
+            <TabsContent value="whatsapp" className="m-0 flex-1 outline-none">
+              <div className="max-h-[calc(100vh-12rem)] overflow-y-auto p-4">
+                <div className="space-y-6 pb-96">
+                  <div className="flex items-center gap-2">
+                    <RiWhatsappLine className="h-5 w-5 text-green-600" />
+                    <h3 className="text-lg font-medium">Configuración de WhatsApp</h3>
+                  </div>
+                
+                  {/* Estado actual de WhatsApp */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Estado de Conexión</CardTitle>
+                      <p className="text-sm text-gray-600">Número de WhatsApp asignado a este chatbot</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {whatsappData ? (
+                        <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50">
+                          <div>
+                            <p className="font-medium text-green-800">✅ Conectado</p>
+                            <p className="text-sm text-green-600">Número: {(whatsappData as any).phoneNumber}</p>
+                            <p className="text-sm text-gray-600">Estado: {(whatsappData as any).status}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-4 border rounded-lg bg-yellow-50">
+                          <p className="font-medium text-yellow-800">⚠️ Sin WhatsApp asignado</p>
+                          <p className="text-sm text-yellow-600">Este chatbot no tiene un número de WhatsApp configurado</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Asignar número existente */}
+                  {Array.isArray(whatsappNumbers) && whatsappNumbers.length > 0 && !whatsappData && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Asignar Número Existente</CardTitle>
+                        <p className="text-sm text-gray-600">Selecciona un número de WhatsApp ya conectado</p>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-3">
+                          {(whatsappNumbers as any[]).map((number: any) => (
+                            <div key={number.id} className="flex items-center justify-between p-3 border rounded-lg">
+                              <div>
+                                <p className="font-medium">{number.phoneNumber}</p>
+                                <p className="text-sm text-gray-600">
+                                  {number.chatbotId ? `Asignado a chatbot ID: ${number.chatbotId}` : 'Disponible'}
+                                </p>
+                              </div>
+                              <Button
+                                onClick={() => assignExistingNumber(number.phoneNumber)}
+                                disabled={!!number.chatbotId}
+                                variant={number.chatbotId ? "secondary" : "default"}
+                                size="sm"
+                              >
+                                {number.chatbotId ? 'En uso' : 'Asignar'}
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Conectar nuevo número */}
+                  {!whatsappData && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Conectar Nuevo Número</CardTitle>
+                        <p className="text-sm text-gray-600">Conecta un nuevo número de WhatsApp exclusivo para este chatbot</p>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <Button
+                          onClick={connectNewWhatsApp}
+                          disabled={isConnecting || !chatbotId}
+                          className="w-full"
+                        >
+                          {isConnecting ? 'Generando QR...' : '📱 Conectar Nuevo WhatsApp'}
+                        </Button>
+                        
+                        {!chatbotId && (
+                          <p className="text-sm text-yellow-600">Guarda el chatbot primero para poder conectar WhatsApp</p>
+                        )}
+
+                        {qrCode && (
+                          <div className="space-y-4">
+                            <div className="text-center">
+                              <p className="font-medium mb-2">Escanea este código QR con WhatsApp</p>
+                              <div className="flex justify-center">
+                                <img src={qrCode} alt="QR Code" className="border rounded-lg" />
+                              </div>
+                              <p className="text-sm text-gray-600 mt-2">
+                                1. Abre WhatsApp en tu teléfono<br/>
+                                2. Toca Menú {'>'} Dispositivos vinculados<br/>
+                                3. Toca Vincular un dispositivo<br/>
+                                4. Escanea este código QR
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Configuración avanzada */}
+                  {whatsappData && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Configuración Avanzada</CardTitle>
+                        <p className="text-sm text-gray-600">Ajustes adicionales para WhatsApp</p>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>Respuesta automática</Label>
+                            <Select defaultValue="true">
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="true">Activada</SelectItem>
+                                <SelectItem value="false">Desactivada</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label>Tiempo de respuesta</Label>
+                            <Select defaultValue="instant">
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="instant">Inmediato</SelectItem>
+                                <SelectItem value="1min">1 minuto</SelectItem>
+                                <SelectItem value="5min">5 minutos</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
 
           </Tabs>
         </div>

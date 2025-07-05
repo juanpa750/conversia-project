@@ -401,8 +401,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { chatbotId, phoneNumber } = req.body;
       
       // Verify chatbot belongs to user
-      const chatbot = await simpleStorage.getChatbotById(chatbotId, req.userId);
-      if (!chatbot) {
+      const chatbot = await simpleStorage.getChatbot(chatbotId);
+      if (!chatbot || chatbot.userId !== req.userId) {
         return res.status(404).json({ message: 'Chatbot not found' });
       }
 
@@ -438,8 +438,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chatbotId = parseInt(req.params.chatbotId);
       
       // Verify chatbot belongs to user
-      const chatbot = await simpleStorage.getChatbotById(chatbotId, req.userId);
-      if (!chatbot) {
+      const chatbot = await simpleStorage.getChatbot(chatbotId);
+      if (!chatbot || chatbot.userId !== req.userId) {
         return res.status(404).json({ message: 'Chatbot not found' });
       }
 
