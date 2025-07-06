@@ -130,3 +130,53 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-400;
 }
+
+/* Estilos adicionales para WhatsApp */
+.whatsapp-qr {
+  @apply border-2 border-gray-200 rounded-lg p-4 bg-white shadow-sm;
+}
+
+.whatsapp-message {
+  @apply max-w-xs px-3 py-2 rounded-lg text-sm;
+}
+
+.whatsapp-message.incoming {
+  @apply bg-gray-100 text-gray-800;
+}
+
+.whatsapp-message.outgoing {
+  @apply bg-blue-500 text-white;
+}
+
+.connection-status {
+  @apply flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium;
+}
+
+.connection-status.connected {
+  @apply bg-green-100 text-green-800;
+}
+
+.connection-status.disconnected {
+  @apply bg-red-100 text-red-800;
+}
+
+.connection-status.connecting {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+/* Estilos para los eventos SSE */
+.sse-notification {
+  @apply fixed top-4 right-4 bg-white border shadow-lg rounded-lg p-4 max-w-sm z-50;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
