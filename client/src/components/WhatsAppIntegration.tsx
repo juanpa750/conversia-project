@@ -62,19 +62,19 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
   const [showQR, setShowQR] = useState(false);
   const [eventSource, setEventSource] = useState<EventSource | null>(null);
 
-  // Función para obtener token y userId
+  // Función para obtener userId del usuario autenticado
   const getAuthData = () => {
-    const token = localStorage.getItem('token');
+    // El sistema usa cookies para autenticación, no necesitamos token manual
     const userId = localStorage.getItem('userId');
-    return { token, userId };
+    return { userId };
   };
 
   // Configurar Server-Sent Events
   useEffect(() => {
-    const { token, userId } = getAuthData();
+    const { userId } = getAuthData();
     
-    if (!userId || !token) {
-      console.warn('No se encontraron credenciales de autenticación');
+    if (!userId) {
+      console.warn('No se encontró userId');
       return;
     }
 
@@ -152,12 +152,9 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
 
   const loadConnectionStatus = async () => {
     try {
-      const { token } = getAuthData();
-      if (!token) return;
-
       const response = await fetch(`/api/whatsapp/status/${chatbotId}`, {
+        credentials: 'include', // Para incluir cookies de autenticación
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -179,12 +176,9 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
 
   const loadMessages = async () => {
     try {
-      const { token } = getAuthData();
-      if (!token) return;
-
       const response = await fetch(`/api/whatsapp/messages/${chatbotId}`, {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -202,12 +196,9 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
 
   const loadStats = async () => {
     try {
-      const { token } = getAuthData();
-      if (!token) return;
-
       const response = await fetch(`/api/whatsapp/messages/${chatbotId}`, {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -247,20 +238,10 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
     }));
     
     try {
-      const { token } = getAuthData();
-      if (!token) {
-        setStatus(prev => ({ 
-          ...prev, 
-          error: 'No se encontró token de autenticación', 
-          loading: false 
-        }));
-        return;
-      }
-
       const response = await fetch(`/api/whatsapp/connect/${chatbotId}`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -303,13 +284,10 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
     setStatus(prev => ({ ...prev, loading: true }));
     
     try {
-      const { token } = getAuthData();
-      if (!token) return;
-
       const response = await fetch(`/api/whatsapp/disconnect/${chatbotId}`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
