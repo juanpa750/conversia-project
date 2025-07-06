@@ -81,10 +81,12 @@ class WhatsAppWebService extends EventEmitter {
       );
 
       // Navegar a WhatsApp Web
+      console.log(`Navegando a WhatsApp Web para chatbot ${chatbotId}...`);
       await page.goto("https://web.whatsapp.com", {
         waitUntil: "networkidle2",
         timeout: 60000,
       });
+      console.log(`Página cargada para chatbot ${chatbotId}`);
 
       const session: WhatsAppSession = {
         chatbotId,
@@ -142,15 +144,44 @@ class WhatsAppWebService extends EventEmitter {
     try {
       console.log("Esperando código QR...");
 
-      // Esperar a que aparezca el QR
-      await page.waitForSelector('[data-ref="qr-code"]', {
-        timeout: 30000,
-      });
+      // Selectores múltiples para diferentes versiones de WhatsApp Web
+      const qrSelectors = [
+        '[data-ref="qr-code"]',
+        '[data-testid="qr-code"]', 
+        'canvas[aria-label*="QR"]',
+        'canvas[aria-label*="qr"]',
+        '.landing-main canvas',
+        '._2EZ_m canvas',
+        'canvas'
+      ];
 
-      // Capturar QR como base64
-      const qrElement = await page.$('[data-ref="qr-code"]');
+      let qrElement = null;
+      
+      // Intentar cada selector
+      for (const selector of qrSelectors) {
+        try {
+          await page.waitForSelector(selector, { timeout: 5000 });
+          qrElement = await page.$(selector);
+          if (qrElement) {
+            console.log(`QR encontrado con selector: ${selector}`);
+            break;
+          }
+        } catch (e) {
+          console.log(`Selector ${selector} no encontrado, probando siguiente...`);
+        }
+      }
+
       if (!qrElement) {
-        throw new Error("No se encontró el elemento QR");
+        // Como último recurso, buscar cualquier canvas en la página
+        const canvasElements = await page.$$('canvas');
+        if (canvasElements.length > 0) {
+          qrElement = canvasElements[0];
+          console.log("Usando primer canvas encontrado como QR");
+        }
+      }
+
+      if (!qrElement) {
+        throw new Error("No se encontró el elemento QR en ningún selector");
       }
 
       const qrCode = await qrElement.screenshot({ encoding: "base64" });

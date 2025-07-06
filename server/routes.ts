@@ -30,18 +30,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Generate proper JWT token
-      const token = generateToken(user);
+      // Create session for user
+      const session = (req as any).session;
+      session.user = {
+        id: user.id,
+        role: user.role || 'user'
+      };
       
-      res.cookie('token', token, { httpOnly: true, secure: false });
       res.json({ 
         success: true,
-        token: token,
         user: { 
           id: user.id, 
           email: user.email, 
           firstName: user.firstName,
-          lastName: user.lastName 
+          lastName: user.lastName,
+          role: user.role || 'user'
         } 
       });
     } catch (error) {

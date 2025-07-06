@@ -18,6 +18,16 @@ export function generateToken(user: User) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 }
 
+// Extend Express session interface
+declare module 'express-session' {
+  export interface SessionData {
+    user?: {
+      id: string;
+      role: string;
+    };
+  }
+}
+
 // Extend Request interface to include userId and userRole
 declare global {
   namespace Express {
@@ -28,21 +38,28 @@ declare global {
   }
 }
 
-// Middleware to authenticate requests
-export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
+// Middleware to authenticate requests using session cookies or JWT tokens
+export function isAuthenticated(req: any, res: Response, next: NextFunction) {
   try {
-    const token = req.headers.authorization?.split(' ')[1] || req.cookies?.token;
-    
-    if (!token) {
-      return res.status(401).json({ message: 'Authentication required' });
+    // First try session authentication
+    if (req.session && req.session.user) {
+      req.userId = req.session.user.id;
+      req.userRole = req.session.user.role;
+      return next();
     }
     
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string };
-    req.userId = decoded.id;
-    req.userRole = decoded.role;
-    next();
+    // Fall back to JWT token authentication from cookies
+    const token = req.cookies?.token;
+    if (token) {
+      const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string };
+      req.userId = decoded.id;
+      req.userRole = decoded.role;
+      return next();
+    }
+    
+    return res.status(401).json({ message: 'Authentication required' });
   } catch (error) {
-    return res.status(401).json({ message: 'Invalid or expired token' });
+    return res.status(401).json({ message: 'Authentication error' });
   }
 }
 
