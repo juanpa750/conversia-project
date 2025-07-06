@@ -62,25 +62,22 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
   const [showQR, setShowQR] = useState(false);
   const [eventSource, setEventSource] = useState<EventSource | null>(null);
 
-  // Función para obtener userId del usuario autenticado
-  const getAuthData = () => {
-    // El sistema usa cookies para autenticación, no necesitamos token manual
-    const userId = localStorage.getItem('userId');
-    return { userId };
+  // Función para obtener credenciales (autenticación por cookies)
+  const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
+    return fetch(url, {
+      ...options,
+      credentials: 'include', // Incluir cookies automáticamente
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      }
+    });
   };
 
   // Configurar Server-Sent Events
   useEffect(() => {
-    const { userId } = getAuthData();
-    
-    if (!userId) {
-      console.warn('No se encontró userId');
-      return;
-    }
-
-    const es = new EventSource(`/api/whatsapp/events/${userId}`, {
-      // Note: EventSource no soporta headers personalizados nativamente
-      // Se podría usar un query parameter para el token si fuera necesario
+    const es = new EventSource(`/api/whatsapp/events/${chatbotId}`, {
+      withCredentials: true // Incluir cookies para autenticación
     });
 
     es.onmessage = (event) => {
@@ -152,12 +149,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
 
   const loadConnectionStatus = async () => {
     try {
-      const response = await fetch(`/api/whatsapp/status/${chatbotId}`, {
-        credentials: 'include', // Para incluir cookies de autenticación
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await makeAuthenticatedRequest(`/api/whatsapp/status/${chatbotId}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -176,12 +168,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
 
   const loadMessages = async () => {
     try {
-      const response = await fetch(`/api/whatsapp/messages/${chatbotId}`, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await makeAuthenticatedRequest(`/api/whatsapp/messages/${chatbotId}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -196,12 +183,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
 
   const loadStats = async () => {
     try {
-      const response = await fetch(`/api/whatsapp/messages/${chatbotId}`, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await makeAuthenticatedRequest(`/api/whatsapp/messages/${chatbotId}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -238,35 +220,22 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
     }));
     
     try {
-      const response = await fetch(`/api/whatsapp/connect/${chatbotId}`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      const response = await makeAuthenticatedRequest(`/api/whatsapp/connect/${chatbotId}`, {
+        method: 'POST'
       });
       
       if (response.ok) {
         const data = await response.json();
         
-        if (data.status === 'connected') {
-          setStatus({ isConnected: true, loading: false });
-          setShowQR(false);
-          loadMessages();
-          loadStats();
-        } else if (data.status === 'waiting_qr') {
-          setStatus({ 
-            isConnected: false, 
-            qrCode: data.qr, 
-            loading: false 
-          });
-          setShowQR(true);
+        if (data.success) {
+          // La conexión se iniciará, esperamos eventos SSE para QR o conexión directa
+          setStatus(prev => ({ ...prev, loading: false }));
         }
       } else {
         const error = await response.json();
         setStatus(prev => ({ 
           ...prev, 
-          error: error.error || 'Error conectando', 
+          error: error.message || 'Error conectando', 
           loading: false 
         }));
       }
@@ -284,12 +253,8 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
     setStatus(prev => ({ ...prev, loading: true }));
     
     try {
-      const response = await fetch(`/api/whatsapp/disconnect/${chatbotId}`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      const response = await makeAuthenticatedRequest(`/api/whatsapp/disconnect/${chatbotId}`, {
+        method: 'POST'
       });
       
       if (response.ok) {
@@ -306,7 +271,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
         const error = await response.json();
         setStatus(prev => ({ 
           ...prev, 
-          error: error.error || 'Error desconectando', 
+          error: error.message || 'Error desconectando', 
           loading: false 
         }));
       }
@@ -407,7 +372,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
         </CardContent>
       </Card>
 
-      {/* Header */}
+      {/* Estado de Conexión */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -467,8 +432,10 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
           </div>
           
           {status.error && (
-            <Alert className="mt-4">
-              <AlertDescription>{status.error}</AlertDescription>
+            <Alert className="mt-4 border-red-200 bg-red-50">
+              <AlertDescription className="text-red-700">
+                ❌ <strong>Error:</strong> {status.error}
+              </AlertDescription>
             </Alert>
           )}
         </CardContent>
@@ -480,7 +447,7 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <QrCode className="w-5 h-5" />
-              Escanea el código QR
+              📱 Escanea el código QR
               <Button
                 onClick={handleRefreshQR}
                 disabled={status.loading}
@@ -495,114 +462,104 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
           </CardHeader>
           <CardContent className="text-center">
             <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-4">
-                Abre WhatsApp en tu teléfono, ve a{' '}
-                <strong>Dispositivos vinculados</strong> y escanea este código QR
+              <p className="text-sm text-green-700 font-medium mb-4">
+                ✅ Código QR generado correctamente
               </p>
-              <div className="inline-block p-4 bg-white rounded-lg border-2 border-gray-200">
+              <div className="inline-block p-4 bg-white rounded-lg shadow-lg border-2 border-green-200">
                 <img 
                   src={status.qrCode} 
-                  alt="QR Code" 
+                  alt="Código QR WhatsApp" 
                   className="w-64 h-64 mx-auto"
                 />
               </div>
-            </div>
-            <div className="text-xs text-gray-500 space-y-1">
-              <p>• El código QR se actualiza automáticamente cada 30 segundos</p>
-              <p>• Una vez conectado, podrás recibir y enviar mensajes automáticamente</p>
-              <p>• La conexión se mantiene activa las 24 horas</p>
+              <div className="mt-4 space-y-2">
+                <p className="text-sm text-green-600">
+                  Abre WhatsApp → Configuración → Dispositivos vinculados → Vincular dispositivo
+                </p>
+                <p className="text-xs text-green-500">
+                  El código se actualiza automáticamente cada 20 segundos
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Estadísticas */}
-      {status.isConnected && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Total Mensajes</p>
-                  <p className="text-2xl font-bold">{stats.totalMessages}</p>
-                </div>
-                <MessageSquare className="w-8 h-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Recibidos</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.messagesReceived}</p>
-                </div>
-                <TrendingUp className="w-8 h-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Enviados</p>
-                  <p className="text-2xl font-bold text-blue-600">{stats.messagesSent}</p>
-                </div>
-                <MessageSquare className="w-8 h-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Contactos</p>
-                  <p className="text-2xl font-bold text-purple-600">{stats.activeContacts}</p>
-                </div>
-                <Users className="w-8 h-8 text-purple-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Estado de carga del QR */}
+      {status.loading && !status.qrCode && (
+        <Card>
+          <CardContent className="text-center p-6">
+            <div className="border-2 border-blue-200 rounded-lg bg-blue-50 p-6">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-500" />
+              <h3 className="text-lg font-semibold mb-2 text-blue-800">Iniciando WhatsApp Web...</h3>
+              <p className="text-sm text-blue-600">
+                Por favor espera mientras se genera el código QR
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Mensajes Recientes */}
-      {status.isConnected && messages.length > 0 && (
+      {/* Estadísticas de mensajes */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="text-center p-4">
+            <MessageSquare className="h-6 w-6 mx-auto mb-2 text-blue-500" />
+            <div className="text-2xl font-bold">{stats.totalMessages}</div>
+            <div className="text-sm text-gray-600">Total Mensajes</div>
+          </CardContent>
+        </Card>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="text-center p-4">
+            <TrendingUp className="h-6 w-6 mx-auto mb-2 text-green-500" />
+            <div className="text-2xl font-bold">{stats.messagesReceived}</div>
+            <div className="text-sm text-gray-600">Recibidos</div>
+          </CardContent>
+        </Card>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="text-center p-4">
+            <TrendingUp className="h-6 w-6 mx-auto mb-2 text-purple-500" />
+            <div className="text-2xl font-bold">{stats.messagesSent}</div>
+            <div className="text-sm text-gray-600">Enviados</div>
+          </CardContent>
+        </Card>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="text-center p-4">
+            <Users className="h-6 w-6 mx-auto mb-2 text-orange-500" />
+            <div className="text-2xl font-bold">{stats.activeContacts}</div>
+            <div className="text-sm text-gray-600">Contactos Activos</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Mensajes recientes */}
+      {messages.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5" />
-              Mensajes Recientes
-            </CardTitle>
+            <CardTitle>💬 Mensajes Recientes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 max-h-64 overflow-y-auto">
-              {messages.slice(-10).map((message) => (
+            <div className="max-h-64 overflow-y-auto space-y-2">
+              {messages.slice(-5).map((message) => (
                 <div 
                   key={message.id} 
-                  className={`flex ${message.isIncoming ? 'justify-start' : 'justify-end'}`}
+                  className={`p-3 rounded-lg ${
+                    message.isIncoming 
+                      ? 'bg-gray-100 text-left' 
+                      : 'bg-blue-100 text-right'
+                  }`}
                 >
-                  <div 
-                    className={`max-w-xs px-3 py-2 rounded-lg ${
-                      message.isIncoming 
-                        ? 'bg-gray-100 text-gray-800' 
-                        : 'bg-blue-500 text-white'
-                    }`}
-                  >
-                    <p className="text-sm">{message.messageText}</p>
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-xs opacity-75">
-                        {formatDate(message.createdAt)}
-                      </p>
-                      {message.wasAutoReplied && (
-                        <span className="text-xs bg-green-100 text-green-800 px-1 rounded ml-2">
-                          IA
-                        </span>
-                      )}
-                    </div>
+                  <div className="text-sm font-medium">
+                    {message.isIncoming ? message.fromNumber : 'Bot'}
+                    {message.wasAutoReplied && (
+                      <Badge variant="secondary" className="ml-2 text-xs">
+                        Auto-respuesta
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-sm">{message.messageText}</div>
+                  <div className="text-xs text-gray-500">
+                    {formatDate(message.createdAt)}
                   </div>
                 </div>
               ))}
@@ -611,17 +568,19 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
         </Card>
       )}
 
-      {/* Estado sin mensajes */}
-      {status.isConnected && messages.length === 0 && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">
-              No hay mensajes aún. Los mensajes aparecerán aquí cuando lleguen.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Información adicional */}
+      <Card>
+        <CardContent className="bg-gray-50 p-4">
+          <h4 className="font-semibold text-gray-800 mb-2">ℹ️ Información Importante</h4>
+          <ul className="text-sm text-gray-600 space-y-1">
+            <li>• La conexión es 100% gratuita usando WhatsApp Web</li>
+            <li>• No necesitas API keys ni tokens de Meta/Facebook</li>
+            <li>• Tu teléfono debe estar conectado a internet para funcionar</li>
+            <li>• Puedes vincular hasta 4 dispositivos por cuenta de WhatsApp</li>
+            <li>• Los mensajes se procesan automáticamente con IA avanzada</li>
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 };
