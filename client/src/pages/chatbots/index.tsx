@@ -427,16 +427,7 @@ export function Chatbots() {
                     <RiBarChart2Line />
                   </Link>
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-green-600 hover:text-green-700"
-                  asChild
-                >
-                  <Link href={`/integrations/whatsapp?chatbot=${chatbot.id}`}>
-                    <RiWhatsappLine className="h-4 w-4" />
-                  </Link>
-                </Button>
+
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -546,16 +537,7 @@ export function Chatbots() {
                           <RiBarChart2Line className="h-4 w-4" />
                         </Link>
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-green-600 hover:text-green-700"
-                        asChild
-                      >
-                        <Link href={`/integrations/whatsapp?chatbot=${chatbot.id}`}>
-                          <RiWhatsappLine className="h-4 w-4" />
-                        </Link>
-                      </Button>
+
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm" className="text-gray-500">

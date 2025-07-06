@@ -1,4 +1,4 @@
-import { users, whatsappConnections, type User, type WhatsappConnection } from "@shared/schema";
+import { users, whatsappConnections, whatsappIntegrations, type User, type WhatsappConnection } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { sql } from "drizzle-orm";
@@ -463,29 +463,25 @@ export class SimpleStorage implements ISimpleStorage {
 
   async createWhatsappIntegration(integration: any): Promise<any> {
     try {
-      const result = await db.execute(sql`
-        INSERT INTO whatsapp_integrations (
-          user_id, phone_number, display_name, business_description,
-          chatbot_id, product_id, priority, auto_respond, operating_hours,
-          status, is_active, created_at, updated_at
-        ) VALUES (
-          ${integration.userId},
-          ${integration.phoneNumber},
-          ${integration.displayName},
-          ${integration.businessDescription},
-          ${integration.chatbotId},
-          ${integration.productId},
-          ${integration.priority},
-          ${integration.autoRespond},
-          ${integration.operatingHours ? JSON.stringify(integration.operatingHours) : null},
-          ${integration.status},
-          ${integration.isActive},
-          NOW(),
-          NOW()
-        )
-        RETURNING *
-      `);
-      return result.rows[0];
+      const result = await db.insert(whatsappIntegrations).values({
+        userId: integration.userId,
+        phoneNumber: integration.phoneNumber,
+        displayName: integration.displayName,
+        businessDescription: integration.businessDescription,
+        chatbotId: integration.chatbotId,
+        productId: integration.productId,
+        priority: integration.priority || 1,
+        autoRespond: integration.autoRespond !== false,
+        operatingHours: integration.operatingHours || {},
+        status: integration.status || 'disconnected',
+        isActive: integration.isActive !== false,
+        messagesSent: 0,
+        messagesReceived: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+      
+      return result[0];
     } catch (error) {
       console.error('Error creating WhatsApp integration:', error);
       throw error;
@@ -572,28 +568,32 @@ export class SimpleStorage implements ISimpleStorage {
 
   async updateWhatsappIntegration(id: number, updates: any): Promise<any> {
     try {
-      let query = 'UPDATE whatsapp_integrations SET ';
-      const sets = [];
+      const updateData: any = {
+        updatedAt: new Date()
+      };
       
       if (updates.status !== undefined) {
-        sets.push(`status = '${updates.status}'`);
+        updateData.status = updates.status;
       }
       if (updates.chatbotId !== undefined) {
-        sets.push(`chatbot_id = ${updates.chatbotId}`);
+        updateData.chatbotId = updates.chatbotId;
       }
       if (updates.phoneNumber !== undefined) {
-        sets.push(`phone_number = '${updates.phoneNumber}'`);
+        updateData.phoneNumber = updates.phoneNumber;
       }
       if (updates.displayName !== undefined) {
-        sets.push(`display_name = '${updates.displayName}'`);
+        updateData.displayName = updates.displayName;
+      }
+      if (updates.isActive !== undefined) {
+        updateData.isActive = updates.isActive;
       }
       
-      sets.push('updated_at = NOW()');
-      query += sets.join(', ') + ` WHERE id = ${id}`;
+      const result = await db.update(whatsappIntegrations)
+        .set(updateData)
+        .where(eq(whatsappIntegrations.id, id))
+        .returning();
       
-      await db.execute(sql.raw(query));
-      
-      return await this.getWhatsappIntegrationById(id);
+      return result[0];
     } catch (error) {
       console.error('Error updating WhatsApp integration:', error);
       throw error;
