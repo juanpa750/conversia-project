@@ -366,12 +366,53 @@ const WhatsAppIntegration: React.FC<WhatsAppIntegrationProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Instrucciones de configuración */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <QrCode className="w-5 h-5" />
+            Instrucciones de Configuración WhatsApp
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="space-y-3 text-sm">
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">1</span>
+                <p><strong>Haz clic en "Conectar WhatsApp"</strong> para generar el código QR</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">2</span>
+                <p><strong>Abre WhatsApp</strong> en tu teléfono móvil</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">3</span>
+                <p>Ve a: <strong>Configuración → Dispositivos vinculados → Vincular dispositivo</strong></p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">4</span>
+                <p><strong>Escanea el código QR</strong> que aparecerá abajo</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">✓</span>
+                <p><strong>¡Listo!</strong> Tu chatbot podrá recibir y enviar mensajes automáticamente</p>
+              </div>
+            </div>
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-xs text-yellow-700">
+                <strong>Importante:</strong> La conexión es 100% gratuita usando WhatsApp Web. No necesitas API keys ni tokens de Meta/Facebook.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Smartphone className="w-5 h-5" />
-            Integración WhatsApp - {chatbotName}
+            Estado de Conexión - {chatbotName}
           </CardTitle>
         </CardHeader>
         <CardContent>

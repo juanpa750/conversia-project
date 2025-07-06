@@ -19,6 +19,7 @@ export interface ISimpleStorage {
   getWhatsappIntegrations(userId: string): Promise<any[]>;
   getWhatsappIntegrationByChatbot(chatbotId: number, userId: string): Promise<any>;
   getWhatsappIntegrationById(id: number): Promise<any>;
+  getWhatsappIntegrationByChatbotId(chatbotId: number): Promise<any>;
   createWhatsappIntegration(integration: any): Promise<any>;
   deleteWhatsappIntegration(id: number): Promise<void>;
   
@@ -457,6 +458,45 @@ export class SimpleStorage implements ISimpleStorage {
       };
     } catch (error) {
       console.error('Error fetching WhatsApp integration by ID:', error);
+      return null;
+    }
+  }
+
+  async getWhatsappIntegrationByChatbotId(chatbotId: number): Promise<any> {
+    try {
+      const result = await db.execute(
+        sql`SELECT * FROM whatsapp_integrations WHERE chatbot_id = ${chatbotId} LIMIT 1`
+      );
+      const row = result.rows?.[0];
+      if (!row) return null;
+      
+      // Map database fields to expected interface
+      return {
+        id: row.id,
+        phoneNumber: row.phone_number,
+        displayName: row.display_name,
+        businessDescription: row.business_description,
+        status: row.status,
+        isActive: row.is_active,
+        chatbotId: row.chatbot_id,
+        productId: row.product_id,
+        priority: row.priority,
+        autoRespond: row.auto_respond,
+        operatingHours: (() => {
+          try {
+            if (typeof row.operating_hours === 'string') {
+              return JSON.parse(row.operating_hours);
+            }
+            return row.operating_hours || {};
+          } catch (e) {
+            return {};
+          }
+        })(),
+        createdAt: row.created_at,
+        user_id: row.user_id
+      };
+    } catch (error) {
+      console.error('Error fetching WhatsApp integration by chatbot ID:', error);
       return null;
     }
   }

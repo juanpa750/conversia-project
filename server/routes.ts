@@ -480,8 +480,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Real WhatsApp Connection endpoints
-  // Initialize WhatsApp connection with QR
-  app.post("/api/whatsapp/connect/:integrationId", isAuthenticated, async (req: any, res) => {
+  // Initialize WhatsApp connection with QR by chatbotId (convenience route)
+  app.post("/api/whatsapp/connect/:chatbotId", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbotId = parseInt(req.params.chatbotId);
+      
+      // Find integration for this chatbot
+      const integration = await simpleStorage.getWhatsappIntegrationByChatbotId(chatbotId);
+      if (!integration || integration.user_id !== req.userId) {
+        return res.status(404).json({ message: 'Integration not found' });
+      }
+
+      // Create session ID for this integration
+      const sessionId = `${req.userId}_${integration.id}`;
+      
+      // Initialize WhatsApp session
+      const result = await whatsappService.initializeSession(sessionId);
+      
+      if (result.success) {
+        // Update integration status to initializing
+        await simpleStorage.updateWhatsappIntegrationStatus(integration.id, 'initializing');
+        res.json({ success: true, sessionId, message: 'WhatsApp initialization started' });
+      } else {
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error('WhatsApp connect error:', error);
+      res.status(500).json({ message: 'Failed to initialize WhatsApp connection' });
+    }
+  });
+
+  // Initialize WhatsApp connection with QR by integrationId
+  app.post("/api/whatsapp/connect/integration/:integrationId", isAuthenticated, async (req: any, res) => {
     try {
       const integrationId = parseInt(req.params.integrationId);
       
