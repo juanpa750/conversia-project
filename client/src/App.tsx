@@ -45,6 +45,7 @@ import NurtureCampaigns from "@/pages/crm/advanced/nurture-campaigns";
 import AIFlows from "@/pages/templates/ai-flows";
 import CalendarPage from "@/pages/calendar";
 import ChatbotConfig from "@/pages/chatbot-config";
+import WhatsAppWebTest from "@/pages/whatsapp-web-test";
 import { useAuth } from "@/hooks/use-auth-simple";
 
 function Router() {
@@ -207,6 +208,11 @@ function Router() {
           <Route path="/integrations/whatsapp-cloud">
             <Layout>
               <WhatsAppCloudIntegration />
+            </Layout>
+          </Route>
+          <Route path="/whatsapp-web-test">
+            <Layout>
+              <WhatsAppWebTest />
             </Layout>
           </Route>
           <Route path="/master/dashboard">

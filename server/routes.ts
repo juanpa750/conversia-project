@@ -821,9 +821,16 @@ Responde de manera natural y conversacional. Usa la información del producto pa
     }
   });
 
+  // Import and register WhatsApp Web routes
+  try {
+    const whatsappRoutes = await import('./whatsappRoutes');
+    app.use('/api', whatsappRoutes.default);
+    console.log('WhatsApp Web routes registered successfully');
+  } catch (error) {
+    console.error('Error importing WhatsApp routes:', error);
+  }
+
   // Create HTTP server
-  const whatsappRoutes = await import('./whatsappRoutes');
-  app.use('/api', whatsappRoutes.default);
 
   const httpServer = createServer(app);
   return httpServer;

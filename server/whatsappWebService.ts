@@ -1,10 +1,10 @@
 // whatsappWebService.ts - Servicio completo para WhatsApp Web
-import puppeteer from 'puppeteer-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import { Browser, Page } from 'puppeteer';
-import { EventEmitter } from 'events';
-import fs from 'fs';
-import path from 'path';
+import puppeteer from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import { Browser, Page } from "puppeteer";
+import { EventEmitter } from "events";
+import fs from "fs";
+import path from "path";
 
 // Configurar puppeteer con stealth
 puppeteer.use(StealthPlugin());
@@ -35,11 +35,11 @@ class WhatsAppWebService extends EventEmitter {
 
   constructor() {
     super();
-    this.sessionsDir = path.join(process.cwd(), 'whatsapp-sessions');
+    this.sessionsDir = path.join(process.cwd(), "whatsapp-sessions");
     this.ensureSessionsDirectory();
   }
 
-  private ensureSessionsDirectory() {
+  private ensureSessionsDirectory(): void {
     if (!fs.existsSync(this.sessionsDir)) {
       fs.mkdirSync(this.sessionsDir, { recursive: true });
     }
@@ -53,34 +53,37 @@ class WhatsAppWebService extends EventEmitter {
       }
 
       const sessionPath = path.join(this.sessionsDir, `session_${chatbotId}`);
-      
+
       // Configurar navegador con stealth
       const browser = await puppeteer.launch({
         headless: true,
         args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process',
-          '--disable-gpu',
-          '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--no-first-run",
+          "--no-zygote",
+          "--single-process",
+          "--disable-gpu",
+          "--disable-web-security",
+          "--disable-features=VizDisplayCompositor"
         ],
-        userDataDir: fs.existsSync(sessionPath) ? sessionPath : undefined
+        userDataDir: fs.existsSync(sessionPath) ? sessionPath : undefined,
       });
 
       const page = await browser.newPage();
-      
+
       // Configurar viewport y headers
       await page.setViewport({ width: 1366, height: 768 });
-      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      await page.setUserAgent(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      );
 
       // Navegar a WhatsApp Web
-      await page.goto('https://web.whatsapp.com', { 
-        waitUntil: 'networkidle2',
-        timeout: 60000 
+      await page.goto("https://web.whatsapp.com", {
+        waitUntil: "networkidle2",
+        timeout: 60000,
       });
 
       const session: WhatsAppSession = {
@@ -88,7 +91,7 @@ class WhatsAppWebService extends EventEmitter {
         browser,
         page,
         isConnected: false,
-        sessionPath
+        sessionPath,
       };
 
       this.sessions.set(chatbotId, session);
@@ -98,24 +101,26 @@ class WhatsAppWebService extends EventEmitter {
 
       // Verificar si ya está conectado o necesita QR
       const isLoggedIn = await this.checkIfLoggedIn(page);
-      
+
       if (isLoggedIn) {
         session.isConnected = true;
         await this.setupMessageListeners(session);
-        this.emit('connected', { chatbotId });
-        return 'CONNECTED';
+        this.emit("connected", { chatbotId });
+        return "CONNECTED";
       } else {
         const qrCode = await this.waitForQRCode(page);
         session.qrCode = qrCode;
-        this.emit('qr', { chatbotId, qr: qrCode });
-        
-        // Esperar conexión
-        await this.waitForConnection(session);
+        this.emit("qr", { chatbotId, qr: qrCode });
+
+        // Esperar conexión en segundo plano
+        this.waitForConnection(session).catch(console.error);
         return qrCode;
       }
-
     } catch (error) {
-      console.error(`Error initializing WhatsApp session for chatbot ${chatbotId}:`, error);
+      console.error(
+        `Error initializing WhatsApp session for chatbot ${chatbotId}:`,
+        error
+      );
       throw error;
     }
   }
@@ -123,7 +128,9 @@ class WhatsAppWebService extends EventEmitter {
   // Verificar si ya está logueado
   private async checkIfLoggedIn(page: Page): Promise<boolean> {
     try {
-      await page.waitForSelector('[data-testid="chat-list"]', { timeout: 10000 });
+      await page.waitForSelector('[data-testid="chat-list"]', {
+        timeout: 10000,
+      });
       return true;
     } catch {
       return false;
@@ -133,22 +140,23 @@ class WhatsAppWebService extends EventEmitter {
   // Esperar y capturar código QR
   private async waitForQRCode(page: Page): Promise<string> {
     try {
-      console.log('Esperando código QR...');
-      
+      console.log("Esperando código QR...");
+
       // Esperar a que aparezca el QR
-      await page.waitForSelector('canvas[aria-label="Scan me!"]', { timeout: 30000 });
-      
+      await page.waitForSelector('[data-ref="qr-code"]', {
+        timeout: 30000,
+      });
+
       // Capturar QR como base64
-      const qrElement = await page.$('canvas[aria-label="Scan me!"]');
+      const qrElement = await page.$('[data-ref="qr-code"]');
       if (!qrElement) {
-        throw new Error('No se encontró el elemento QR');
+        throw new Error("No se encontró el elemento QR");
       }
 
-      const qrCode = await qrElement.screenshot({ encoding: 'base64' });
+      const qrCode = await qrElement.screenshot({ encoding: "base64" });
       return `data:image/png;base64,${qrCode}`;
-      
     } catch (error) {
-      console.error('Error esperando QR:', error);
+      console.error("Error esperando QR:", error);
       throw error;
     }
   }
@@ -157,18 +165,22 @@ class WhatsAppWebService extends EventEmitter {
   private async waitForConnection(session: WhatsAppSession): Promise<void> {
     try {
       console.log(`Esperando conexión para chatbot ${session.chatbotId}...`);
-      
+
       // Esperar a que aparezca la lista de chats
-      await session.page.waitForSelector('[data-testid="chat-list"]', { timeout: 120000 });
-      
+      await session.page.waitForSelector('[data-testid="chat-list"]', {
+        timeout: 120000,
+      });
+
       session.isConnected = true;
       await this.setupMessageListeners(session);
-      
-      this.emit('connected', { chatbotId: session.chatbotId });
+
+      this.emit("connected", { chatbotId: session.chatbotId });
       console.log(`WhatsApp conectado para chatbot ${session.chatbotId}`);
-      
     } catch (error) {
-      console.error(`Error esperando conexión para chatbot ${session.chatbotId}:`, error);
+      console.error(
+        `Error esperando conexión para chatbot ${session.chatbotId}:`,
+        error
+      );
       throw error;
     }
   }
@@ -178,23 +190,26 @@ class WhatsAppWebService extends EventEmitter {
     const { page, chatbotId } = session;
 
     // Listener para desconexión
-    page.on('close', () => {
+    page.on("close", () => {
       console.log(`Página cerrada para chatbot ${chatbotId}`);
-      this.emit('disconnected', { chatbotId });
+      this.emit("disconnected", { chatbotId });
     });
 
     // Listener para errores
-    page.on('error', (error) => {
+    page.on("error", (error) => {
       console.error(`Error en página para chatbot ${chatbotId}:`, error);
-      this.emit('error', { chatbotId, error });
+      this.emit("error", { chatbotId, error });
     });
 
     // Listener para cambios de red
-    page.on('response', async (response) => {
-      if (response.url().includes('web.whatsapp.com') && response.status() === 500) {
+    page.on("response", async (response) => {
+      if (
+        response.url().includes("web.whatsapp.com") &&
+        response.status() === 500
+      ) {
         console.log(`Posible desconexión detectada para chatbot ${chatbotId}`);
         session.isConnected = false;
-        this.emit('disconnected', { chatbotId });
+        this.emit("disconnected", { chatbotId });
       }
     });
   }
@@ -204,112 +219,119 @@ class WhatsAppWebService extends EventEmitter {
     const { page, chatbotId } = session;
 
     try {
-      // Inyectar script para escuchar mensajes
-      await page.evaluateOnNewDocument(() => {
-        // @ts-ignore
-        window.WhatsAppListener = {
-          messages: [],
-          initialized: false
-        };
-      });
-
-      await page.evaluate(() => {
-        // Script para interceptar mensajes
-        const originalLog = console.log;
+      // Función para detectar mensajes
+      await page.evaluate((chatbotId) => {
+        let lastMessageCount = 0;
         
-        // Función para detectar nuevos mensajes
         const detectMessages = () => {
           const messages = document.querySelectorAll('[data-testid="msg-container"]');
           
-          messages.forEach((msgElement) => {
-            const isFromMe = msgElement.classList.contains('message-out');
-            const textElement = msgElement.querySelector('.selectable-text');
+          if (messages.length > lastMessageCount) {
+            const newMessages = Array.from(messages).slice(lastMessageCount);
             
-            if (textElement && !isFromMe) {
-              const text = textElement.textContent || '';
-              const timeElement = msgElement.querySelector('[data-testid="msg-meta"]');
+            newMessages.forEach((msgElement) => {
+              const isFromMe = msgElement.classList.contains('message-out');
+              const textElement = msgElement.querySelector('.selectable-text');
               
-              if (text && !textElement.hasAttribute('data-processed')) {
-                textElement.setAttribute('data-processed', 'true');
+              if (textElement && !isFromMe) {
+                const text = textElement.textContent || '';
                 
-                // Enviar mensaje al backend
-                // @ts-ignore
-                if (window.messageCallback) {
-                  // @ts-ignore
-                  window.messageCallback({
-                    body: text,
-                    timestamp: new Date().toISOString(),
-                    isFromMe: false
+                if (text && !textElement.hasAttribute('data-processed')) {
+                  textElement.setAttribute('data-processed', 'true');
+                  
+                  // Enviar mensaje a través de custom event
+                  const event = new CustomEvent('whatsapp-message', {
+                    detail: {
+                      body: text,
+                      timestamp: new Date().toISOString(),
+                      isFromMe: false,
+                      chatbotId: chatbotId
+                    }
                   });
+                  
+                  window.dispatchEvent(event);
                 }
               }
-            }
-          });
+            });
+            
+            lastMessageCount = messages.length;
+          }
         };
 
         // Observar cambios en el DOM
-        const observer = new MutationObserver(() => {
-          detectMessages();
-        });
-
+        const observer = new MutationObserver(detectMessages);
         observer.observe(document.body, {
           childList: true,
-          subtree: true
+          subtree: true,
         });
 
         // Detectar mensajes iniciales
         setTimeout(detectMessages, 2000);
-      });
+      }, chatbotId);
 
-      // Configurar callback para mensajes
-      await page.exposeFunction('messageCallback', async (messageData: any) => {
-        const message: WhatsAppMessage = {
-          id: Date.now().toString(),
-          from: 'contact', // Se puede mejorar para obtener el número real
-          to: 'chatbot',
-          body: messageData.body,
-          timestamp: new Date(messageData.timestamp),
-          isFromMe: messageData.isFromMe,
-          chatbotId
-        };
+      // Listener para mensajes personalizados
+      page.on('console', (msg) => {
+        if (msg.type() === 'log' && msg.text().includes('whatsapp-message')) {
+          try {
+            const messageData = JSON.parse(msg.text().replace('whatsapp-message: ', ''));
+            
+            const message: WhatsAppMessage = {
+              id: Date.now().toString(),
+              from: "contact",
+              to: "chatbot",
+              body: messageData.body,
+              timestamp: new Date(messageData.timestamp),
+              isFromMe: messageData.isFromMe,
+              chatbotId,
+            };
 
-        this.emit('message', message);
+            this.emit("message", message);
+          } catch (error) {
+            console.error('Error parsing message:', error);
+          }
+        }
       });
 
       console.log(`Listeners de mensajes configurados para chatbot ${chatbotId}`);
-      
     } catch (error) {
       console.error(`Error configurando listeners para chatbot ${chatbotId}:`, error);
     }
   }
 
   // Enviar mensaje
-  async sendMessage(chatbotId: string, to: string, message: string): Promise<boolean> {
+  async sendMessage(
+    chatbotId: string,
+    to: string,
+    message: string
+  ): Promise<boolean> {
     const session = this.sessions.get(chatbotId);
-    
+
     if (!session || !session.isConnected) {
       throw new Error(`Session not connected for chatbot ${chatbotId}`);
     }
 
     try {
       const { page } = session;
-      
+
       // Buscar o abrir chat
       await this.openChat(page, to);
-      
+
       // Escribir mensaje
-      const messageBox = await page.waitForSelector('[data-testid="message-composer"]', { timeout: 10000 });
-      await messageBox?.click();
-      await messageBox?.type(message);
+      const messageBox = await page.waitForSelector(
+        '[data-testid="message-composer"]',
+        { timeout: 10000 }
+      );
       
-      // Enviar mensaje
-      const sendButton = await page.waitForSelector('[data-testid="send"]', { timeout: 5000 });
-      await sendButton?.click();
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      if (messageBox) {
+        await messageBox.click();
+        await messageBox.type(message);
+
+        // Enviar mensaje
+        await page.keyboard.press('Enter');
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+
       return true;
-      
     } catch (error) {
       console.error(`Error sending message for chatbot ${chatbotId}:`, error);
       return false;
@@ -320,67 +342,79 @@ class WhatsAppWebService extends EventEmitter {
   private async openChat(page: Page, contact: string): Promise<void> {
     try {
       // Buscar en la lista de chats
-      const searchBox = await page.waitForSelector('[data-testid="chat-list-search"]', { timeout: 10000 });
-      await searchBox?.click();
-      await searchBox?.type(contact);
+      const searchBox = await page.waitForSelector(
+        '[data-testid="chat-list-search"]',
+        { timeout: 10000 }
+      );
       
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Hacer clic en el primer resultado
-      const firstChat = await page.waitForSelector('[data-testid="chat-list"] > div:first-child', { timeout: 10000 });
-      await firstChat?.click();
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      if (searchBox) {
+        await searchBox.click();
+        await searchBox.type(contact);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        // Hacer clic en el primer resultado
+        const firstChat = await page.waitForSelector(
+          '[data-testid="chat-list"] > div:first-child',
+          { timeout: 10000 }
+        );
+        
+        if (firstChat) {
+          await firstChat.click();
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
     } catch (error) {
-      console.error('Error opening chat:', error);
+      console.error("Error opening chat:", error);
       throw error;
     }
   }
 
   // Obtener estado de la sesión
-  getSessionStatus(chatbotId: string): { isConnected: boolean; qrCode?: string } {
+  getSessionStatus(chatbotId: string): {
+    isConnected: boolean;
+    qrCode?: string;
+  } {
     const session = this.sessions.get(chatbotId);
-    
+
     if (!session) {
       return { isConnected: false };
     }
 
     return {
       isConnected: session.isConnected,
-      qrCode: session.qrCode
+      qrCode: session.qrCode,
     };
   }
 
   // Desconectar sesión
   async disconnectSession(chatbotId: string): Promise<void> {
     const session = this.sessions.get(chatbotId);
-    
+
     if (session) {
       try {
         await session.browser.close();
       } catch (error) {
         console.error(`Error closing browser for chatbot ${chatbotId}:`, error);
       }
-      
+
       this.sessions.delete(chatbotId);
-      this.emit('disconnected', { chatbotId });
+      this.emit("disconnected", { chatbotId });
     }
   }
 
   // Obtener todas las sesiones activas
   getActiveSessions(): string[] {
     return Array.from(this.sessions.keys()).filter(
-      chatbotId => this.sessions.get(chatbotId)?.isConnected
+      (chatbotId) => this.sessions.get(chatbotId)?.isConnected
     );
   }
 
   // Limpiar todas las sesiones
   async cleanup(): Promise<void> {
-    const promises = Array.from(this.sessions.keys()).map(
-      chatbotId => this.disconnectSession(chatbotId)
+    const promises = Array.from(this.sessions.keys()).map((chatbotId) =>
+      this.disconnectSession(chatbotId)
     );
-    
+
     await Promise.all(promises);
   }
 }

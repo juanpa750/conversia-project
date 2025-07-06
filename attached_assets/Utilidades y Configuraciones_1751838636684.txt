@@ -1,0 +1,48 @@
+// src/lib/utils.ts
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+// src/lib/queryClient.ts
+export const apiRequest = async (
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<any> => {
+  const token = localStorage.getItem('token');
+  
+  const defaultOptions: RequestInit = {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+    ...options,
+  };
+
+  const response = await fetch(`/api${endpoint}`, defaultOptions);
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Error de red' }));
+    throw new Error(error.message || 'Error en la solicitud');
+  }
+
+  return response.json();
+};
+
+// src/lib/constants.ts
+export const WHATSAPP_EVENTS = {
+  QR_GENERATED: 'qr',
+  CONNECTED: 'connected',
+  DISCONNECTED: 'disconnected',
+  MESSAGE_RECEIVED: 'message',
+  ERROR: 'error',
+} as const;
+
+export const CONNECTION_STATUS = {
+  CONNECTING: 'connecting',
+  CONNECTED: 'connected',
+  DISCONNECTED: 'disconnected',
+  ERROR: 'error',
+} as const;
