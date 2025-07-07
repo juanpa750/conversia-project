@@ -248,8 +248,196 @@ export class WhatsAppMultiService extends EventEmitter {
   }
 
   private async setupMessageListeners(session: WhatsAppSession, sessionKey: string) {
-    // TODO: Implementar listeners de mensajes
     console.log(`📨 Configurando listeners de mensajes para: ${sessionKey}`);
+    
+    if (!session.page) return;
+
+    try {
+      // Interceptar mensajes entrantes usando eventos del DOM
+      await session.page.evaluateOnNewDocument(() => {
+        // Listener para nuevos mensajes
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === 1) { // Element node
+                const element = node as Element;
+                
+                // Buscar mensajes entrantes (no enviados por nosotros)
+                const messageElement = element.querySelector('[data-testid="msg-container"]') || 
+                                     (element.matches && element.matches('[data-testid="msg-container"]') ? element : null);
+                
+                if (messageElement) {
+                  // Verificar que no sea un mensaje enviado por nosotros
+                  const isOutgoing = messageElement.closest('[data-testid="msg-container"]')?.querySelector('[data-testid="msg-meta"]')?.textContent?.includes('✓');
+                  
+                  if (!isOutgoing) {
+                    const messageText = messageElement.querySelector('[data-testid="conversation-compose-box-input"]')?.textContent ||
+                                       messageElement.textContent?.trim();
+                    
+                    const contactElement = document.querySelector('[data-testid="conversation-header"]');
+                    const contactName = contactElement?.textContent?.trim() || 'Usuario';
+                    
+                    if (messageText && messageText.length > 0) {
+                      // Enviar mensaje al servidor
+                      window.postMessage({
+                        type: 'WHATSAPP_MESSAGE_RECEIVED',
+                        data: {
+                          sessionKey: '${sessionKey}',
+                          message: messageText,
+                          contact: contactName,
+                          timestamp: Date.now()
+                        }
+                      }, '*');
+                    }
+                  }
+                }
+              }
+            });
+          });
+        });
+
+        // Observar cambios en el chat
+        const chatContainer = document.querySelector('[data-testid="conversation-panel-messages"]');
+        if (chatContainer) {
+          observer.observe(chatContainer, {
+            childList: true,
+            subtree: true
+          });
+        }
+
+        // También observar el documento completo para nuevos chats
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+      });
+
+      // Escuchar mensajes del navegador
+      session.page.on('console', async (msg) => {
+        const msgText = msg.text();
+        if (msgText.includes('WHATSAPP_MESSAGE_RECEIVED')) {
+          try {
+            const data = JSON.parse(msgText.split('WHATSAPP_MESSAGE_RECEIVED: ')[1]);
+            await this.handleIncomingMessage(data);
+          } catch (error) {
+            // Ignorar errores de parsing
+          }
+        }
+      });
+
+      // Listener alternativo usando window.postMessage
+      await session.page.exposeFunction('handleWhatsAppMessage', async (data: any) => {
+        await this.handleIncomingMessage(data);
+      });
+
+      console.log(`✅ Listeners de mensajes configurados para: ${sessionKey}`);
+    } catch (error) {
+      console.error(`❌ Error configurando listeners: ${sessionKey}`, error);
+    }
+  }
+
+  private async handleIncomingMessage(data: any) {
+    try {
+      console.log(`📨 Mensaje recibido de ${data.contact}: ${data.message}`);
+      
+      // Extraer chatbot ID y user ID del sessionKey
+      const [userId, chatbotId] = data.sessionKey.split('_');
+      
+      // Obtener la sesión
+      const session = this.sessions.get(data.sessionKey);
+      if (!session) return;
+      
+      // Importar servicio de IA dinámicamente para evitar dependencias circulares
+      const { advancedAIService } = await import('./advancedAIService');
+      
+      // Procesar mensaje con IA
+      const context = advancedAIService.analyzeConversation(data.message, []);
+      const aiResponse = await advancedAIService.generateIntelligentResponse(
+        context,
+        userId,
+        chatbotId
+      );
+      
+      // Enviar respuesta automática
+      if (aiResponse.message) {
+        await this.sendMessage(data.sessionKey, aiResponse.message);
+        
+        // Guardar conversación en base de datos
+        await this.saveConversation(userId, chatbotId, data.contact, data.message, aiResponse.message);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error procesando mensaje:', error);
+    }
+  }
+
+  private async sendMessage(sessionKey: string, message: string) {
+    try {
+      const session = this.sessions.get(sessionKey);
+      if (!session || !session.page) return;
+
+      console.log(`📤 Enviando respuesta: ${message.substring(0, 50)}...`);
+      
+      // Buscar el input de texto de WhatsApp y escribir el mensaje
+      await session.page.evaluate((msg) => {
+        const inputElement = document.querySelector('[data-testid="conversation-compose-box-input"]') as HTMLElement;
+        if (inputElement) {
+          // Simular el evento de entrada de texto
+          inputElement.focus();
+          inputElement.textContent = msg;
+          
+          // Disparar eventos para que WhatsApp detecte el cambio
+          const inputEvent = new Event('input', { bubbles: true });
+          inputElement.dispatchEvent(inputEvent);
+          
+          // Buscar y hacer clic en el botón de enviar
+          setTimeout(() => {
+            const sendButton = document.querySelector('[data-testid="send"]') as HTMLElement;
+            if (sendButton) {
+              sendButton.click();
+            }
+          }, 500);
+        }
+      }, message);
+      
+      console.log(`✅ Mensaje enviado`);
+    } catch (error) {
+      console.error('❌ Error enviando mensaje:', error);
+    }
+  }
+
+  private async saveConversation(userId: string, chatbotId: string, contact: string, userMessage: string, botResponse: string) {
+    try {
+      // Importar base de datos dinámicamente
+      const { db } = await import('./db');
+      const { whatsappMessages } = await import('../shared/schema');
+      
+      // Guardar mensaje del usuario
+      await db.insert(whatsappMessages).values({
+        userId,
+        chatbotId: parseInt(chatbotId),
+        contactName: contact,
+        contactPhone: 'unknown', // No tenemos el teléfono en este punto
+        message: userMessage,
+        direction: 'incoming',
+        timestamp: new Date()
+      });
+      
+      // Guardar respuesta del bot
+      await db.insert(whatsappMessages).values({
+        userId,
+        chatbotId: parseInt(chatbotId),
+        contactName: contact,
+        contactPhone: 'unknown',
+        message: botResponse,
+        direction: 'outgoing',
+        timestamp: new Date()
+      });
+      
+      console.log(`💾 Conversación guardada en base de datos`);
+    } catch (error) {
+      console.error('❌ Error guardando conversación:', error);
+    }
   }
 
   async getSession(chatbotId: string, userId: string): Promise<WhatsAppSession | null> {
