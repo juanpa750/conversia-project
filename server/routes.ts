@@ -450,6 +450,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Procesar mensajes entrantes de WhatsApp
+  app.post("/api/whatsapp/process-message", async (req: any, res) => {
+    try {
+      const { sessionKey, message, contact, timestamp } = req.body;
+      
+      console.log(`📨 Procesando mensaje de WhatsApp: "${message}" de ${contact}`);
+      
+      // Procesar mensaje con AI
+      await whatsappMultiService.processIncomingMessage(sessionKey, message, contact);
+      
+      res.json({ success: true, processed: true });
+      
+    } catch (error) {
+      console.error('❌ Error procesando mensaje WhatsApp:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  });
+
   // Verificar manualmente el estado de conexión
   app.post("/api/whatsapp/check-connection/:chatbotId", isAuthenticated, async (req: any, res) => {
     try {

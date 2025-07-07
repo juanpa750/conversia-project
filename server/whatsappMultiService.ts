@@ -289,65 +289,85 @@ export class WhatsAppMultiService extends EventEmitter {
     
     if (!session.page) return;
 
+    // Enviar mensaje de bienvenida después de conectar
+    setTimeout(() => {
+      this.sendWelcomeMessage(session, sessionKey);
+    }, 5000);
+
     try {
-      // Interceptar mensajes entrantes usando eventos del DOM
-      await session.page.evaluateOnNewDocument(() => {
-        // Listener para nuevos mensajes
-        const observer = new MutationObserver((mutations) => {
-          mutations.forEach((mutation) => {
-            mutation.addedNodes.forEach((node) => {
-              if (node.nodeType === 1) { // Element node
-                const element = node as Element;
+      // Configurar polling para detectar mensajes entrantes
+      await session.page.evaluate((sessionKey) => {
+        let lastMessageCount = 0;
+        let processingMessage = false;
+        
+        const checkForNewMessages = async () => {
+          if (processingMessage) return;
+          
+          try {
+            // Buscar mensajes entrantes (no enviados por nosotros)
+            const messages = document.querySelectorAll('[data-testid="msg-container"]');
+            
+            if (messages.length > lastMessageCount) {
+              processingMessage = true;
+              
+              // Obtener los mensajes nuevos
+              const newMessages = Array.from(messages).slice(lastMessageCount);
+              
+              for (const msgElement of newMessages) {
+                // Verificar que no sea un mensaje enviado por nosotros
+                const isOutgoing = msgElement.classList.contains('message-out') || 
+                                 msgElement.querySelector('[data-testid="msg-meta"]')?.textContent?.includes('✓✓') ||
+                                 msgElement.querySelector('.message-out');
                 
-                // Buscar mensajes entrantes (no enviados por nosotros)
-                const messageElement = element.querySelector('[data-testid="msg-container"]') || 
-                                     (element.matches && element.matches('[data-testid="msg-container"]') ? element : null);
-                
-                if (messageElement) {
-                  // Verificar que no sea un mensaje enviado por nosotros
-                  const isOutgoing = messageElement.closest('[data-testid="msg-container"]')?.querySelector('[data-testid="msg-meta"]')?.textContent?.includes('✓');
+                if (!isOutgoing) {
+                  // Extraer texto del mensaje
+                  const messageTextElement = msgElement.querySelector('[data-testid="conversation-compose-box-input"]') ||
+                                           msgElement.querySelector('.selectable-text') ||
+                                           msgElement.querySelector('span[dir="ltr"]') ||
+                                           msgElement.querySelector('span');
                   
-                  if (!isOutgoing) {
-                    const messageText = messageElement.querySelector('[data-testid="conversation-compose-box-input"]')?.textContent ||
-                                       messageElement.textContent?.trim();
+                  const messageText = messageTextElement?.textContent?.trim();
+                  
+                  // Obtener nombre del contacto
+                  const contactElement = document.querySelector('[data-testid="conversation-header"]') ||
+                                       document.querySelector('[data-testid="header-title"]');
+                  const contactName = contactElement?.textContent?.trim() || 'Usuario';
+                  
+                  if (messageText && messageText.length > 0) {
+                    console.log(`📩 Mensaje recibido: "${messageText}" de ${contactName}`);
                     
-                    const contactElement = document.querySelector('[data-testid="conversation-header"]');
-                    const contactName = contactElement?.textContent?.trim() || 'Usuario';
-                    
-                    if (messageText && messageText.length > 0) {
-                      // Enviar mensaje al servidor
-                      window.postMessage({
-                        type: 'WHATSAPP_MESSAGE_RECEIVED',
-                        data: {
-                          sessionKey: '${sessionKey}',
-                          message: messageText,
-                          contact: contactName,
-                          timestamp: Date.now()
-                        }
-                      }, '*');
-                    }
+                    // Enviar al servidor para procesamiento con AI
+                    fetch('/api/whatsapp/process-message', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        sessionKey: sessionKey,
+                        message: messageText,
+                        contact: contactName,
+                        timestamp: Date.now()
+                      })
+                    }).catch(err => console.error('Error enviando mensaje:', err));
                   }
                 }
               }
-            });
-          });
-        });
-
-        // Observar cambios en el chat
-        const chatContainer = document.querySelector('[data-testid="conversation-panel-messages"]');
-        if (chatContainer) {
-          observer.observe(chatContainer, {
-            childList: true,
-            subtree: true
-          });
-        }
-
-        // También observar el documento completo para nuevos chats
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true
-        });
-      });
+              
+              lastMessageCount = messages.length;
+              processingMessage = false;
+            }
+          } catch (error) {
+            console.error('Error detectando mensajes:', error);
+            processingMessage = false;
+          }
+        };
+        
+        // Verificar mensajes cada 2 segundos
+        setInterval(checkForNewMessages, 2000);
+        
+        // Verificar inmediatamente
+        checkForNewMessages();
+      }, sessionKey);
 
       // Escuchar mensajes del navegador
       session.page.on('console', async (msg) => {
@@ -576,6 +596,72 @@ export class WhatsAppMultiService extends EventEmitter {
     
     this.sessions.clear();
     console.log('🧹 Limpieza completa del servicio WhatsApp');
+  }
+  // Función para enviar mensaje de bienvenida
+  private async sendWelcomeMessage(session: WhatsAppSession, sessionKey: string) {
+    if (!session.page) return;
+
+    try {
+      console.log(`🎉 Enviando mensaje de bienvenida para: ${sessionKey}`);
+      
+      const welcomeMessage = `¡Hola! 👋 Soy tu asistente virtual de ConversIA.
+
+Estoy aquí para ayudarte con tus consultas y brindarte el mejor servicio.
+
+¿En qué puedo ayudarte hoy?`;
+
+      await this.sendMessage(session, welcomeMessage);
+      console.log(`✅ Mensaje de bienvenida enviado para: ${sessionKey}`);
+      
+    } catch (error) {
+      console.error('❌ Error enviando mensaje de bienvenida:', error);
+    }
+  }
+
+  // Procesar mensajes entrantes y generar respuestas con AI
+  async processIncomingMessage(sessionKey: string, message: string, contact: string) {
+    console.log(`🔄 Procesando mensaje de ${contact}: "${message}"`);
+    
+    try {
+      const session = this.sessions.get(sessionKey);
+      if (!session) {
+        console.error('❌ Sesión no encontrada:', sessionKey);
+        return;
+      }
+
+      // Generar respuesta con AI
+      const aiResponse = await this.generateAIResponse(message, session.chatbotId, session.userId);
+      
+      if (aiResponse) {
+        // Enviar respuesta
+        await this.sendMessage(session, aiResponse);
+        console.log(`✅ Respuesta AI enviada: "${aiResponse}"`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error procesando mensaje:', error);
+    }
+  }
+
+  // Generar respuesta con AI
+  private async generateAIResponse(message: string, chatbotId: string, userId: string): Promise<string> {
+    try {
+      // Respuesta básica de AI (aquí puedes integrar con OpenAI, Anthropic, etc.)
+      const responses = [
+        "¡Gracias por tu mensaje! Te ayudo con gusto.",
+        "Excelente pregunta. Déjame ayudarte con eso.",
+        "Entiendo tu consulta. Permíteme asistirte.",
+        "¡Perfecto! Estoy aquí para ayudarte.",
+        "Gracias por contactarnos. ¿Cómo puedo ayudarte mejor?"
+      ];
+      
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      return `${randomResponse}\n\n"${message}" - procesado por ConversIA AI 🤖`;
+      
+    } catch (error) {
+      console.error('❌ Error generando respuesta AI:', error);
+      return "Disculpa, tuve un pequeño problema técnico. ¿Puedes repetir tu consulta?";
+    }
   }
 }
 
