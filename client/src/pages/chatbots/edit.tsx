@@ -55,6 +55,11 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
   // Cargar datos cuando se obtiene el chatbot
   useEffect(() => {
     if (chatbot) {
+      // Verificar si la personalidad existe en las opciones, si no, usar "custom"
+      const validPersonalities = ['professional', 'friendly', 'expert', 'energetic', 'consultant'];
+      const currentPersonality = chatbot.aiPersonality;
+      const personalityToUse = validPersonalities.includes(currentPersonality) ? currentPersonality : 'custom';
+      
       setFormData({
         name: chatbot.name || '',
         description: chatbot.description || '',
@@ -63,7 +68,7 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
         productId: chatbot.productId || null,
         triggerKeywords: Array.isArray(chatbot.triggerKeywords) ? chatbot.triggerKeywords : [],
         aiInstructions: chatbot.aiInstructions || '',
-        aiPersonality: chatbot.aiPersonality || '',
+        aiPersonality: personalityToUse,
         welcomeMessage: chatbot.welcomeMessage || '',
         objective: chatbot.objective || 'sales',
         conversationObjective: chatbot.conversationObjective || 'sales'
@@ -179,7 +184,8 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
     { value: 'friendly', label: 'Amigable y Cercano', description: 'Conversacional, cálido y empático' },
     { value: 'expert', label: 'Experto Técnico', description: 'Conocimiento especializado y detallado' },
     { value: 'energetic', label: 'Enérgico y Motivador', description: 'Entusiasta, positivo y dinámico' },
-    { value: 'consultant', label: 'Consultor Estratégico', description: 'Hace preguntas, analiza y recomienda' }
+    { value: 'consultant', label: 'Consultor Estratégico', description: 'Hace preguntas, analiza y recomienda' },
+    { value: 'custom', label: 'Personalidad Personalizada', description: 'Configuración específica según instrucciones' }
   ];
 
   if (isLoading) {
@@ -383,7 +389,7 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
               <div>
                 <Label htmlFor="aiPersonality">Personalidad del Bot</Label>
                 <Select 
-                  value={formData.aiPersonality} 
+                  value={formData.aiPersonality || 'professional'} 
                   onValueChange={(value) => setFormData({ ...formData, aiPersonality: value })}
                 >
                   <SelectTrigger>
