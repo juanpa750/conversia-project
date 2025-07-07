@@ -34,7 +34,7 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
 
     const pollStatus = async () => {
       try {
-        const response = await apiRequest('GET', `/api/whatsapp/status/${chatbotId}`);
+        const response = await apiRequest('GET', `/api/whatsapp-real/status/${chatbotId}`);
         if (response.ok) {
           const data = await response.json();
           setSessionStatus({
@@ -74,7 +74,7 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
 
   const fetchQRCode = async () => {
     try {
-      const response = await apiRequest('GET', `/api/whatsapp/status/${chatbotId}`);
+      const response = await apiRequest('GET', `/api/whatsapp-real/status/${chatbotId}`);
       if (response.ok) {
         const data = await response.json();
         if (data.qrCode) {
@@ -91,7 +91,7 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
     setQrCode(null);
     
     try {
-      const response = await apiRequest('POST', `/api/whatsapp/connect/${chatbotId}`, {});
+      const response = await apiRequest('POST', `/api/whatsapp-real/connect/${chatbotId}`, {});
       
       const result = await response.json();
       
@@ -123,7 +123,7 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
 
   const disconnectWhatsApp = async () => {
     try {
-      const response = await apiRequest('POST', `/api/whatsapp/disconnect/${chatbotId}`, {});
+      const response = await apiRequest('POST', `/api/whatsapp-real/disconnect/${chatbotId}`, {});
       const result = await response.json();
       
       if (result.success) {
@@ -158,7 +158,7 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
     setQrCode(null);
     
     try {
-      const response = await apiRequest('POST', `/api/whatsapp/restart/${chatbotId}`, {});
+      const response = await apiRequest('POST', `/api/whatsapp-real/restart/${chatbotId}`, {});
       const result = await response.json();
       
       if (result.success) {
@@ -359,19 +359,42 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
 
         </div>
 
-        {/* Instrucciones mejoradas */}
-        <div className="text-sm text-muted-foreground space-y-3 bg-yellow-50 p-4 rounded-lg border">
-          <p><strong>🚨 IMPORTANTE - Instrucciones para conexión REAL:</strong></p>
-          <div className="space-y-2">
-            <p><strong>Paso 1:</strong> Abre WhatsApp Web en otra pestaña: <a href="https://web.whatsapp.com" target="_blank" className="text-blue-600 underline">web.whatsapp.com</a></p>
-            <p><strong>Paso 2:</strong> En tu teléfono, abre WhatsApp → Configuración → Dispositivos vinculados</p>
-            <p><strong>Paso 3:</strong> Toca "Vincular un dispositivo" y escanea el QR de WhatsApp Web</p>
-            <p><strong>Paso 4:</strong> Una vez conectado en WhatsApp Web, regresa aquí y usa nuestro sistema para gestionar tus chatbots</p>
+        {/* QR Code REAL de WhatsApp */}
+        {qrCode && !sessionStatus.connected && (
+          <div className="flex flex-col items-center space-y-4 p-6 border rounded-lg bg-green-50">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold mb-2 text-green-800">📱 Escanea este código QR con WhatsApp</h3>
+              <p className="text-sm text-green-700 mb-4">
+                Abre WhatsApp en tu teléfono → Configuración → Dispositivos vinculados → Vincular dispositivo
+              </p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-lg border-2 border-green-200">
+              <img 
+                src={qrCode} 
+                alt="Código QR de WhatsApp" 
+                className="w-64 h-64 object-contain"
+              />
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-green-600 bg-green-100 p-2 rounded">
+                ✅ Este código QR es REAL y conectará directamente con WhatsApp
+              </p>
+            </div>
           </div>
-          <div className="bg-blue-50 p-3 rounded">
-            <p className="text-xs"><strong>Nota técnica:</strong> Nuestro sistema gestiona las respuestas automáticas una vez que WhatsApp esté conectado en tu navegador.</p>
+        )}
+
+        {/* Instrucciones simples */}
+        {!qrCode && !sessionStatus.connected && (
+          <div className="text-sm text-muted-foreground space-y-3 bg-blue-50 p-4 rounded-lg border">
+            <p><strong>📲 Cómo conectar WhatsApp:</strong></p>
+            <div className="space-y-2">
+              <p><strong>1.</strong> Haz clic en "Activar Chatbot" para generar el código QR</p>
+              <p><strong>2.</strong> En tu teléfono: WhatsApp → Configuración → Dispositivos vinculados</p>
+              <p><strong>3.</strong> Toca "Vincular un dispositivo" y escanea el QR que aparezca aquí</p>
+              <p><strong>4.</strong> ¡Listo! Tu chatbot responderá automáticamente</p>
+            </div>
           </div>
-        </div>
+        )}
     </div>
   );
 }
