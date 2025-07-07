@@ -146,51 +146,44 @@ export class EnhancedAIService {
     
     const product = await storage.getProduct(productId);
     if (!product) {
-      return `En ${businessName}, tenemos varios productos disponibles. ¿Qué necesitas específicamente?`;
+      return `Tenemos varios productos disponibles. ¿Qué necesitas específicamente?`;
     }
     
-    let response = '';
+    // Análisis inteligente del mensaje del cliente
     const message = userMessage.toLowerCase();
+    let response = '';
     
-    // Combinar instrucciones del producto con lógica AIDA
-    const customInstructions = product.ai_instructions || '';
+    // Usar descripción del producto como conocimiento interno, no para copiar todo
+    const productKnowledge = product.description || '';
     
-    switch (aidaStage) {
-      case 'attention':
-        response = `${product.name} es una excelente opción. ${product.description || 'Producto de calidad garantizada.'} ${customInstructions}`;
-        break;
-        
-      case 'interest':
-        if (message.includes('precio')) {
-          response = `${product.name} tiene un precio de ${product.price || 'consultar'}. Es una inversión que vale la pena por su calidad.`;
-        } else {
-          response = `${product.name} destaca por ${product.description || 'su excelente calidad'}. ${customInstructions}`;
-        }
-        break;
-        
-      case 'desire':
-        response = `Los beneficios de ${product.name} son únicos. ${product.description} ${customInstructions} Muchos clientes quedan satisfechos.`;
-        break;
-        
-      case 'action':
-        response = `Perfecto! ${product.name} es una excelente decisión. ${product.price ? `El precio es ${product.price}` : ''} ¿Confirmas tu pedido?`;
-        break;
-        
-      default:
-        response = `${product.name} es ideal para ti. ${product.description || ''} ${customInstructions}`;
+    // Responder SOLO a lo que el cliente pregunta específicamente
+    if (message.includes('precio') || message.includes('costo') || message.includes('vale')) {
+      response = `${product.name} cuesta ${product.price || 'consultar'}. Es una excelente inversión porque da resultados desde la primera aplicación. ¿Te gustaría conocer algún beneficio específico?`;
+    } 
+    else if (message.includes('beneficio') || message.includes('sirve') || message.includes('ayuda')) {
+      // Extraer 2-3 beneficios clave del conocimiento del producto
+      const benefitKeywords = ['hidrata', 'nutre', 'repara', 'fortalece', 'define', 'brillo', 'suavidad', 'crecimiento'];
+      const foundBenefits = benefitKeywords.filter(b => productKnowledge.toLowerCase().includes(b)).slice(0, 2);
+      
+      response = foundBenefits.length > 0 
+        ? `${product.name} ${foundBenefits.join(' y ')} el cabello de manera natural. ¿Qué tipo de cabello tienes?`
+        : `${product.name} tiene múltiples beneficios para el cabello. ¿Cuál es tu mayor preocupación capilar?`;
+    }
+    else if (message.includes('como') && (message.includes('usar') || message.includes('aplicar'))) {
+      response = `${product.name} es muy fácil de usar. Te explico paso a paso cuando confirmes tu pedido. ¿Te interesa conocer el precio especial?`;
+    }
+    else if (message.includes('testimonio') || message.includes('funciona') || message.includes('resultado')) {
+      response = `${product.name} tiene excelentes resultados. Nuestras clientas ven cambios desde la primera aplicación. ¿Quieres saber cómo puede ayudar a tu tipo de cabello específicamente?`;
+    }
+    else if (message.includes('envio') || message.includes('entrega')) {
+      response = `Tenemos envío gratis y pago contra entrega en toda Colombia para ${product.name}. ¿En qué ciudad te encuentras?`;
+    }
+    else {
+      // Respuesta general pero específica
+      response = `${product.name} es perfecto para cabellos que necesitan nutrición profunda. Es 100% natural y da resultados visibles. ¿Qué te gustaría saber específicamente?`;
     }
     
-    // Aplicar personalidad si está configurada
-    if (product.ai_personality) {
-      if (product.ai_personality.includes('formal')) {
-        response = response.replace(/!/g, '.');
-      }
-      if (product.ai_personality.includes('amigable')) {
-        response += ' ¡Estoy aquí para ayudarte! 😊';
-      }
-    }
-    
-    return `En ${businessName}, ${response}`;
+    return response;
   }
   
   /**

@@ -212,6 +212,13 @@ The application is configured for deployment on Replit with:
 - **System Dependencies**: Puppeteer with stealth plugin for improved QR generation
 
 ## Recent Changes
+- **January 7, 2025 (Night - 10:14 PM)**: AI Now Uses Product Knowledge Intelligently
+- **CRITICAL FIX**: AI now uses product description as INTERNAL KNOWLEDGE only
+- **SMART RESPONSES**: AI responds specifically to client questions, not information dumping
+- **GRADUAL CONVERSATION**: System answers only what client asks (price, benefits, usage, etc.)
+- **NATURAL FLOW**: Conversations now build gradually based on client interest
+- **CLIENT-FOCUSED**: No more overwhelming clients with entire product descriptions
+
 - **January 7, 2025 (Night - 10:07 PM)**: Enhanced Conversational AI Response System
 - **FIXED**: Removed repetitive "Hola! Bienvenido a 29" from AI responses  
 - **IMPROVED**: AI responses now format long product descriptions into conversational snippets
