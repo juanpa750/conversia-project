@@ -375,13 +375,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: 'WhatsApp ya está conectado',
           sessionId: `${userId}_${chatbotId}`
         });
-      } else {
+      } else if (result === 'QR_GENERATED') {
+        // Obtener el QR de la sesión
+        const session = await whatsappMultiService.getSession(chatbotId, userId);
         res.json({ 
           success: true, 
+          connected: false,
           status: 'waiting_qr',
-          qr: result,
+          qr: session?.qrCode,
           message: 'Escanea el código QR con WhatsApp',
           sessionId: `${userId}_${chatbotId}`
+        });
+      } else {
+        res.json({ 
+          success: false,
+          connected: false,
+          status: 'error',
+          message: 'Error generando conexión WhatsApp'
         });
       }
 
