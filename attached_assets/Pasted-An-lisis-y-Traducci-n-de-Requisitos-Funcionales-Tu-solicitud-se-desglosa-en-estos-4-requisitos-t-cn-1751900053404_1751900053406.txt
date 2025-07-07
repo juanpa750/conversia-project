@@ -1,0 +1,175 @@
+Análisis y Traducción de Requisitos Funcionales
+Tu solicitud se desglosa en estos 4 requisitos técnicos:
+Enlace Automático vía QR: El usuario escanea el QR y la sesión de WhatsApp se establece, quedando lista para operar.
+Activación por Disparador (Trigger): La IA solo debe responder a los mensajes que contengan una palabra o frase clave (disparador) definida en la configuración del chatbot.
+Visualización del Número Enlazado: La interfaz de usuario debe mostrar el número de teléfono de la cuenta de WhatsApp que se acaba de conectar.
+Conexión Estable: La sesión de WhatsApp no debe desconectarse fácilmente y debe ser resiliente.
+Ahora, veamos cómo implementar cada uno de estos puntos en tu código.
+Plan de Implementación y Correcciones al Código
+1. Enlace Automático vía QR (¡Esto ya lo tienes casi listo!)
+Tu flujo actual en whatsappMultiService.ts y WhatsAppIntegration.tsx ya maneja esto. El usuario hace clic en "Conectar", se genera un QR, lo escanea, y la sesión se activa. Esto es correcto. El "automatismo" es inherente al funcionamiento de WhatsApp Web.
+Sugerencia: Asegúrate de que el estado en el frontend se actualice correctamente cuando la conexión se establece sin necesidad de recargar la página. Podrías usar WebSockets o un polling más frecuente en el frontend para verificar el estado después de mostrar el QR. Tu waitForConnection en el backend es un buen comienzo para esto.
+2. Activación por Disparador (MODIFICACIÓN NECESARIA)
+Actualmente, tu processIncomingMessage en whatsappMultiService.ts procesa todos los mensajes. Necesitas agregar una lógica para filtrar por los disparadores. Tu schema de base de datos ya está preparado para esto con el campo triggerKeywords.
+Acción: Modifica la función processIncomingMessage en server/whatsappMultiService.ts.
+Código Actual (Problemático):
+Generated typescript
+// server/whatsappMultiService.ts
+
+private async processIncomingMessage(message: any, session: WhatsAppSession, sessionKey: string) {
+  try {
+    const { advancedAIService } = await import('./advancedAIService.js');
+    const { storage } = await import('./storage.js');
+    
+    console.log(`📨 Procesando mensaje de ${message.contact}: ${message.message}`);
+    
+    // SIEMPRE procesa el mensaje
+    const context = advancedAIService.analyzeConversation(message.message);
+    // ... el resto de la lógica
+Use code with caution.
+TypeScript
+Código Corregido (Con Lógica de Disparador):
+Generated typescript
+// server/whatsappMultiService.ts
+
+private async processIncomingMessage(message: any, session: WhatsAppSession, sessionKey: string) {
+  try {
+    const { advancedAIService } = await import('./advancedAIService.js');
+    const { storage } = await import('./storage.js');
+    
+    const chatbotId = parseInt(session.chatbotId);
+    
+    // 1. Obtener los detalles del chatbot, incluyendo los disparadores
+    const chatbot = await storage.getChatbot(chatbotId);
+    if (!chatbot) {
+      console.error(`Chatbot con ID ${chatbotId} no encontrado.`);
+      return;
+    }
+
+    // 2. Verificar si hay disparadores configurados y si el mensaje los contiene
+    const triggers: string[] = chatbot.triggerKeywords || [];
+    const incomingMessage = message.message.toLowerCase();
+
+    // Si no hay triggers, responde a todo. Si hay, verifica si el mensaje contiene alguno.
+    const shouldRespond = triggers.length === 0 || triggers.some(trigger => incomingMessage.includes(trigger.toLowerCase()));
+
+    if (!shouldRespond) {
+      console.log(`💬 Mensaje de ${message.contact} ignorado (no contiene disparador).`);
+      return; // No hacer nada si no hay un disparador
+    }
+
+    console.log(`📨 Procesando mensaje de ${message.contact} (disparador encontrado): ${message.message}`);
+    
+    // 3. Si el disparador está presente, continuar con la lógica de la IA
+    const context = advancedAIService.analyzeConversation(message.message);
+    const aiResponse = await advancedAIService.generateIntelligentResponse(
+      context, 
+      session.userId, 
+      chatbotId
+    );
+
+    await storage.saveWhatsAppMessage({
+      chatbotId: chatbotId,
+      contactPhone: message.contact,
+      contactName: message.contact,
+      messageType: 'incoming',
+      content: message.message,
+      detectedIntent: context.detectedIntent,
+      sentimentScore: context.sentimentScore.toString(),
+      aiResponse: aiResponse.message
+    });
+
+    await this.sendMessage(session, message.contact, aiResponse.message);
+    
+    console.log(`✅ Respuesta enviada a ${message.contact}: ${aiResponse.message}`);
+    
+  } catch (error) {
+    console.error('❌ Error processing message:', error);
+  }
+}
+Use code with caution.
+TypeScript
+3. Visualización del Número Enlazado (MODIFICACIÓN NECESARIA)
+Este es el requisito más complicado porque WhatsApp Web no expone fácilmente el número de teléfono del propio usuario en el DOM. Intentar "scrapear" esta información de la página de perfil es muy frágil y se romperá con cualquier actualización de WhatsApp.
+La Solución Profesional y Robusta: Pedirle al usuario que confirme su número.
+Acción:
+Backend: Tu schema (chatbots.whatsappNumber) y tu API de updateChatbot ya están listos para guardar el número. ¡Perfecto!
+Frontend: Modifica WhatsAppIntegration.tsx para añadir un campo donde el usuario pueda ingresar y guardar el número de teléfono asociado a ese chatbot. Este campo podría aparecer una vez que la conexión esté establecida.
+Ejemplo de cómo añadirlo en WhatsAppIntegration.tsx:
+Generated tsx
+// Dentro del componente WhatsAppIntegration
+
+// ... otros estados
+const [phoneNumber, setPhoneNumber] = useState('');
+
+// ... en el useEffect que carga el estado, también obtén el número guardado
+useEffect(() => {
+    const fetchStatus = async () => {
+        const response = await apiRequest('GET', `/api/chatbots/${chatbotId}`);
+        const data = await response.json();
+        // ...
+        setPhoneNumber(data.whatsappNumber || ''); // Cargar el número guardado
+    }
+    fetchStatus();
+}, [chatbotId]);
+
+const handleSavePhoneNumber = async () => {
+    try {
+        await apiRequest('PUT', `/api/chatbots/${chatbotId}`, { whatsappNumber: phoneNumber });
+        toast({ title: "Número guardado", description: "El número de WhatsApp ha sido guardado." });
+    } catch (error) {
+        toast({ title: "Error", description: "No se pudo guardar el número.", variant: "destructive" });
+    }
+};
+
+// ... en el JSX, dentro de CardContent cuando está conectado
+{isConnected && (
+    <div className="space-y-4">
+        <div className="bg-green-50 ...">
+            {/* ... Mensaje de conectado exitosamente */}
+        </div>
+
+        {/* --- NUEVA SECCIÓN --- */}
+        <div>
+            <Label htmlFor="whatsapp-number">Número de WhatsApp Enlazado</Label>
+            <div className="flex items-center gap-2 mt-1">
+                <Input
+                    id="whatsapp-number"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="Ej: +5491122334455"
+                />
+                <Button onClick={handleSavePhoneNumber} size="sm">Guardar</Button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+                Este número se usa para identificación. Asegúrate que coincida con la cuenta conectada.
+            </p>
+        </div>
+        {/* --- FIN NUEVA SECCIÓN --- */}
+    </div>
+)}
+Use code with caution.
+Tsx
+4. Conexión Estable (MEJORA CRÍTICA)
+Tu sistema actual de sesiones en memoria (private sessions: Map<...) es propenso a fallos. Si el servidor se reinicia, todas las conexiones se pierden.
+Acción: Debes persistir la información de la sesión de WhatsApp.
+Persistir Sesión: La librería whatsapp-web.js (que estás usando indirectamente a través de Puppeteer) tiene mecanismos para guardar y restaurar sesiones, usualmente en un archivo JSON. Tu campo chatbots.whatsappSessionData en la base de datos es el lugar perfecto para esto.
+Cuando Puppeteer se conecte, obtendrá un objeto de sesión. Debes guardarlo en whatsappSessionData.
+Al iniciar una conexión, primero intenta restaurarla desde whatsappSessionData. Si falla o no existe, entonces genera un nuevo QR.
+Health Checks (Monitoreo de Salud): La conexión puede caerse (ej: el teléfono pierde internet). Necesitas un mecanismo que lo detecte.
+Crea un setInterval que se ejecute cada 5-10 minutos para cada sesión activa.
+Dentro del intervalo, llama a tu función checkIfConnected.
+Si checkIfConnected devuelve false, actualiza el estado del chatbot en la base de datos (whatsappConnected = false) y notifica al usuario (por email o en el dashboard) que necesita volver a conectar.
+Instrucción para la IA "Corregida" (Versión Requerimiento Funcional)
+Si tuvieras que escribir esto en un ticket para un desarrollador (o para ti mismo), se vería así:
+Título: Implementar Conexión de Chatbot a WhatsApp con Activación por Disparador
+User Story:
+Como usuario de ConversIA, quiero conectar un chatbot a mi número de WhatsApp escaneando un código QR. Una vez conectado, el chatbot debe permanecer en escucha y solo responder automáticamente a los mensajes que contengan una de las palabras clave que he configurado como "disparador". La interfaz debe mostrarme claramente qué número de teléfono está enlazado y la conexión debe ser estable, reconectándose si es posible o notificándome si se pierde la sesión.
+Criterios de Aceptación:
+El sistema genera un código QR para que el usuario vincule su WhatsApp.
+Una vez escaneado, el estado en el UI cambia a "Conectado".
+El usuario puede introducir y guardar el número de teléfono asociado a la cuenta de WhatsApp conectada.
+El motor de IA solo procesa y responde a mensajes entrantes si contienen un triggerKeyword definido en la configuración del chatbot. Si no hay triggerKeywords, responde a todos los mensajes.
+Los mensajes que no contienen un disparador son ignorados por la IA.
+La sesión de WhatsApp se guarda en la base de datos para sobrevivir a reinicios del servidor.
+Un "health check" verifica periódicamente la conexión y actualiza el estado si la sesión se pierde.

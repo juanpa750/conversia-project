@@ -289,10 +289,10 @@ export class WhatsAppMultiService extends EventEmitter {
     
     if (!session.page) return;
 
-    // Enviar mensaje de bienvenida después de conectar
+    // Enviar mensaje de bienvenida después de conectar (reducido a 3 segundos)
     setTimeout(() => {
       this.sendWelcomeMessage(session, sessionKey);
-    }, 5000);
+    }, 3000);
 
     try {
       // Configurar polling para detectar mensajes entrantes
@@ -629,13 +629,43 @@ Estoy aquí para ayudarte con tus consultas y brindarte el mejor servicio.
         return;
       }
 
-      // Generar respuesta con AI
-      const aiResponse = await this.generateAIResponse(message, session.chatbotId, session.userId);
+      const chatbotId = parseInt(session.chatbotId);
+      
+      // Obtener los detalles del chatbot, incluyendo los disparadores
+      const { simpleStorage } = await import('./storage.js');
+      const chatbot = await simpleStorage.getChatbot(chatbotId);
+      
+      if (!chatbot) {
+        console.error(`❌ Chatbot con ID ${chatbotId} no encontrado.`);
+        return;
+      }
+
+      // Verificar si hay disparadores configurados y si el mensaje los contiene
+      const triggers: string[] = chatbot.triggerKeywords ? 
+        JSON.parse(chatbot.triggerKeywords) : [];
+      const incomingMessage = message.toLowerCase();
+
+      // Si no hay triggers, responde a todo. Si hay, verifica si el mensaje contiene alguno.
+      const shouldRespond = triggers.length === 0 || 
+        triggers.some(trigger => incomingMessage.includes(trigger.toLowerCase()));
+
+      if (!shouldRespond) {
+        console.log(`💬 Mensaje de ${contact} ignorado (no contiene disparador).`);
+        return; // No hacer nada si no hay un disparador
+      }
+
+      console.log(`📨 Procesando mensaje de ${contact} (disparador encontrado): ${message}`);
+
+      // Generar respuesta con AI usando las instrucciones del chatbot
+      const aiResponse = await this.generateAIResponse(message, session.chatbotId, session.userId, chatbot);
       
       if (aiResponse) {
         // Enviar respuesta
         await this.sendMessage(session, aiResponse);
         console.log(`✅ Respuesta AI enviada: "${aiResponse}"`);
+        
+        // Guardar mensaje en base de datos
+        await this.saveMessageToDatabase(chatbotId, contact, message, aiResponse);
       }
       
     } catch (error) {
@@ -643,24 +673,65 @@ Estoy aquí para ayudarte con tus consultas y brindarte el mejor servicio.
     }
   }
 
-  // Generar respuesta con AI
-  private async generateAIResponse(message: string, chatbotId: string, userId: string): Promise<string> {
+  // Generar respuesta con AI usando información del chatbot
+  private async generateAIResponse(message: string, chatbotId: string, userId: string, chatbot: any): Promise<string> {
     try {
-      // Respuesta básica de AI (aquí puedes integrar con OpenAI, Anthropic, etc.)
-      const responses = [
-        "¡Gracias por tu mensaje! Te ayudo con gusto.",
-        "Excelente pregunta. Déjame ayudarte con eso.",
-        "Entiendo tu consulta. Permíteme asistirte.",
-        "¡Perfecto! Estoy aquí para ayudarte.",
-        "Gracias por contactarnos. ¿Cómo puedo ayudarte mejor?"
-      ];
+      // Usar las instrucciones y personalidad del chatbot
+      const aiInstructions = chatbot.aiInstructions || "Eres un asistente útil";
+      const aiPersonality = chatbot.aiPersonality || "Amigable y profesional";
+      const objective = chatbot.conversationObjective || "Ayudar al usuario";
       
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      return `${randomResponse}\n\n"${message}" - procesado por ConversIA AI 🤖`;
+      // Generar respuesta personalizada basada en la configuración del chatbot
+      const contextualResponse = this.generateContextualResponse(message, aiInstructions, aiPersonality, objective);
+      
+      return contextualResponse;
       
     } catch (error) {
       console.error('❌ Error generando respuesta AI:', error);
       return "Disculpa, tuve un pequeño problema técnico. ¿Puedes repetir tu consulta?";
+    }
+  }
+
+  // Generar respuesta contextual usando la configuración del chatbot
+  private generateContextualResponse(message: string, instructions: string, personality: string, objective: string): string {
+    const messageLower = message.toLowerCase();
+    
+    // Detectar intención del mensaje
+    if (messageLower.includes('hola') || messageLower.includes('buenos') || messageLower.includes('saludos')) {
+      return `¡Hola! ${personality}. ${instructions} ¿En qué puedo ayudarte hoy?`;
+    }
+    
+    if (messageLower.includes('precio') || messageLower.includes('costo') || messageLower.includes('cuanto')) {
+      return `${personality}. Te ayudo con información de precios. ${objective}. ¿Qué producto te interesa específicamente?`;
+    }
+    
+    if (messageLower.includes('gracias') || messageLower.includes('thank')) {
+      return `¡De nada! ${personality}. Estoy aquí cuando me necesites. ${objective}`;
+    }
+    
+    // Respuesta general usando la configuración del chatbot
+    return `${personality}. ${instructions} ¿Podrías darme más detalles sobre tu consulta para ayudarte mejor?`;
+  }
+
+  // Guardar mensaje en base de datos
+  private async saveMessageToDatabase(chatbotId: number, contact: string, message: string, aiResponse: string) {
+    try {
+      const { simpleStorage } = await import('./storage.js');
+      
+      await simpleStorage.saveWhatsAppMessage({
+        chatbotId: chatbotId,
+        contactPhone: contact,
+        contactName: contact,
+        messageType: 'incoming',
+        content: message,
+        detectedIntent: 'general',
+        sentimentScore: '0.5',
+        aiResponse: aiResponse
+      });
+      
+      console.log(`💾 Mensaje guardado en BD para chatbot ${chatbotId}`);
+    } catch (error) {
+      console.error('❌ Error guardando mensaje en BD:', error);
     }
   }
 }

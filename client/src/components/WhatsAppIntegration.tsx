@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, QrCode, CheckCircle, XCircle, Copy, Power, PowerOff, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, QrCode, CheckCircle, XCircle, Copy, Power, PowerOff, RefreshCw, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -17,12 +19,26 @@ export default function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsApp
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [status, setStatus] = useState<'not_initialized' | 'waiting_qr' | 'connected' | 'error'>('not_initialized');
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [chatbot, setChatbot] = useState<any>(null);
   const { toast } = useToast();
 
   // Verificar estado al cargar el componente
   useEffect(() => {
     checkConnectionStatus();
+    loadChatbotData();
   }, [chatbotId]);
+
+  const loadChatbotData = async () => {
+    try {
+      const response = await apiRequest('GET', `/api/chatbots/${chatbotId}`);
+      const data = await response.json();
+      setChatbot(data);
+      setPhoneNumber(data.whatsappNumber || '');
+    } catch (error) {
+      console.error('Error loading chatbot data:', error);
+    }
+  };
 
   const checkConnectionStatus = async () => {
     try {
@@ -180,6 +196,24 @@ export default function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsApp
       case 'waiting_qr': return 'bg-yellow-500';
       case 'error': return 'bg-red-500';
       default: return 'bg-gray-500';
+    }
+  };
+
+  const handleSavePhoneNumber = async () => {
+    try {
+      await apiRequest('PATCH', `/api/chatbots/${chatbotId}`, { 
+        whatsappNumber: phoneNumber 
+      });
+      toast({ 
+        title: "Número guardado", 
+        description: "El número de WhatsApp ha sido guardado." 
+      });
+    } catch (error) {
+      toast({ 
+        title: "Error", 
+        description: "No se pudo guardar el número.", 
+        variant: "destructive" 
+      });
     }
   };
 
