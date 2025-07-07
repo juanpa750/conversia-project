@@ -48,6 +48,20 @@ export function isAuthenticated(req: any, res: Response, next: NextFunction) {
       return next();
     }
     
+    // Try JWT token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string };
+        req.userId = decoded.id;
+        req.userRole = decoded.role;
+        return next();
+      } catch (jwtError) {
+        console.log('JWT verification failed:', jwtError);
+      }
+    }
+    
     // Fall back to JWT token authentication from cookies
     const token = req.cookies?.token;
     if (token) {

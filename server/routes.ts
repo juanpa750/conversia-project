@@ -38,8 +38,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: user.role || 'user'
       };
       
+      // Generate JWT token for API requests
+      const token = generateToken(user);
+      
       res.json({ 
         success: true,
+        token,
         user: { 
           id: user.id, 
           email: user.email, 
