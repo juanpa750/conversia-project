@@ -19,7 +19,7 @@ import SubscriptionCheckout from "@/pages/subscription/checkout";
 import Settings from "@/pages/settings";
 import Support from "@/pages/support";
 import CRMDashboard from "@/pages/crm";
-import WhatsAppConnect from "@/pages/integrations/whatsapp-connect";
+// WhatsApp integration disponible en los chatbots
 import WhatsAppBotConfig from "@/pages/integrations/whatsapp-bot";
 import WhatsAppIntegrationPage from "@/pages/integrations/whatsapp";
 import WhatsAppCloudIntegration from "@/pages/integrations/whatsapp-cloud";
@@ -190,11 +190,7 @@ function Router() {
               <Support />
             </Layout>
           </Route>
-          <Route path="/integrations/whatsapp-connect">
-            <Layout>
-              <WhatsAppConnect />
-            </Layout>
-          </Route>
+          {/* WhatsApp connect integrado en los chatbots */}
           <Route path="/integrations/whatsapp-bot">
             <Layout>
               <WhatsAppBotConfig />
@@ -286,7 +282,7 @@ function Router() {
                   <div className="border rounded-lg p-4">
                     <h3 className="font-semibold mb-2">WhatsApp Business</h3>
                     <p className="text-sm text-gray-600 mb-4">Conecta tu WhatsApp Business</p>
-                    <a href="/integrations/whatsapp-connect" className="text-blue-600 hover:underline">Configurar</a>
+                    <span className="text-green-600">Integrado en chatbots</span>
                   </div>
                 </div>
               </div>
