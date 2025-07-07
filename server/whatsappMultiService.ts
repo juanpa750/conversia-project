@@ -155,8 +155,37 @@ export class WhatsAppMultiService extends EventEmitter {
 
   private async checkIfConnected(page: Page): Promise<boolean> {
     try {
-      await page.waitForSelector('[data-testid="chat-list"]', { timeout: 5000 });
-      return true;
+      // Verificar múltiples selectores que indican conexión exitosa
+      const connectedSelectors = [
+        '[data-testid="chat-list"]',
+        '[data-testid="side"]',
+        '[data-testid="conversation-panel-wrapper"]',
+        '#main',
+        '.app-wrapper-web'
+      ];
+      
+      for (const selector of connectedSelectors) {
+        try {
+          await page.waitForSelector(selector, { timeout: 2000 });
+          console.log(`✅ Conexión detectada con selector: ${selector}`);
+          return true;
+        } catch (e) {
+          // Continuar con el siguiente selector
+        }
+      }
+      
+      // Verificar si ya no hay QR code (indica conexión)
+      try {
+        const qrExists = await page.$('canvas');
+        if (!qrExists) {
+          console.log(`✅ Conexión detectada: QR ya no está presente`);
+          return true;
+        }
+      } catch (e) {
+        // Ignorar error
+      }
+      
+      return false;
     } catch {
       return false;
     }
@@ -488,6 +517,38 @@ export class WhatsAppMultiService extends EventEmitter {
       hasSession: true,
       qrCode: session.qrCode || null
     };
+  }
+
+  // Verificar manualmente el estado de conexión
+  async checkConnectionStatus(chatbotId: string, userId: string): Promise<boolean> {
+    const sessionKey = `${userId}_${chatbotId}`;
+    const session = this.sessions.get(sessionKey);
+    
+    if (!session || !session.page) {
+      return false;
+    }
+
+    try {
+      const isConnected = await this.checkIfConnected(session.page);
+      
+      if (isConnected && !session.isConnected) {
+        // Actualizar estado de conexión
+        session.isConnected = true;
+        await this.setupMessageListeners(session, sessionKey);
+        
+        this.emit('connected', { 
+          chatbotId: session.chatbotId, 
+          userId: session.userId 
+        });
+        
+        console.log(`🔄 Estado actualizado - ahora conectado: ${sessionKey}`);
+      }
+      
+      return isConnected;
+    } catch (error) {
+      console.error(`❌ Error verificando conexión: ${sessionKey}`, error);
+      return false;
+    }
   }
 
   // Cleanup método para cerrar todo

@@ -416,6 +416,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chatbotId = req.params.chatbotId;
       const userId = req.userId;
 
+      // Verificar manualmente el estado de conexión
+      const isConnected = await whatsappMultiService.checkConnectionStatus(chatbotId, userId);
       const session = await whatsappMultiService.getSession(chatbotId, userId);
       
       if (!session) {
@@ -426,14 +428,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ 
-        connected: session.isConnected,
-        status: session.isConnected ? 'connected' : 'waiting_connection',
+        connected: session.isConnected || isConnected,
+        status: (session.isConnected || isConnected) ? 'connected' : 'waiting_connection',
         sessionId: `${userId}_${chatbotId}`,
         lastActivity: session.lastActivity
       });
 
     } catch (error) {
       console.error('❌ Error obteniendo estado WhatsApp:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  });
+
+  // Verificar manualmente el estado de conexión
+  app.post("/api/whatsapp/check-connection/:chatbotId", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbotId = req.params.chatbotId;
+      const userId = req.userId;
+
+      const isConnected = await whatsappMultiService.checkConnectionStatus(chatbotId, userId);
+      
+      res.json({ 
+        success: true,
+        connected: isConnected,
+        status: isConnected ? 'connected' : 'not_connected',
+        message: isConnected ? 'WhatsApp conectado exitosamente' : 'WhatsApp no conectado aún'
+      });
+
+    } catch (error) {
+      console.error('❌ Error verificando conexión WhatsApp:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   });

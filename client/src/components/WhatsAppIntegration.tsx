@@ -40,6 +40,41 @@ export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrat
     }
   };
 
+  const forceCheckConnection = async () => {
+    try {
+      setIsConnecting(true);
+      const response = await apiRequest('POST', `/api/whatsapp/check-connection/${chatbotId}`);
+      const data = await response.json();
+      
+      if (data.connected) {
+        setIsConnected(true);
+        setStatus('connected');
+        toast({
+          title: "✅ WhatsApp Conectado",
+          description: "Tu WhatsApp está conectado y funcionando",
+        });
+      } else {
+        toast({
+          title: "⚠️ WhatsApp No Conectado",
+          description: "Escanea el código QR para conectar",
+          variant: "destructive",
+        });
+      }
+      
+      // Actualizar estado general
+      await checkConnectionStatus();
+    } catch (error) {
+      console.error('Error forzando verificación:', error);
+      toast({
+        title: "❌ Error",
+        description: "No se pudo verificar el estado de conexión",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
   const connectWhatsApp = async () => {
     if (isConnecting) return;
     
@@ -258,11 +293,17 @@ export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrat
           )}
           
           <Button
-            onClick={checkConnectionStatus}
+            onClick={forceCheckConnection}
             variant="outline"
             size="sm"
+            disabled={isConnecting}
+            title="Verificar estado de conexión"
           >
-            🔄
+            {isConnecting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              "🔄"
+            )}
           </Button>
         </div>
 
