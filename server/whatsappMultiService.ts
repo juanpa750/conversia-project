@@ -127,6 +127,9 @@ export class WhatsAppMultiService extends EventEmitter {
       // Configurar listeners de la página
       await this.setupPageListeners(session, sessionKey);
 
+      // Esperar a que la página cargue completamente
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
       // Verificar si ya está conectado
       const isAlreadyConnected = await this.checkIfConnected(page);
       
@@ -138,15 +141,16 @@ export class WhatsAppMultiService extends EventEmitter {
         return 'CONNECTED';
       } else {
         // Generar código QR
+        console.log(`🔍 Generando QR para nueva sesión: ${sessionKey}`);
         const qrCode = await this.generateQRCode(page);
         session.qrCode = qrCode;
         
         // Esperar conexión en segundo plano
         this.waitForConnection(session, sessionKey);
         
-        console.log(`📋 QR generado para: ${sessionKey}`);
+        console.log(`📋 QR generado exitosamente para: ${sessionKey}`);
         this.emit('qr', { chatbotId, userId, qr: qrCode });
-        return qrCode;
+        return 'QR_GENERATED';
       }
 
     } catch (error) {
@@ -157,38 +161,40 @@ export class WhatsAppMultiService extends EventEmitter {
 
   private async checkIfConnected(page: Page): Promise<boolean> {
     try {
-      // Verificar múltiples selectores que indican conexión exitosa
+      // Primero verificar si hay código QR (indica que NO está conectado)
+      const qrExists = await page.$('canvas');
+      if (qrExists) {
+        console.log('🔍 Código QR presente - NO conectado');
+        return false;
+      }
+
+      // Verificar selectores específicos que indican conexión real
       const connectedSelectors = [
         '[data-testid="chat-list"]',
-        '[data-testid="side"]',
-        '[data-testid="conversation-panel-wrapper"]',
-        '#main',
-        '.app-wrapper-web'
+        '[data-testid="side"]', 
+        '[data-testid="search"]',
+        '#main .two'
       ];
       
       for (const selector of connectedSelectors) {
         try {
-          await page.waitForSelector(selector, { timeout: 2000 });
-          console.log(`✅ Conexión detectada con selector: ${selector}`);
-          return true;
+          await page.waitForSelector(selector, { timeout: 3000 });
+          console.log(`✅ Conexión confirmada con selector: ${selector}`);
+          
+          // Verificación adicional: comprobar que no haya pantalla de carga
+          const loadingElements = await page.$$('[data-testid="startup-screen"], .landing-wrapper, [data-testid="intro"]');
+          if (loadingElements.length === 0) {
+            return true;
+          }
         } catch (e) {
           // Continuar con el siguiente selector
         }
       }
       
-      // Verificar si ya no hay QR code (indica conexión)
-      try {
-        const qrExists = await page.$('canvas');
-        if (!qrExists) {
-          console.log(`✅ Conexión detectada: QR ya no está presente`);
-          return true;
-        }
-      } catch (e) {
-        // Ignorar error
-      }
-      
+      console.log('❌ No se detectó conexión activa');
       return false;
-    } catch {
+    } catch (error) {
+      console.log('❌ Error verificando conexión:', error);
       return false;
     }
   }
@@ -197,7 +203,7 @@ export class WhatsAppMultiService extends EventEmitter {
     try {
       console.log('🔍 Buscando código QR...');
 
-      // Esperar a que aparezca el QR
+      // Esperar a que aparezca el canvas del QR
       await page.waitForSelector('canvas', { timeout: 20000 });
       
       // Buscar el canvas del QR
