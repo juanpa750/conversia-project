@@ -793,6 +793,23 @@ export class SimpleStorage implements ISimpleStorage {
     }
   }
 
+  async getRecentMessagesForContact(chatbotId: number, contactPhone: string, minutesAgo: number = 30): Promise<any[]> {
+    try {
+      const result = await db.execute(sql`
+        SELECT * FROM whatsapp_messages 
+        WHERE chatbot_id = ${chatbotId} 
+        AND contact_phone = ${contactPhone}
+        AND created_at > NOW() - INTERVAL '${minutesAgo} minutes'
+        ORDER BY created_at DESC
+        LIMIT 10
+      `);
+      return result.rows || [];
+    } catch (error) {
+      console.error('Error getting recent messages:', error);
+      return [];
+    }
+  }
+
   async getWhatsAppMessages(chatbotId: number): Promise<any[]> {
     try {
       const result = await db.execute(sql`

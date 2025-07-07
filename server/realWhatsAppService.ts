@@ -282,24 +282,43 @@ export class RealWhatsAppService extends EventEmitter {
 
       console.log(`🤖 Procesando mensaje con chatbot: ${chatbot.name}`);
 
-      // Verificar palabras activadoras
+      // Sistema de activación por conversación
       const triggerWords = chatbot.triggerKeywords || [];
       const messageText = message.body.toLowerCase();
+      const contactPhone = message.from;
+      
+      // Verificar si ya existe una conversación activa para este contacto
+      let isActiveConversation = false;
+      try {
+        const { simpleStorage } = await import('./storage');
+        const recentMessages = await simpleStorage.getRecentMessagesForContact(chatbotId, contactPhone, 30); // últimos 30 minutos
+        isActiveConversation = recentMessages && recentMessages.length > 0;
+      } catch (error) {
+        console.log('No se pudo verificar conversación activa, asumiendo nueva conversación');
+      }
       
       let shouldRespond = false;
       
-      // Si no hay palabras activadoras, responder a todo
-      if (triggerWords.length === 0) {
+      if (isActiveConversation) {
+        // Si hay conversación activa, responder a todo
         shouldRespond = true;
+        console.log(`🔄 Conversación activa detectada para ${contactPhone}`);
+      } else if (triggerWords.length === 0) {
+        // Si no hay palabras activadoras configuradas, responder a todo
+        shouldRespond = true;
+        console.log(`🚀 Sin palabras activadoras, respondiendo a todo`);
       } else {
-        // Verificar si el mensaje contiene alguna palabra activadora
+        // Verificar si el mensaje contiene alguna palabra activadora para iniciar conversación
         shouldRespond = triggerWords.some((keyword: string) => 
           messageText.includes(keyword.toLowerCase())
         );
+        if (shouldRespond) {
+          console.log(`🎯 Palabra activadora detectada: ${triggerWords.find(k => messageText.includes(k.toLowerCase()))}`);
+        }
       }
 
       if (!shouldRespond) {
-        console.log(`⏭️ Mensaje no contiene palabras activadoras: ${triggerWords.join(', ')}`);
+        console.log(`⏭️ Conversación no activa y sin palabras activadoras: ${triggerWords.join(', ')}`);
         return;
       }
 
