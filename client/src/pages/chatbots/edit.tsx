@@ -439,14 +439,14 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
               <div>
                 <Label htmlFor="productId">Producto/Servicio Principal</Label>
                 <Select 
-                  value={formData.productId?.toString() || ''} 
-                  onValueChange={(value) => setFormData({ ...formData, productId: value ? parseInt(value) : null })}
+                  value={formData.productId?.toString() || 'none'} 
+                  onValueChange={(value) => setFormData({ ...formData, productId: value === 'none' ? null : parseInt(value) })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un producto (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin producto específico</SelectItem>
+                    <SelectItem value="none">Sin producto específico</SelectItem>
                     {products.map((product) => (
                       <SelectItem key={product.id} value={product.id.toString()}>
                         {product.name}
@@ -547,7 +547,7 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <WhatsAppIntegration chatbotId={parseInt(id)} />
+              <WhatsAppIntegration chatbotId={parseInt(id)} chatbotName={formData.name} />
             </CardContent>
           </Card>
         </TabsContent>
