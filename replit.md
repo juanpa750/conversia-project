@@ -212,6 +212,13 @@ The application is configured for deployment on Replit with:
 - **System Dependencies**: Puppeteer with stealth plugin for improved QR generation
 
 ## Recent Changes
+- **January 7, 2025 (Night - 10:07 PM)**: Enhanced Conversational AI Response System
+- **FIXED**: Removed repetitive "Hola! Bienvenido a 29" from AI responses  
+- **IMPROVED**: AI responses now format long product descriptions into conversational snippets
+- **ENHANCED**: Added intelligent question generation at end of responses for engagement
+- **OPTIMIZED**: Messages now limited to ~500 characters with key product highlights
+- **NATURAL**: Conversation flow now more organic with proper follow-up questions
+
 - **January 7, 2025 (Night - 9:40 PM)**: Fixed Critical Frontend Cache Update Issue
 - **FIXED**: Configuration no longer disappears when changing products
 - **FIXED**: Frontend cache now updates immediately after save operations

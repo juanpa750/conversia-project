@@ -248,6 +248,53 @@ export class RealWhatsAppService extends EventEmitter {
     return Array.from(this.sessions.keys());
   }
 
+  /**
+   * Formatear respuesta de IA para ser más conversacional según configuración del chatbot
+   */
+  private formatConversationalResponse(aiMessage: string, chatbot: any): string {
+    // Limpiar mensaje de saludo repetitivo
+    let cleanMessage = aiMessage
+      .replace(/¡Hola!\s*Bienvenido\s*a\s*\d+\.?\s*/gi, '')
+      .replace(/^Hola[,!]?\s*/gi, '')
+      .trim();
+
+    // Si el mensaje es muy largo (más de 500 caracteres), resumirlo
+    if (cleanMessage.length > 500) {
+      // Extraer información clave del producto
+      const lines = cleanMessage.split('\n').filter(line => line.trim());
+      
+      // Tomar las primeras 3-4 líneas más importantes
+      const keyInfo = [];
+      for (const line of lines) {
+        if (line.includes('👉') || line.includes('✅') || line.includes('⭐')) {
+          keyInfo.push(line.trim());
+          if (keyInfo.length >= 3) break;
+        }
+      }
+      
+      // Si encontró información clave, usarla. Si no, tomar las primeras líneas
+      if (keyInfo.length > 0) {
+        cleanMessage = keyInfo.join('\n\n');
+      } else {
+        cleanMessage = lines.slice(0, 3).join('\n\n');
+      }
+    }
+    
+    // Agregar pregunta conversacional al final según el objetivo
+    const questions = [
+      "¿Te gustaría conocer más detalles sobre algún beneficio específico?",
+      "¿Qué tipo de cabello tienes? Así puedo recomendarte mejor.",
+      "¿Has probado antes productos similares?",
+      "¿Cuál es tu mayor preocupación con tu cabello actualmente?",
+      "¿Te interesa conocer el precio especial de esta semana?"
+    ];
+    
+    const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
+    
+    // Formatear respuesta final
+    return `${cleanMessage}\n\n${randomQuestion}`;
+  }
+
   // Procesar mensaje entrante y generar respuesta AI
   private async processIncomingMessage(message: any, sessionId: string): Promise<void> {
     try {
@@ -360,8 +407,8 @@ export class RealWhatsAppService extends EventEmitter {
         responseText = chatbot.welcomeMessage;
         console.log(`👋 Enviando mensaje de bienvenida (primera interacción)`);
       } else {
-        // Respuestas subsecuentes: usar respuesta de IA directa
-        responseText = aiResponse.message;
+        // Respuestas subsecuentes: formatear respuesta de IA para ser conversacional
+        responseText = this.formatConversationalResponse(aiResponse.message, chatbot);
         console.log(`💬 Enviando respuesta conversacional (conversación activa)`);
       }
 
