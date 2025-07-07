@@ -43,22 +43,15 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
     successMetrics: 'conversions'
   });
 
-  // Auto-save debounced - Reducido a 500ms para mejor respuesta
-  const [debouncedFormData, setDebouncedFormData] = useState(formData);
+  // Desactivamos auto-save temporalmente para arreglar el problema
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedFormData(formData);
-    }, 500); // Reducido a 500ms para respuesta más rápida
-
-    return () => clearTimeout(timer);
-  }, [formData]);
-
-  useEffect(() => {
-    if (debouncedFormData !== formData && Object.keys(debouncedFormData).length > 0) {
-      updateChatbot.mutate(debouncedFormData);
+    // Marcar que hay cambios sin guardar cuando se modifica el form
+    if (chatbot && formData.name) {
+      setHasUnsavedChanges(true);
     }
-  }, [debouncedFormData]);
+  }, [formData]);
   
   const [newKeyword, setNewKeyword] = useState('');
   const [autoSaving, setAutoSaving] = useState(false);
@@ -83,7 +76,7 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
       const currentPersonality = chatbot.aiPersonality;
       const personalityToUse = validPersonalities.includes(currentPersonality) ? currentPersonality : 'custom';
       
-      setFormData({
+      const loadedData = {
         name: chatbot.name || '',
         description: chatbot.description || '',
         type: chatbot.type || 'sales',
@@ -103,7 +96,10 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
         responseLength: chatbot.responseLength || 'moderate',
         language: chatbot.language || 'spanish',
         successMetrics: chatbot.successMetrics || 'conversions'
-      });
+      };
+      
+      setFormData(loadedData);
+      setHasUnsavedChanges(false); // Marcar como guardado
     }
   }, [chatbot]);
 
@@ -122,6 +118,9 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
       // Actualizar cache inmediatamente con los datos recibidos
       queryClient.setQueryData([`/api/chatbots/${id}`], data);
       queryClient.invalidateQueries({ queryKey: ['/api/chatbots'] });
+      
+      // Marcar que los cambios están guardados
+      setHasUnsavedChanges(false);
       
       // Solo mostrar toast para cambios manuales, no auto-guardado
       if (!autoSaving) {
@@ -281,9 +280,13 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
               Guardando...
             </div>
           )}
-          <Button onClick={handleSave} disabled={updateChatbot.isPending}>
+          <Button 
+            onClick={handleSave} 
+            disabled={updateChatbot.isPending}
+            variant={hasUnsavedChanges ? "default" : "outline"}
+          >
             <Save className="h-4 w-4 mr-2" />
-            {updateChatbot.isPending ? 'Guardando...' : 'Guardar Cambios'}
+            {updateChatbot.isPending ? 'Guardando...' : hasUnsavedChanges ? 'Guardar Cambios' : 'Guardado'}
           </Button>
         </div>
       </div>
