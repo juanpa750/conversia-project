@@ -12,6 +12,7 @@ interface RealWhatsAppSession {
   status: 'initializing' | 'qr_ready' | 'connecting' | 'connected' | 'disconnected' | 'error';
   phoneNumber?: string;
   sessionId: string;
+  activeConversations?: Map<string, number>; // Map de contactPhone -> timestamp
 }
 
 export class RealWhatsAppService extends EventEmitter {
@@ -287,19 +288,44 @@ export class RealWhatsAppService extends EventEmitter {
       const messageText = message.body.toLowerCase();
       const contactPhone = message.from;
       
-      // Por ahora simplificar: responder a mensajes con palabras clave
-      // Esto evita errores SQL y funciona de manera más confiable
+      // Sistema de conversación simplificado pero funcional
       let isActiveConversation = false;
-      
       let shouldRespond = false;
-      let isFirstMessage = !isActiveConversation;
       
-      if (triggerWords.length === 0) {
+      // Sistema simplificado: mantener conversación activa en memoria temporal
+      // Esto evita problemas con la base de datos y funciona de manera más confiable
+      const sessionData = this.sessions.get(sessionId);
+      if (sessionData) {
+        // Verificar si este contacto ya está en conversación activa
+        if (!sessionData.activeConversations) {
+          sessionData.activeConversations = new Map();
+        }
+        
+        const lastContact = sessionData.activeConversations.get(contactPhone);
+        const now = Date.now();
+        const thirtyMinutes = 30 * 60 * 1000;
+        
+        if (lastContact && (now - lastContact) < thirtyMinutes) {
+          isActiveConversation = true;
+          console.log(`🔍 Conversación activa en memoria para ${contactPhone}`);
+        } else {
+          console.log(`🔍 Nueva conversación o conversación expirada para ${contactPhone}`);
+        }
+        
+        // Actualizar timestamp de la conversación
+        sessionData.activeConversations.set(contactPhone, now);
+      }
+      
+      if (isActiveConversation) {
+        // Si hay conversación activa, responder a cualquier mensaje
+        shouldRespond = true;
+        console.log(`🔄 Conversación activa - respondiendo a: "${messageText}"`);
+      } else if (triggerWords.length === 0) {
         // Si no hay palabras activadoras configuradas, responder a todo
         shouldRespond = true;
         console.log(`🚀 Sin palabras activadoras, respondiendo a todo`);
       } else {
-        // Verificar si el mensaje contiene alguna palabra activadora
+        // Verificar si el mensaje contiene alguna palabra activadora para iniciar conversación
         shouldRespond = triggerWords.some((keyword: string) => 
           messageText.includes(keyword.toLowerCase())
         );
@@ -327,12 +353,16 @@ export class RealWhatsAppService extends EventEmitter {
       let responseText = aiResponse.message;
 
       // Estructura de respuesta conversacional más natural
+      let isFirstMessage = !isActiveConversation;
+      
       if (chatbot.welcomeMessage && chatbot.welcomeMessage.trim() && isFirstMessage) {
         // Primera interacción: solo mensaje de bienvenida
         responseText = chatbot.welcomeMessage;
+        console.log(`👋 Enviando mensaje de bienvenida (primera interacción)`);
       } else {
         // Respuestas subsecuentes: más cortas y conversacionales
         responseText = this.makeResponseConversational(aiResponse.message, message.body.toLowerCase());
+        console.log(`💬 Enviando respuesta conversacional (conversación activa)`);
       }
 
       console.log(`🤖 Enviando respuesta: ${responseText.substring(0, 100)}...`);
