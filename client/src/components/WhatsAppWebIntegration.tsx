@@ -95,21 +95,12 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
       const result = await response.json();
       
       if (result.success) {
-        if (result.connected) {
-          toast({
-            title: "¡Conectado!",
-            description: "WhatsApp conectado exitosamente",
-          });
-          setSessionStatus({ connected: true, status: 'connected' });
-          onConnectionChange?.(true);
-        } else if (result.qr) {
-          setQrCode(result.qr);
-          setIsPolling(true);
-          toast({
-            title: "Escanea el código QR",
-            description: "Abre WhatsApp en tu teléfono y escanea el código QR",
-          });
-        }
+        // Iniciar polling para obtener el QR code y estado
+        setIsPolling(true);
+        toast({
+          title: "Iniciando conexión",
+          description: "Generando código QR...",
+        });
       } else {
         toast({
           title: "Error",
@@ -158,6 +149,43 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
         description: "Error al desconectar WhatsApp",
         variant: "destructive",
       });
+    }
+  };
+
+  const restartWhatsApp = async () => {
+    setIsConnecting(true);
+    setQrCode(null);
+    
+    try {
+      const response = await apiRequest('POST', `/api/whatsapp/restart/${chatbotId}`, {});
+      const result = await response.json();
+      
+      if (result.success) {
+        if (result.qrCode) {
+          setQrCode(result.qrCode);
+          setIsPolling(true);
+          setSessionStatus({ connected: false, status: 'qr_ready' });
+          toast({
+            title: "Nuevo código QR",
+            description: "Escanea el código QR para conectar",
+          });
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Error al reiniciar WhatsApp",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error restarting WhatsApp:', error);
+      toast({
+        title: "Error",
+        description: "Error al reiniciar WhatsApp",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
     }
   };
 
@@ -302,13 +330,23 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
               )}
             </>
           ) : (
-            <Button 
-              onClick={disconnectWhatsApp}
-              variant="outline"
-              className="flex-1"
-            >
-              Desconectar WhatsApp
-            </Button>
+            <>
+              <Button 
+                onClick={restartWhatsApp}
+                disabled={isConnecting}
+                className="flex-1"
+              >
+                {isConnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Generar nuevo QR
+              </Button>
+              <Button 
+                onClick={disconnectWhatsApp}
+                variant="outline"
+                className="flex-1"
+              >
+                Desconectar WhatsApp
+              </Button>
+            </>
           )}
           
           <Button 

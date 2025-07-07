@@ -447,10 +447,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Desconectar sesión WhatsApp
   app.post("/api/whatsapp/disconnect/:chatbotId", isAuthenticated, async (req: any, res) => {
     try {
-      const chatbotId = req.params.chatbotId;
+      const chatbotId = parseInt(req.params.chatbotId);
       const userId = req.userId;
 
-      await whatsappMultiService.disconnectSession(chatbotId, userId);
+      // Find integration for this chatbot
+      const integration = await simpleStorage.getWhatsappIntegrationByChatbotId(chatbotId);
+      if (!integration || integration.user_id !== userId) {
+        return res.status(404).json({ message: 'Integration not found' });
+      }
+
+      // Create session ID for this integration
+      const sessionId = `${userId}_${integration.id}`;
+      
+      // Remove session from WhatsApp service
+      whatsappService.sessions.delete(sessionId);
+
+      // Update integration status to disconnected
+      await simpleStorage.updateWhatsappIntegrationStatus(integration.id, 'disconnected');
       
       res.json({ 
         success: true, 
@@ -459,6 +472,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error('❌ Error desconectando WhatsApp:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  });
+
+  // Restart WhatsApp session to generate new QR
+  app.post("/api/whatsapp/restart/:chatbotId", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbotId = parseInt(req.params.chatbotId);
+      const userId = req.userId;
+
+      // Find integration for this chatbot
+      const integration = await simpleStorage.getWhatsappIntegrationByChatbotId(chatbotId);
+      if (!integration || integration.user_id !== userId) {
+        return res.status(404).json({ message: 'Integration not found' });
+      }
+
+      // Create session ID for this integration
+      const sessionId = `${userId}_${integration.id}`;
+      
+      // Restart WhatsApp session
+      const result = await whatsappService.restartSession(sessionId);
+      
+      if (result.success) {
+        // Update integration status to initializing
+        await simpleStorage.updateWhatsappIntegrationStatus(integration.id, 'initializing');
+        res.json({ 
+          success: true, 
+          sessionId, 
+          qrCode: result.qrCode,
+          message: 'WhatsApp session restarted' 
+        });
+      } else {
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error('❌ Error restarting WhatsApp:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   });

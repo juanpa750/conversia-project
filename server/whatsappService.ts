@@ -15,7 +15,7 @@ interface WhatsAppSession {
 }
 
 class WhatsAppService extends EventEmitter {
-  private sessions: Map<string, WhatsAppSession> = new Map();
+  public sessions: Map<string, WhatsAppSession> = new Map();
 
   async initializeSession(sessionId: string): Promise<{ success: boolean; qrCode?: string; error?: string }> {
     try {
@@ -198,6 +198,24 @@ class WhatsAppService extends EventEmitter {
     }
 
     return await this.initializeSession(sessionId);
+  }
+
+  async restartSession(sessionId: string): Promise<{ success: boolean; qrCode?: string; error?: string }> {
+    try {
+      console.log(`🔄 Restarting WhatsApp session: ${sessionId}`);
+      
+      // Remove existing session
+      this.sessions.delete(sessionId);
+      
+      // Initialize new session
+      return await this.initializeSession(sessionId);
+    } catch (error) {
+      console.error(`Error restarting session ${sessionId}:`, error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
   }
 }
 
