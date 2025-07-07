@@ -88,7 +88,11 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
         type: chatbot.type || 'sales',
         status: chatbot.status || 'draft',
         productId: chatbot.productId || null,
-        triggerKeywords: Array.isArray(chatbot.triggerKeywords) ? chatbot.triggerKeywords : [],
+        triggerKeywords: Array.isArray(chatbot.triggerKeywords) 
+          ? chatbot.triggerKeywords 
+          : (typeof chatbot.triggerKeywords === 'string' && chatbot.triggerKeywords.length > 0)
+            ? JSON.parse(chatbot.triggerKeywords)
+            : [],
         aiInstructions: chatbot.aiInstructions || '',
         aiPersonality: personalityToUse,
         welcomeMessage: chatbot.welcomeMessage || '',
@@ -138,19 +142,23 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
 
   const handleAddKeyword = () => {
     if (newKeyword.trim() && !formData.triggerKeywords.includes(newKeyword.trim())) {
-      setFormData({
+      const newFormData = {
         ...formData,
         triggerKeywords: [...formData.triggerKeywords, newKeyword.trim()]
-      });
+      };
+      setFormData(newFormData);
+      updateChatbot.mutate(newFormData);
       setNewKeyword('');
     }
   };
 
   const handleRemoveKeyword = (keyword: string) => {
-    setFormData({
+    const newFormData = {
       ...formData,
       triggerKeywords: formData.triggerKeywords.filter(k => k !== keyword)
-    });
+    };
+    setFormData(newFormData);
+    updateChatbot.mutate(newFormData);
   };
 
   const objectives = [

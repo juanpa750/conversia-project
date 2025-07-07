@@ -242,6 +242,7 @@ export class SimpleStorage implements ISimpleStorage {
           objective = COALESCE(${updates.objective}, objective),
           success_metrics = COALESCE(${updates.successMetrics}, success_metrics),
           language = COALESCE(${updates.language}, language),
+          trigger_keywords = COALESCE(${updates.triggerKeywords ? updates.triggerKeywords : null}, trigger_keywords),
           updated_at = NOW()
         WHERE id = ${id}
         RETURNING *
@@ -356,7 +357,7 @@ export class SimpleStorage implements ISimpleStorage {
           ai_instructions = COALESCE(${updates.aiInstructions}, ai_instructions),
           conversation_objective = COALESCE(${updates.conversationObjective}, conversation_objective),
           ai_personality = COALESCE(${updates.aiPersonality}, ai_personality),
-          trigger_keywords = COALESCE(${updates.triggerKeywords ? JSON.stringify(updates.triggerKeywords) : null}, trigger_keywords),
+          trigger_keywords = COALESCE(${updates.triggerKeywords ? updates.triggerKeywords : null}, trigger_keywords),
           updated_at = NOW()
         WHERE id = ${id}
         RETURNING *
