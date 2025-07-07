@@ -232,22 +232,26 @@ export class SimpleStorage implements ISimpleStorage {
 
   async updateChatbot(id: number, updates: any): Promise<any> {
     try {
-      // Handle trigger keywords separately since it's causing issues with Drizzle ORM array types
-      if (updates.triggerKeywords !== undefined) {
-        let keywordsArray: string[] = [];
-        
-        if (Array.isArray(updates.triggerKeywords)) {
-          keywordsArray = updates.triggerKeywords;
-        } else if (typeof updates.triggerKeywords === 'string') {
-          try {
-            const parsed = JSON.parse(updates.triggerKeywords);
-            keywordsArray = Array.isArray(parsed) ? parsed : [updates.triggerKeywords];
-          } catch {
-            keywordsArray = [updates.triggerKeywords];
-          }
+      console.log('🔧 UpdateChatbot called with:', JSON.stringify(updates, null, 2));
+      
+      // Filter out empty string updates to prevent overwriting existing data
+      const filteredUpdates = {};
+      Object.keys(updates).forEach(key => {
+        const value = updates[key];
+        // Only include non-empty values or explicit null/numbers
+        if (value !== "" && (value !== null || key === 'productId')) {
+          filteredUpdates[key] = value;
         }
+      });
+      
+      if (Object.keys(filteredUpdates).length === 0) {
+        console.log('⚠️ No valid updates detected, skipping database update');
+        return await this.getChatbot(id);
+      }
 
-        // Update trigger_keywords separately using direct SQL with proper array literal
+      // Handle trigger keywords separately
+      if (filteredUpdates.triggerKeywords !== undefined && Array.isArray(filteredUpdates.triggerKeywords)) {
+        const keywordsArray = filteredUpdates.triggerKeywords;
         const arrayLiteral = `{${keywordsArray.map(k => `"${k.replace(/"/g, '\\"')}"`).join(',')}}`;
         await db.execute(sql.raw(`
           UPDATE chatbots 
@@ -257,55 +261,55 @@ export class SimpleStorage implements ISimpleStorage {
       }
 
       // Remove triggerKeywords from updates to handle other fields normally
-      const { triggerKeywords, ...otherUpdates } = updates;
+      const { triggerKeywords, ...otherUpdates } = filteredUpdates;
 
-      // Update other fields using direct SQL to avoid placeholder conflicts
+      // Build update parts only for non-empty values
       const updateParts = [];
         
-        if (otherUpdates.name !== undefined) {
+        if (otherUpdates.name) {
           updateParts.push(`name = '${otherUpdates.name.replace(/'/g, "''")}'`);
         }
-        if (otherUpdates.description !== undefined) {
+        if (otherUpdates.description) {
           updateParts.push(`description = '${otherUpdates.description.replace(/'/g, "''")}'`);
         }
-        if (otherUpdates.type !== undefined) {
+        if (otherUpdates.type) {
           updateParts.push(`type = '${otherUpdates.type}'`);
         }
-        if (otherUpdates.status !== undefined) {
+        if (otherUpdates.status) {
           updateParts.push(`status = '${otherUpdates.status}'`);
         }
         if (otherUpdates.flow !== undefined) {
           const flowValue = otherUpdates.flow ? (typeof otherUpdates.flow === 'string' ? otherUpdates.flow : JSON.stringify(otherUpdates.flow)) : null;
           updateParts.push(flowValue ? `flow = '${flowValue.replace(/'/g, "''")}'` : 'flow = NULL');
         }
-        if (otherUpdates.aiInstructions !== undefined) {
+        if (otherUpdates.aiInstructions) {
           updateParts.push(`ai_instructions = '${otherUpdates.aiInstructions.replace(/'/g, "''")}'`);
         }
-        if (otherUpdates.aiPersonality !== undefined) {
+        if (otherUpdates.aiPersonality) {
           updateParts.push(`ai_personality = '${otherUpdates.aiPersonality}'`);
         }
-        if (otherUpdates.conversationObjective !== undefined) {
+        if (otherUpdates.conversationObjective) {
           updateParts.push(`conversation_objective = '${otherUpdates.conversationObjective}'`);
         }
-        if (otherUpdates.communicationTone !== undefined) {
+        if (otherUpdates.communicationTone) {
           updateParts.push(`communication_personality = '${otherUpdates.communicationTone}'`);
         }
-        if (otherUpdates.responseLength !== undefined) {
+        if (otherUpdates.responseLength) {
           updateParts.push(`response_length = '${otherUpdates.responseLength}'`);
         }
-        if (otherUpdates.objective !== undefined) {
+        if (otherUpdates.objective) {
           updateParts.push(`objective = '${otherUpdates.objective}'`);
         }
-        if (otherUpdates.successMetrics !== undefined) {
+        if (otherUpdates.successMetrics) {
           updateParts.push(`success_metrics = '${otherUpdates.successMetrics}'`);
         }
-        if (otherUpdates.language !== undefined) {
+        if (otherUpdates.language) {
           updateParts.push(`language = '${otherUpdates.language}'`);
         }
         if (otherUpdates.productId !== undefined) {
           updateParts.push(`product_id = ${otherUpdates.productId || 'NULL'}`);
         }
-        if (otherUpdates.welcomeMessage !== undefined) {
+        if (otherUpdates.welcomeMessage) {
           updateParts.push(`welcome_message = '${otherUpdates.welcomeMessage.replace(/'/g, "''")}'`);
         }
         
@@ -770,7 +774,7 @@ export class SimpleStorage implements ISimpleStorage {
     try {
       const result = await db.execute(sql`
         INSERT INTO whatsapp_messages (
-          chatbot_id, contact_phone, contact_name, message_type, content, 
+          chatbot_id, contact_phone, contact_name, message_type, message_text, 
           message_id, ai_response, detected_intent, timestamp, created_at
         ) VALUES (
           ${message.chatbotId},
