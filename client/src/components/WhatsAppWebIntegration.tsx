@@ -239,17 +239,7 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Smartphone className="w-5 h-5" />
-          Integración WhatsApp Web
-        </CardTitle>
-        <CardDescription>
-          Conecta tu chatbot a WhatsApp usando WhatsApp Web
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="w-full space-y-4">
         {/* Estado actual */}
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Estado:</span>
@@ -345,7 +335,6 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
             <li>¡Listo! Tu chatbot estará conectado</li>
           </ol>
         </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 }
