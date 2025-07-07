@@ -226,6 +226,21 @@ export class SimpleStorage implements ISimpleStorage {
 
   async updateChatbot(id: number, updates: any): Promise<any> {
     try {
+      // Handle trigger keywords separately due to PostgreSQL array type complexity
+      let triggerKeywordsValue = null;
+      if (updates.triggerKeywords !== undefined) {
+        if (Array.isArray(updates.triggerKeywords)) {
+          triggerKeywordsValue = updates.triggerKeywords;
+        } else if (typeof updates.triggerKeywords === 'string') {
+          try {
+            const parsed = JSON.parse(updates.triggerKeywords);
+            triggerKeywordsValue = Array.isArray(parsed) ? parsed : [updates.triggerKeywords];
+          } catch {
+            triggerKeywordsValue = [updates.triggerKeywords];
+          }
+        }
+      }
+
       const result = await db.execute(sql`
         UPDATE chatbots 
         SET 
@@ -242,7 +257,7 @@ export class SimpleStorage implements ISimpleStorage {
           objective = COALESCE(${updates.objective}, objective),
           success_metrics = COALESCE(${updates.successMetrics}, success_metrics),
           language = COALESCE(${updates.language}, language),
-          trigger_keywords = COALESCE(${updates.triggerKeywords ? updates.triggerKeywords : null}, trigger_keywords),
+          trigger_keywords = ${triggerKeywordsValue !== null ? triggerKeywordsValue : sql`trigger_keywords`},
           updated_at = NOW()
         WHERE id = ${id}
         RETURNING *
@@ -357,7 +372,7 @@ export class SimpleStorage implements ISimpleStorage {
           ai_instructions = COALESCE(${updates.aiInstructions}, ai_instructions),
           conversation_objective = COALESCE(${updates.conversationObjective}, conversation_objective),
           ai_personality = COALESCE(${updates.aiPersonality}, ai_personality),
-          trigger_keywords = COALESCE(${updates.triggerKeywords ? updates.triggerKeywords : null}, trigger_keywords),
+          trigger_keywords = ${updates.triggerKeywords !== undefined ? (Array.isArray(updates.triggerKeywords) ? updates.triggerKeywords : [updates.triggerKeywords]) : sql`trigger_keywords`},
           updated_at = NOW()
         WHERE id = ${id}
         RETURNING *
