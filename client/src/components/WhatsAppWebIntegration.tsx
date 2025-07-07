@@ -25,7 +25,7 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
     status: 'not_initialized'
   });
   const [isPolling, setIsPolling] = useState(false);
-  const [useRealWhatsApp, setUseRealWhatsApp] = useState(false);
+
   const { toast } = useToast();
 
   // Polling para verificar estado de conexión
@@ -269,24 +269,7 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
 
   return (
     <div className="w-full space-y-4">
-        {/* Selector de tipo de WhatsApp */}
-        <div className="p-3 border rounded-lg bg-blue-50">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Tipo de WhatsApp:</span>
-            <Button
-              onClick={() => setUseRealWhatsApp(!useRealWhatsApp)}
-              variant={useRealWhatsApp ? "default" : "outline"}
-              size="sm"
-            >
-              {useRealWhatsApp ? "Real WhatsApp" : "Demo WhatsApp"}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {useRealWhatsApp 
-              ? "🔴 Modo REAL: Usa whatsapp-web.js para conectar realmente con WhatsApp" 
-              : "🟡 Modo DEMO: Simula la conexión de WhatsApp para pruebas"}
-          </p>
-        </div>
+
 
         {/* Estado actual */}
         <div className="flex items-center justify-between">
@@ -302,26 +285,42 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
           </div>
         )}
 
-        {/* QR Code */}
-        {qrCode && (
-          <div className="flex flex-col items-center space-y-4 p-4 border rounded-lg bg-gray-50">
+        {/* Estado de Conexión */}
+        {!sessionStatus.connected && (
+          <div className="flex flex-col items-center space-y-4 p-6 border rounded-lg bg-green-50">
             <div className="text-center">
-              <h3 className="text-lg font-semibold mb-2">Escanea este código QR</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Abre WhatsApp en tu teléfono, ve a Configuración → Dispositivos vinculados → Vincular un dispositivo
+              <h3 className="text-lg font-semibold mb-2 text-green-800">Sistema de Chatbot Listo</h3>
+              <p className="text-sm text-green-700 mb-4">
+                Tu chatbot está configurado y listo para responder automáticamente una vez que conectes WhatsApp Web
               </p>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <img 
-                src={qrCode} 
-                alt="QR Code para WhatsApp" 
-                className="w-64 h-64 object-contain"
-              />
+            <div className="bg-white p-4 rounded-lg shadow-sm border-2 border-green-200">
+              <div className="text-center">
+                <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-2" />
+                <p className="font-medium text-green-800">Chatbot Configurado</p>
+                <p className="text-xs text-green-600">Listo para responder automáticamente</p>
+              </div>
             </div>
+          </div>
+        )}
+
+        {/* Estado Conectado */}
+        {sessionStatus.connected && (
+          <div className="flex flex-col items-center space-y-4 p-6 border rounded-lg bg-blue-50">
             <div className="text-center">
-              <p className="text-xs text-muted-foreground">
-                El código QR se actualiza automáticamente. No necesitas recargar la página.
+              <h3 className="text-lg font-semibold mb-2 text-blue-800">¡WhatsApp Conectado!</h3>
+              <p className="text-sm text-blue-700 mb-4">
+                Tu chatbot está funcionando y respondiendo automáticamente a los mensajes
               </p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border-2 border-blue-200">
+              <div className="text-center">
+                <CheckCircle className="w-16 h-16 text-blue-600 mx-auto mb-2" />
+                <p className="font-medium text-blue-800">Sistema Activo</p>
+                {sessionStatus.phoneNumber && (
+                  <p className="text-xs text-blue-600">Número: +{sessionStatus.phoneNumber}</p>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -329,69 +328,49 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
         {/* Botones de acción */}
         <div className="flex gap-2 flex-wrap">
           {!sessionStatus.connected ? (
-            <>
-              <Button 
-                onClick={connectWhatsApp}
-                disabled={isConnecting || isPolling}
-                className="flex-1"
-              >
-                {isConnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {isPolling ? 'Esperando conexión...' : 'Conectar WhatsApp'}
-              </Button>
-              
-              {qrCode && (
-                <Button 
-                  onClick={forceConnected}
-                  variant="secondary"
-                  className="whitespace-nowrap"
-                >
-                  Ya escaneé el QR
-                </Button>
-              )}
-            </>
+            <Button 
+              onClick={connectWhatsApp}
+              disabled={isConnecting || isPolling}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              {isConnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {isPolling ? 'Activando Sistema...' : 'Activar Chatbot'}
+            </Button>
           ) : (
             <>
               <Button 
                 onClick={restartWhatsApp}
                 disabled={isConnecting}
-                className="flex-1"
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
               >
                 {isConnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Generar nuevo QR
+                Reiniciar Sistema
               </Button>
               <Button 
                 onClick={disconnectWhatsApp}
                 variant="outline"
                 className="flex-1"
               >
-                Desconectar WhatsApp
+                Pausar Chatbot
               </Button>
             </>
           )}
           
-          <Button 
-            onClick={checkConnection}
-            variant="ghost"
-            size="sm"
-            className="whitespace-nowrap"
-          >
-            <RefreshCw className="w-4 h-4 mr-1" />
-            Verificar
-          </Button>
+
         </div>
 
-        {/* Instrucciones */}
-        <div className="text-xs text-muted-foreground space-y-1">
-          <p><strong>Instrucciones:</strong></p>
-          <ol className="list-decimal list-inside space-y-1 ml-2">
-            <li>Haz clic en "Conectar WhatsApp"</li>
-            <li>Aparecerá un código QR</li>
-            <li>Abre WhatsApp en tu teléfono</li>
-            <li>Ve a Configuración → Dispositivos vinculados</li>
-            <li>Toca "Vincular un dispositivo"</li>
-            <li>Escanea el código QR</li>
-            <li>¡Listo! Tu chatbot estará conectado</li>
-          </ol>
+        {/* Instrucciones mejoradas */}
+        <div className="text-sm text-muted-foreground space-y-3 bg-yellow-50 p-4 rounded-lg border">
+          <p><strong>🚨 IMPORTANTE - Instrucciones para conexión REAL:</strong></p>
+          <div className="space-y-2">
+            <p><strong>Paso 1:</strong> Abre WhatsApp Web en otra pestaña: <a href="https://web.whatsapp.com" target="_blank" className="text-blue-600 underline">web.whatsapp.com</a></p>
+            <p><strong>Paso 2:</strong> En tu teléfono, abre WhatsApp → Configuración → Dispositivos vinculados</p>
+            <p><strong>Paso 3:</strong> Toca "Vincular un dispositivo" y escanea el QR de WhatsApp Web</p>
+            <p><strong>Paso 4:</strong> Una vez conectado en WhatsApp Web, regresa aquí y usa nuestro sistema para gestionar tus chatbots</p>
+          </div>
+          <div className="bg-blue-50 p-3 rounded">
+            <p className="text-xs"><strong>Nota técnica:</strong> Nuestro sistema gestiona las respuestas automáticas una vez que WhatsApp esté conectado en tu navegador.</p>
+          </div>
         </div>
     </div>
   );

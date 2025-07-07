@@ -53,8 +53,8 @@ class WhatsAppService extends EventEmitter {
       const browserToken = crypto.randomBytes(16).toString('base64');
       
       // Create the exact QR data format that WhatsApp mobile app expects
-      // This is the real format: ref,publicKey,privateKey,serverToken,advSecret,browserToken
-      const qrData = [ref, publicKeyData, privateKeyData, serverToken, advSecret, browserToken].join(',');
+      // WhatsApp Web QR format: ref,publicKey,serverToken,advSecret,browserToken (sin privateKey en QR)
+      const qrData = [ref, publicKeyData, serverToken, advSecret, browserToken].join(',');
       
       // Generate QR code with WhatsApp Web exact specifications
       const qrCodeImage = await QRCode.toDataURL(qrData, {

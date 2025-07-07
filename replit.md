@@ -212,14 +212,14 @@ The application is configured for deployment on Replit with:
 - **System Dependencies**: Puppeteer with stealth plugin for improved QR generation
 
 ## Recent Changes
-- **January 6, 2025 (Evening)**: Complete WhatsApp Web Integration Implementation
-- **Authentication System Overhaul**: Removed JWT token requirements, implemented cookie-based authentication
-- **Database Integration**: Fixed missing whatsapp_messages table and added all required columns
-- **Enhanced WhatsApp Component**: Implemented improved WhatsAppIntegration with detailed instructions and error handling
-- **Multiple Chatbot Support**: Added chatbotId-based routing for seamless integration
-- **CSS Styling Updates**: Added specialized WhatsApp styles and animations for better UX
-- **Server-Sent Events**: Real-time QR code updates and connection status monitoring
-- **Free & Open Platform**: Completely removed external API dependencies - 100% free solution using WhatsApp Web
+- **January 7, 2025 (Evening)**: Major WhatsApp Integration UX Overhaul
+- **Removed Confusing Demo Mode**: Eliminated demo/real WhatsApp toggle that was confusing users
+- **Honest Connection Process**: Replaced fake QR codes with clear instructions to use web.whatsapp.com
+- **Simplified User Interface**: Removed non-functional verify button and streamlined connection flow
+- **Improved User Communication**: Added clear step-by-step instructions for real WhatsApp Web connection
+- **Enhanced Visual Feedback**: Better status indicators showing chatbot readiness and connection states
+- **Transparent Approach**: System now clearly explains that users need to connect via official WhatsApp Web
+- **Better Button Labels**: Changed "Conectar WhatsApp" to "Activar Chatbot" for clarity
 
 ## Development Workflow
 
