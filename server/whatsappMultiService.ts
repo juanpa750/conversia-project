@@ -304,8 +304,10 @@ export class WhatsAppMultiService extends EventEmitter {
           if (processingMessage) return;
           
           try {
-            // Buscar mensajes entrantes (no enviados por nosotros)
-            const messages = document.querySelectorAll('[data-testid="msg-container"]');
+            // Buscar mensajes entrantes (múltiples selectores para mayor robustez)
+            const messages = document.querySelectorAll('[data-testid="msg-container"]') ||
+                            document.querySelectorAll('.message-in') ||
+                            document.querySelectorAll('div[class*="message"]');
             
             if (messages.length > lastMessageCount) {
               processingMessage = true;
@@ -320,10 +322,11 @@ export class WhatsAppMultiService extends EventEmitter {
                                  msgElement.querySelector('.message-out');
                 
                 if (!isOutgoing) {
-                  // Extraer texto del mensaje
-                  const messageTextElement = msgElement.querySelector('[data-testid="conversation-compose-box-input"]') ||
-                                           msgElement.querySelector('.selectable-text') ||
+                  // Extraer texto del mensaje con múltiples selectores
+                  const messageTextElement = msgElement.querySelector('.selectable-text') ||
                                            msgElement.querySelector('span[dir="ltr"]') ||
+                                           msgElement.querySelector('[data-testid="conversation-compose-box-input"]') ||
+                                           msgElement.querySelector('span.copyable-text') ||
                                            msgElement.querySelector('span');
                   
                   const messageText = messageTextElement?.textContent?.trim();
@@ -335,6 +338,8 @@ export class WhatsAppMultiService extends EventEmitter {
                   
                   if (messageText && messageText.length > 0) {
                     console.log(`📩 Mensaje recibido: "${messageText}" de ${contactName}`);
+                    console.log(`🔑 SessionKey: ${sessionKey}`);
+                    console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
                     
                     // Enviar al servidor para procesamiento con AI
                     fetch('/api/whatsapp/process-message', {
@@ -348,7 +353,17 @@ export class WhatsAppMultiService extends EventEmitter {
                         contact: contactName,
                         timestamp: Date.now()
                       })
-                    }).catch(err => console.error('Error enviando mensaje:', err));
+                    })
+                    .then(response => {
+                      if (response.ok) {
+                        console.log(`✅ Mensaje enviado exitosamente al servidor`);
+                      } else {
+                        console.error(`❌ Error HTTP ${response.status}: ${response.statusText}`);
+                      }
+                    })
+                    .catch(err => {
+                      console.error('❌ Error enviando mensaje al servidor:', err);
+                    });
                   }
                 }
               }
@@ -640,14 +655,32 @@ Estoy aquí para ayudarte con tus consultas y brindarte el mejor servicio.
         return;
       }
 
-      // Verificar si hay disparadores configurados y si el mensaje los contiene
-      const triggers: string[] = chatbot.triggerKeywords ? 
-        JSON.parse(chatbot.triggerKeywords) : [];
+      // CORRECCIÓN CRÍTICA: Verificar si hay disparadores configurados y si el mensaje los contiene
+      let triggers: string[] = [];
+      
+      try {
+        // Intentar parsear triggerKeywords si existe y no está vacío
+        if (chatbot.triggerKeywords && chatbot.triggerKeywords.length > 0) {
+          if (Array.isArray(chatbot.triggerKeywords)) {
+            triggers = chatbot.triggerKeywords;
+          } else if (typeof chatbot.triggerKeywords === 'string') {
+            triggers = JSON.parse(chatbot.triggerKeywords);
+          }
+        }
+      } catch (error) {
+        console.error('Error parseando triggers:', error);
+        triggers = []; // Si hay error, usar array vacío
+      }
+      
       const incomingMessage = message.toLowerCase();
 
       // Si no hay triggers, responde a todo. Si hay, verifica si el mensaje contiene alguno.
       const shouldRespond = triggers.length === 0 || 
         triggers.some(trigger => incomingMessage.includes(trigger.toLowerCase()));
+      
+      console.log(`🔍 Triggers configurados: [${triggers.join(', ')}]`);
+      console.log(`📝 Mensaje recibido: "${incomingMessage}"`);
+      console.log(`✅ ¿Debe responder?: ${shouldRespond}`);
 
       if (!shouldRespond) {
         console.log(`💬 Mensaje de ${contact} ignorado (no contiene disparador).`);
