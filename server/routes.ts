@@ -5,9 +5,9 @@ import { simpleStorage } from "./storage";
 import { whatsappMultiService } from "./whatsappMultiService";
 import { whatsappCloudAPI } from "./whatsappCloudAPI";
 import { whatsappRoutes } from './whatsappRoutes';
+import { whatsappService } from './whatsappService';
 
 import { registerWhatsAppSimpleRoutes } from "./routes-whatsapp-simple";
-// WhatsApp Web service will be imported in whatsappRoutes.ts
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 
@@ -41,6 +41,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate JWT token for API requests
       const token = generateToken(user);
       
+      // Set token as httpOnly cookie for web requests
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: false, // Set to true in production with HTTPS
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      });
+      
       res.json({ 
         success: true,
         token,
@@ -56,6 +63,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Login error:', error);
       res.status(500).json({ message: "Internal server error" });
     }
+  });
+
+  // Logout route to clear session and cookies
+  app.post("/api/auth/logout", (req, res) => {
+    // Clear session
+    if ((req as any).session) {
+      (req as any).session.destroy();
+    }
+    
+    // Clear cookies
+    res.clearCookie('token');
+    res.clearCookie('connect.sid');
+    
+    res.json({ success: true, message: 'Logged out successfully' });
   });
 
   // Get current user

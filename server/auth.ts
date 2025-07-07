@@ -58,17 +58,23 @@ export function isAuthenticated(req: any, res: Response, next: NextFunction) {
         req.userRole = decoded.role;
         return next();
       } catch (jwtError) {
-        console.log('JWT verification failed:', jwtError);
+        console.log('JWT verification failed from header:', jwtError.message);
       }
     }
     
     // Fall back to JWT token authentication from cookies
     const token = req.cookies?.token;
     if (token) {
-      const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string };
-      req.userId = decoded.id;
-      req.userRole = decoded.role;
-      return next();
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string };
+        req.userId = decoded.id;
+        req.userRole = decoded.role;
+        return next();
+      } catch (jwtError) {
+        console.log('JWT verification failed from cookie:', jwtError.message);
+        // Clear corrupted cookie
+        res.clearCookie('token');
+      }
     }
     
     return res.status(401).json({ message: 'Authentication required' });
