@@ -256,9 +256,15 @@ export class RealWhatsAppService extends EventEmitter {
         return;
       }
 
-      // Extraer chatbotId del sessionId (formato: userId_chatbotId)
-      const chatbotId = parseInt(sessionId.split('_')[1]);
-      if (!chatbotId) {
+      // Extraer chatbotId del sessionId (formato: test_user_29 o userId_chatbotId)
+      let chatbotId: number;
+      if (sessionId.includes('test_user_')) {
+        chatbotId = parseInt(sessionId.replace('test_user_', ''));
+      } else {
+        chatbotId = parseInt(sessionId.split('_')[1]);
+      }
+      
+      if (!chatbotId || isNaN(chatbotId)) {
         console.error(`❌ ChatbotId no válido en sessionId: ${sessionId}`);
         return;
       }
