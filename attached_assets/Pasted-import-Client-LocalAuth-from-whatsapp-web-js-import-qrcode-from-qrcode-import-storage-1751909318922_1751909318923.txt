@@ -1,0 +1,208 @@
+import { Client, LocalAuth } from 'whatsapp-web.js';
+import qrcode from 'qrcode';
+import { storage } from './storage.js';
+
+// Almacenar clientes activos por chatbot
+const activeClients = new Map<number, Client>();
+const qrCodes = new Map<number, string>();
+
+export async function connectWhatsApp(chatbotId: number) {
+  try {
+    // Si ya existe un cliente, desconectarlo primero
+    if (activeClients.has(chatbotId)) {
+      const existingClient = activeClients.get(chatbotId);
+      await existingClient?.destroy();
+      activeClients.delete(chatbotId);
+    }
+
+    const client = new Client({
+      authStrategy: new LocalAuth({ 
+        clientId: `chatbot-${chatbotId}` 
+      }),
+      puppeteer: { 
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      }
+    });
+
+    // Evento cuando se genera el QR
+    client.on('qr', async (qr) => {
+      console.log(`QR generado para chatbot ${chatbotId}`);
+      const qrCodeUrl = await qrcode.toDataURL(qr);
+      qrCodes.set(chatbotId, qrCodeUrl);
+    });
+
+    // Evento cuando se conecta exitosamente
+    client.on('ready', async () => {
+      console.log(`WhatsApp conectado para chatbot ${chatbotId}`);
+      
+      // Marcar como conectado en la base de datos
+      await storage.updateChatbot(chatbotId, {
+        whatsappConnected: true,
+        lastConnectionCheck: new Date()
+      }, 'system');
+
+      // Limpiar QR code
+      qrCodes.delete(chatbotId);
+    });
+
+    // Evento cuando se recibe un mensaje
+    client.on('message', async (message) => {
+      // Solo procesar mensajes entrantes (no los que enviamos)
+      if (message.fromMe) return;
+
+      console.log(`Mensaje recibido en chatbot ${chatbotId}:`, message.body);
+
+      try {
+        // Obtener configuración del chatbot
+        const chatbot = await storage.getChatbot(chatbotId);
+        if (!chatbot || chatbot.status !== 'active') return;
+
+        // Procesar mensaje con IA
+        const response = await processMessageWithAI(message.body, chatbot);
+        
+        // Enviar respuesta
+        await message.reply(response);
+
+        // Guardar en base de datos
+        await storage.saveWhatsAppMessage({
+          chatbotId,
+          contactPhone: message.from,
+          contactName: message.notifyName || 'Desconocido',
+          messageType: 'received',
+          content: message.body,
+          messageId: message.id.id,
+          aiResponse: response
+        });
+
+      } catch (error) {
+        console.error('Error procesando mensaje:', error);
+        await message.reply('Lo siento, hubo un problema procesando tu mensaje. Intenta nuevamente.');
+      }
+    });
+
+    // Evento de desconexión
+    client.on('disconnected', async (reason) => {
+      console.log(`WhatsApp desconectado para chatbot ${chatbotId}:`, reason);
+      
+      await storage.updateChatbot(chatbotId, {
+        whatsappConnected: false,
+        lastConnectionCheck: new Date()
+      }, 'system');
+
+      activeClients.delete(chatbotId);
+    });
+
+    // Inicializar cliente
+    await client.initialize();
+    activeClients.set(chatbotId, client);
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('Error conectando WhatsApp:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Procesar mensaje con IA (Anthropic)
+async function processMessageWithAI(message: string, chatbot: any): Promise<string> {
+  try {
+    // Si no hay configuración de IA, usar respuesta predeterminada
+    if (!chatbot.aiInstructions) {
+      return `Hola! Soy ${chatbot.name}. Gracias por contactarnos. ¿En qué puedo ayudarte?`;
+    }
+
+    // Aquí puedes integrar con Anthropic, OpenAI, etc.
+    // Por ahora, una respuesta inteligente básica
+    const businessName = await storage.getBusinessName(chatbot.userId);
+    
+    const systemPrompt = `
+      Eres ${chatbot.name}, un asistente de ${businessName}.
+      
+      Instrucciones: ${chatbot.aiInstructions}
+      
+      Objetivo: ${chatbot.conversationObjective || 'Ayudar al cliente'}
+      
+      Responde de manera amigable, profesional y útil.
+      Mantén las respuestas concisas pero informativas.
+    `;
+
+    // Respuesta inteligente basada en palabras clave
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.includes('precio') || lowerMessage.includes('costo') || lowerMessage.includes('valor')) {
+      return `Hola! Me da mucho gusto que preguntes por nuestros precios. Te puedo ayudar con información sobre nuestros productos y servicios. ¿Qué específicamente te interesa?`;
+    }
+    
+    if (lowerMessage.includes('horario') || lowerMessage.includes('hora') || lowerMessage.includes('abierto')) {
+      return `Nuestro horario de atención es de lunes a viernes de 9:00 AM a 6:00 PM. ¿En qué puedo ayudarte hoy?`;
+    }
+    
+    if (lowerMessage.includes('hola') || lowerMessage.includes('buenos') || lowerMessage.includes('buenas')) {
+      return `¡Hola! Bienvenido a ${businessName}. Soy ${chatbot.name}, tu asistente virtual. ¿En qué puedo ayudarte hoy?`;
+    }
+    
+    if (lowerMessage.includes('gracias')) {
+      return `¡De nada! Estoy aquí para ayudarte. Si tienes más preguntas, no dudes en escribirme.`;
+    }
+
+    // Respuesta general
+    return `Hola! Soy ${chatbot.name} de ${businessName}. Recibí tu mensaje: "${message}". ¿Cómo puedo ayudarte específicamente?`;
+
+  } catch (error) {
+    console.error('Error procesando con IA:', error);
+    return 'Gracias por tu mensaje. Un miembro de nuestro equipo se pondrá en contacto contigo pronto.';
+  }
+}
+
+// Obtener QR code
+export function getQRCode(chatbotId: number): string | null {
+  return qrCodes.get(chatbotId) || null;
+}
+
+// Verificar estado de conexión
+export function isWhatsAppConnected(chatbotId: number): boolean {
+  const client = activeClients.get(chatbotId);
+  return client ? client.info?.wid !== undefined : false;
+}
+
+// Desconectar WhatsApp
+export async function disconnectWhatsApp(chatbotId: number) {
+  try {
+    const client = activeClients.get(chatbotId);
+    if (client) {
+      await client.destroy();
+      activeClients.delete(chatbotId);
+    }
+    
+    // Actualizar en BD
+    await storage.updateChatbot(chatbotId, {
+      whatsappConnected: false,
+      lastConnectionCheck: new Date()
+    }, 'system');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error desconectando WhatsApp:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Enviar mensaje (opcional - para pruebas)
+export async function sendMessage(chatbotId: number, phoneNumber: string, message: string) {
+  try {
+    const client = activeClients.get(chatbotId);
+    if (!client) {
+      throw new Error('WhatsApp no conectado');
+    }
+
+    const formattedNumber = phoneNumber.includes('@') ? phoneNumber : `${phoneNumber}@c.us`;
+    await client.sendMessage(formattedNumber, message);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error enviando mensaje:', error);
+    return { success: false, error: error.message };
+  }
+}

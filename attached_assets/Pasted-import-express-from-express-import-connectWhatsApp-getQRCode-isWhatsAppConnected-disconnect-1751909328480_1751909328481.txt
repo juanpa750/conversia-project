@@ -1,0 +1,241 @@
+import express from 'express';
+import { connectWhatsApp, getQRCode, isWhatsAppConnected, disconnectWhatsApp, sendMessage } from './whatsapp.js';
+import { isAuthenticated } from './auth.js';
+import { storage } from './storage.js';
+
+// Agregar estas rutas a tu archivo routes.ts existente
+
+// Conectar WhatsApp
+app.post('/api/whatsapp/connect/chatbot/:id', isAuthenticated, async (req, res) => {
+  try {
+    const chatbotId = parseInt(req.params.id);
+    const userId = req.userId;
+    
+    // Verificar que el chatbot pertenece al usuario
+    const chatbot = await storage.getChatbot(chatbotId);
+    if (!chatbot || chatbot.userId !== userId) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'No tienes permiso para este chatbot' 
+      });
+    }
+
+    // Verificar si ya está conectado
+    if (isWhatsAppConnected(chatbotId)) {
+      return res.json({
+        success: true,
+        connected: true,
+        message: 'WhatsApp ya está conectado',
+        sessionId: `chatbot-${chatbotId}`
+      });
+    }
+
+    // Iniciar proceso de conexión
+    const result = await connectWhatsApp(chatbotId);
+    
+    if (result.success) {
+      // Esperar un poco para que se genere el QR
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      const qrCode = getQRCode(chatbotId);
+      
+      res.json({
+        success: true,
+        connected: false,
+        qr: qrCode,
+        sessionId: `chatbot-${chatbotId}`,
+        message: 'Escanea el código QR para conectar'
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: result.error || 'Error conectando WhatsApp'
+      });
+    }
+  } catch (error) {
+    console.error('Error en /api/whatsapp/connect:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
+// Verificar estado de conexión
+app.get('/api/whatsapp/status/:id', isAuthenticated, async (req, res) => {
+  try {
+    const chatbotId = parseInt(req.params.id);
+    const userId = req.userId;
+    
+    // Verificar que el chatbot pertenece al usuario
+    const chatbot = await storage.getChatbot(chatbotId);
+    if (!chatbot || chatbot.userId !== userId) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'No tienes permiso para este chatbot' 
+      });
+    }
+
+    const connected = isWhatsAppConnected(chatbotId);
+    const qrCode = getQRCode(chatbotId);
+    
+    res.json({
+      connected,
+      qr: qrCode,
+      sessionId: connected ? `chatbot-${chatbotId}` : null,
+      lastCheck: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error en /api/whatsapp/status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error verificando estado'
+    });
+  }
+});
+
+// Forzar verificación de conexión
+app.post('/api/whatsapp/check-connection/:id', isAuthenticated, async (req, res) => {
+  try {
+    const chatbotId = parseInt(req.params.id);
+    const userId = req.userId;
+    
+    // Verificar que el chatbot pertenece al usuario
+    const chatbot = await storage.getChatbot(chatbotId);
+    if (!chatbot || chatbot.userId !== userId) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'No tienes permiso para este chatbot' 
+      });
+    }
+
+    const connected = isWhatsAppConnected(chatbotId);
+    
+    // Actualizar estado en BD
+    await storage.updateChatbot(chatbotId, {
+      whatsappConnected: connected,
+      lastConnectionCheck: new Date()
+    }, userId);
+    
+    res.json({
+      success: true,
+      connected,
+      message: connected ? 'WhatsApp está conectado' : 'WhatsApp no está conectado'
+    });
+  } catch (error) {
+    console.error('Error en /api/whatsapp/check-connection:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error verificando conexión'
+    });
+  }
+});
+
+// Forzar marcar como conectado
+app.post('/api/whatsapp/force-connected/:id', isAuthenticated, async (req, res) => {
+  try {
+    const chatbotId = parseInt(req.params.id);
+    const userId = req.userId;
+    
+    // Verificar que el chatbot pertenece al usuario
+    const chatbot = await storage.getChatbot(chatbotId);
+    if (!chatbot || chatbot.userId !== userId) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'No tienes permiso para este chatbot' 
+      });
+    }
+
+    // Marcar como conectado en BD
+    await storage.updateChatbot(chatbotId, {
+      whatsappConnected: true,
+      lastConnectionCheck: new Date()
+    }, userId);
+    
+    res.json({
+      success: true,
+      message: 'WhatsApp marcado como conectado'
+    });
+  } catch (error) {
+    console.error('Error en /api/whatsapp/force-connected:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error marcando como conectado'
+    });
+  }
+});
+
+// Desconectar WhatsApp
+app.post('/api/whatsapp/disconnect/:id', isAuthenticated, async (req, res) => {
+  try {
+    const chatbotId = parseInt(req.params.id);
+    const userId = req.userId;
+    
+    // Verificar que el chatbot pertenece al usuario
+    const chatbot = await storage.getChatbot(chatbotId);
+    if (!chatbot || chatbot.userId !== userId) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'No tienes permiso para este chatbot' 
+      });
+    }
+
+    const result = await disconnectWhatsApp(chatbotId);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'WhatsApp desconectado exitosamente'
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: result.error || 'Error desconectando WhatsApp'
+      });
+    }
+  } catch (error) {
+    console.error('Error en /api/whatsapp/disconnect:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error desconectando WhatsApp'
+    });
+  }
+});
+
+// Enviar mensaje de prueba (opcional)
+app.post('/api/whatsapp/send-message/:id', isAuthenticated, async (req, res) => {
+  try {
+    const chatbotId = parseInt(req.params.id);
+    const userId = req.userId;
+    const { phoneNumber, message } = req.body;
+    
+    // Verificar que el chatbot pertenece al usuario
+    const chatbot = await storage.getChatbot(chatbotId);
+    if (!chatbot || chatbot.userId !== userId) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'No tienes permiso para este chatbot' 
+      });
+    }
+
+    const result = await sendMessage(chatbotId, phoneNumber, message);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Mensaje enviado exitosamente'
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: result.error || 'Error enviando mensaje'
+      });
+    }
+  } catch (error) {
+    console.error('Error en /api/whatsapp/send-message:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error enviando mensaje'
+    });
+  }
+});

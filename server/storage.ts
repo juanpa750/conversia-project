@@ -1,7 +1,6 @@
-import { users, whatsappConnections, whatsappIntegrations, type User, type WhatsappConnection } from "@shared/schema";
+import { users, whatsappConnections, whatsappIntegrations, chatbots, businessProducts, type User, type WhatsappConnection } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export interface ISimpleStorage {
   // User operations
@@ -226,43 +225,111 @@ export class SimpleStorage implements ISimpleStorage {
 
   async updateChatbot(id: number, updates: any): Promise<any> {
     try {
-      // Handle trigger keywords separately due to PostgreSQL array type complexity
-      let triggerKeywordsValue = null;
+      // Handle trigger keywords separately since it's causing issues with Drizzle ORM array types
       if (updates.triggerKeywords !== undefined) {
+        let keywordsArray: string[] = [];
+        
         if (Array.isArray(updates.triggerKeywords)) {
-          triggerKeywordsValue = updates.triggerKeywords;
+          keywordsArray = updates.triggerKeywords;
         } else if (typeof updates.triggerKeywords === 'string') {
           try {
             const parsed = JSON.parse(updates.triggerKeywords);
-            triggerKeywordsValue = Array.isArray(parsed) ? parsed : [updates.triggerKeywords];
+            keywordsArray = Array.isArray(parsed) ? parsed : [updates.triggerKeywords];
           } catch {
-            triggerKeywordsValue = [updates.triggerKeywords];
+            keywordsArray = [updates.triggerKeywords];
           }
         }
+
+        // Update trigger_keywords separately using direct SQL with proper array literal
+        const arrayLiteral = `{${keywordsArray.map(k => `"${k.replace(/"/g, '\\"')}"`).join(',')}}`;
+        await db.execute(sql.raw(`
+          UPDATE chatbots 
+          SET trigger_keywords = '${arrayLiteral}'::text[], updated_at = NOW()
+          WHERE id = ${id}
+        `));
       }
 
+      // Remove triggerKeywords from updates to handle other fields normally
+      const { triggerKeywords, ...otherUpdates } = updates;
+
+      // Update other fields using standard SQL to avoid type conflicts
+      const updateFields: string[] = [];
+      const values: any[] = [];
+
+      if (otherUpdates.name !== undefined) {
+        updateFields.push('name = ?');
+        values.push(otherUpdates.name);
+      }
+      if (otherUpdates.description !== undefined) {
+        updateFields.push('description = ?');
+        values.push(otherUpdates.description);
+      }
+      if (otherUpdates.type !== undefined) {
+        updateFields.push('type = ?');
+        values.push(otherUpdates.type);
+      }
+      if (otherUpdates.status !== undefined) {
+        updateFields.push('status = ?');
+        values.push(otherUpdates.status);
+      }
+      if (otherUpdates.flow !== undefined) {
+        updateFields.push('flow = ?');
+        values.push(otherUpdates.flow ? (typeof otherUpdates.flow === 'string' ? otherUpdates.flow : JSON.stringify(otherUpdates.flow)) : null);
+      }
+      if (otherUpdates.aiInstructions !== undefined) {
+        updateFields.push('ai_instructions = ?');
+        values.push(otherUpdates.aiInstructions);
+      }
+      if (otherUpdates.aiPersonality !== undefined) {
+        updateFields.push('ai_personality = ?');
+        values.push(otherUpdates.aiPersonality);
+      }
+      if (otherUpdates.conversationObjective !== undefined) {
+        updateFields.push('conversation_objective = ?');
+        values.push(otherUpdates.conversationObjective);
+      }
+      if (otherUpdates.communicationTone !== undefined) {
+        updateFields.push('communication_personality = ?');
+        values.push(otherUpdates.communicationTone);
+      }
+      if (otherUpdates.responseLength !== undefined) {
+        updateFields.push('response_length = ?');
+        values.push(otherUpdates.responseLength);
+      }
+      if (otherUpdates.objective !== undefined) {
+        updateFields.push('objective = ?');
+        values.push(otherUpdates.objective);
+      }
+      if (otherUpdates.successMetrics !== undefined) {
+        updateFields.push('success_metrics = ?');
+        values.push(otherUpdates.successMetrics);
+      }
+      if (otherUpdates.language !== undefined) {
+        updateFields.push('language = ?');
+        values.push(otherUpdates.language);
+      }
+
+      if (updateFields.length > 0) {
+        updateFields.push('updated_at = NOW()');
+        values.push(id);
+
+        const result = await db.execute(sql`
+          UPDATE chatbots 
+          SET ${sql.raw(updateFields.join(', '))}
+          WHERE id = ${id}
+          RETURNING *
+        `);
+        
+        return result.rows[0];
+      }
+
+      // If no other fields to update, just return the current record
       const result = await db.execute(sql`
-        UPDATE chatbots 
-        SET 
-          name = COALESCE(${updates.name}, name),
-          description = COALESCE(${updates.description}, description),
-          type = COALESCE(${updates.type}, type),
-          status = COALESCE(${updates.status}, status),
-          flow = COALESCE(${updates.flow ? (typeof updates.flow === 'string' ? updates.flow : JSON.stringify(updates.flow)) : null}, flow),
-          ai_instructions = COALESCE(${updates.aiInstructions}, ai_instructions),
-          ai_personality = COALESCE(${updates.aiPersonality}, ai_personality),
-          conversation_objective = COALESCE(${updates.conversationObjective}, conversation_objective),
-          communication_personality = COALESCE(${updates.communicationTone}, communication_personality),
-          response_length = COALESCE(${updates.responseLength}, response_length),
-          objective = COALESCE(${updates.objective}, objective),
-          success_metrics = COALESCE(${updates.successMetrics}, success_metrics),
-          language = COALESCE(${updates.language}, language),
-          trigger_keywords = ${triggerKeywordsValue !== null ? triggerKeywordsValue : sql`trigger_keywords`},
-          updated_at = NOW()
-        WHERE id = ${id}
-        RETURNING *
+        SELECT * FROM chatbots WHERE id = ${id}
       `);
+      
       return result.rows[0];
+      
     } catch (error) {
       console.error('Error updating chatbot:', error);
       throw error;
