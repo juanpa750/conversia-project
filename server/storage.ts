@@ -806,11 +806,12 @@ export class SimpleStorage implements ISimpleStorage {
 
   async getRecentMessagesForContact(chatbotId: number, contactPhone: string, minutesAgo: number = 30): Promise<any[]> {
     try {
+      const timeAgo = new Date(Date.now() - minutesAgo * 60 * 1000);
       const result = await db.execute(sql`
         SELECT * FROM whatsapp_messages 
         WHERE chatbot_id = ${chatbotId} 
         AND contact_phone = ${contactPhone}
-        AND created_at > NOW() - INTERVAL '${minutesAgo} minutes'
+        AND created_at > ${timeAgo.toISOString()}
         ORDER BY created_at DESC
         LIMIT 10
       `);

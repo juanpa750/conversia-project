@@ -282,7 +282,7 @@ export class RealWhatsAppService extends EventEmitter {
 
       console.log(`🤖 Procesando mensaje con chatbot: ${chatbot.name}`);
 
-      // Sistema de activación por conversación
+      // Sistema de activación por conversación simplificado
       const triggerWords = chatbot.triggerKeywords || [];
       const messageText = message.body.toLowerCase();
       const contactPhone = message.from;
@@ -298,6 +298,7 @@ export class RealWhatsAppService extends EventEmitter {
       }
       
       let shouldRespond = false;
+      let isFirstMessage = !isActiveConversation;
       
       if (isActiveConversation) {
         // Si hay conversación activa, responder a todo
@@ -333,7 +334,7 @@ export class RealWhatsAppService extends EventEmitter {
       let responseText = aiResponse.message;
 
       // Estructura de respuesta conversacional más natural
-      if (chatbot.welcomeMessage && chatbot.welcomeMessage.trim() && needsTrigger) {
+      if (chatbot.welcomeMessage && chatbot.welcomeMessage.trim() && isFirstMessage) {
         // Primera interacción: solo mensaje de bienvenida
         responseText = chatbot.welcomeMessage;
       } else {
