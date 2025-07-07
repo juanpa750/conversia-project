@@ -238,8 +238,14 @@ export class SimpleStorage implements ISimpleStorage {
       const filteredUpdates = {};
       Object.keys(updates).forEach(key => {
         const value = updates[key];
-        // Only include non-empty values or explicit null/numbers
-        if (value !== "" && (value !== null || key === 'productId')) {
+        // Only include non-empty values (avoid overwriting with empty strings)
+        if (value !== "" && value !== null && value !== undefined) {
+          filteredUpdates[key] = value;
+        } else if (key === 'productId' && (value === null || value === undefined)) {
+          // Allow explicit null for productId to clear it
+          filteredUpdates[key] = null;
+        } else if (Array.isArray(value) && value.length > 0) {
+          // Include non-empty arrays
           filteredUpdates[key] = value;
         }
       });
@@ -774,10 +780,11 @@ export class SimpleStorage implements ISimpleStorage {
     try {
       const result = await db.execute(sql`
         INSERT INTO whatsapp_messages (
-          chatbot_id, contact_phone, contact_name, message_type, message_text, 
+          chatbot_id, user_id, contact_phone, contact_name, message_type, message_text, 
           message_id, ai_response, detected_intent, timestamp, created_at
         ) VALUES (
           ${message.chatbotId},
+          ${message.userId},
           ${message.contactPhone},
           ${message.contactName},
           ${message.messageType || 'received'},

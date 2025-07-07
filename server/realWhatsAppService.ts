@@ -332,9 +332,13 @@ export class RealWhatsAppService extends EventEmitter {
 
       let responseText = aiResponse.message;
 
-      // Si hay mensaje de bienvenida y es primera interacción, usarlo
-      if (chatbot.welcomeMessage && chatbot.welcomeMessage.trim()) {
-        responseText = chatbot.welcomeMessage + '\n\n' + responseText;
+      // Estructura de respuesta conversacional más natural
+      if (chatbot.welcomeMessage && chatbot.welcomeMessage.trim() && needsTrigger) {
+        // Primera interacción: solo mensaje de bienvenida
+        responseText = chatbot.welcomeMessage;
+      } else {
+        // Respuestas subsecuentes: más cortas y conversacionales
+        responseText = this.makeResponseConversational(aiResponse.message, message.body.toLowerCase());
       }
 
       console.log(`🤖 Enviando respuesta: ${responseText.substring(0, 100)}...`);
@@ -346,6 +350,7 @@ export class RealWhatsAppService extends EventEmitter {
       try {
         await simpleStorage.saveWhatsAppMessage({
           chatbotId: chatbotId,
+          userId: chatbot.user_id,
           contactPhone: message.from,
           contactName: message.notifyName || 'Usuario',
           messageType: 'received',
@@ -362,6 +367,61 @@ export class RealWhatsAppService extends EventEmitter {
 
     } catch (error) {
       console.error(`❌ Error procesando mensaje en sesión ${sessionId}:`, error);
+    }
+  }
+
+  /**
+   * Detecta el chatbot apropiado basado en palabras clave
+   */
+  static async detectChatbot(incomingMessage: string, userId: string): Promise<any> {
+    try {
+      const chatbots = await simpleStorage.getChatbotsByUser(userId);
+      console.log(`🎯 Chatbots disponibles: ${chatbots.length}`);
+      
+      if (chatbots.length === 0) return null;
+      
+      const message = incomingMessage.toLowerCase().trim();
+      console.log(`🔍 Mensaje a analizar: ${message}`);
+      
+      let bestMatch = null;
+      let bestScore = 0;
+      
+      for (const chatbot of chatbots) {
+        console.log(`📋 Analizando chatbot ID ${chatbot.id}: ${chatbot.name}`);
+        let score = 0;
+        
+        // Verificar palabras clave de activación
+        if (chatbot.triggerKeywords && Array.isArray(chatbot.triggerKeywords)) {
+          console.log(`📝 Keywords: ${JSON.stringify(chatbot.triggerKeywords)}`);
+          
+          for (const keyword of chatbot.triggerKeywords) {
+            if (keyword && message.includes(keyword.toLowerCase())) {
+              score += 10;
+              console.log(`✅ Palabra clave encontrada: "${keyword}" (+10 puntos)`);
+            }
+          }
+        }
+        
+        // Si no hay palabras clave configuradas, usar este chatbot por defecto
+        if (!chatbot.triggerKeywords || chatbot.triggerKeywords.length === 0) {
+          console.log(`🚀 Sin palabras activadoras, respondiendo a todo`);
+          score = 1; // Score bajo pero válido
+        }
+        
+        console.log(`📊 Score final para chatbot ${chatbot.id}: ${score}`);
+        
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = chatbot;
+        }
+      }
+      
+      console.log(`🎯 Chatbot detectado: ${bestMatch?.id || 'null'} con score: ${bestScore}`);
+      return bestMatch;
+      
+    } catch (error) {
+      console.error('Error detectando chatbot:', error);
+      return null;
     }
   }
 }
