@@ -38,6 +38,11 @@ export interface ISimpleStorage {
   getContactByPhone(userId: string, phone: string): Promise<any>;
   createContact(contact: any): Promise<any>;
   updateWhatsappIntegration(id: number, updates: any): Promise<any>;
+  
+  // WhatsApp messaging operations
+  saveWhatsAppMessage(message: any): Promise<any>;
+  getWhatsAppMessages(chatbotId: number): Promise<any[]>;
+  getBusinessName(userId: string): Promise<string>;
 }
 
 export class SimpleStorage implements ISimpleStorage {
@@ -763,6 +768,69 @@ export class SimpleStorage implements ISimpleStorage {
     } catch (error) {
       console.error('Error creating contact:', error);
       throw error;
+    }
+  }
+
+  // WhatsApp messaging operations
+  async saveWhatsAppMessage(message: any): Promise<any> {
+    try {
+      const result = await db.execute(sql`
+        INSERT INTO whatsapp_messages (
+          chatbot_id, contact_phone, contact_name, message_type, content, 
+          message_id, ai_response, detected_intent, timestamp, created_at
+        ) VALUES (
+          ${message.chatbotId},
+          ${message.contactPhone},
+          ${message.contactName},
+          ${message.messageType || 'received'},
+          ${message.content},
+          ${message.messageId},
+          ${message.aiResponse},
+          ${message.detectedIntent || 'general_inquiry'},
+          NOW(),
+          NOW()
+        )
+        RETURNING *
+      `);
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error saving WhatsApp message:', error);
+      throw error;
+    }
+  }
+
+  async getWhatsAppMessages(chatbotId: number): Promise<any[]> {
+    try {
+      const result = await db.execute(sql`
+        SELECT * FROM whatsapp_messages 
+        WHERE chatbot_id = ${chatbotId} 
+        ORDER BY timestamp DESC 
+        LIMIT 100
+      `);
+      return result.rows || [];
+    } catch (error) {
+      console.error('Error getting WhatsApp messages:', error);
+      return [];
+    }
+  }
+
+  async getBusinessName(userId: string): Promise<string> {
+    try {
+      const user = await this.getUser(userId);
+      if (user?.businessName) {
+        return user.businessName;
+      }
+      
+      // Fallback: usar el email como nombre del negocio
+      if (user?.email) {
+        const emailName = user.email.split('@')[0];
+        return emailName.charAt(0).toUpperCase() + emailName.slice(1);
+      }
+      
+      return "Mi Negocio";
+    } catch (error) {
+      console.error('Error getting business name:', error);
+      return "Mi Negocio";
     }
   }
 }

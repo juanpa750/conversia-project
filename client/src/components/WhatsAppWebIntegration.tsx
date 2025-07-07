@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Smartphone, QrCode, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Smartphone, QrCode, CheckCircle, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -34,20 +34,25 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
     const pollStatus = async () => {
       try {
         const response = await apiRequest('GET', `/whatsapp/status/${chatbotId}`);
-        const status = await response.json();
-        
-        setSessionStatus(status);
-        
-        // Si está conectado, detener polling
-        if (status.connected) {
-          setIsPolling(false);
-          setQrCode(null);
-          onConnectionChange?.(true);
-        }
-        
-        // Si hay QR code disponible, obtenerlo
-        if (status.status === 'qr_code' && !qrCode) {
-          await fetchQRCode();
+        if (response.ok) {
+          const data = await response.json();
+          setSessionStatus({
+            connected: data.connected,
+            status: data.status,
+            phoneNumber: data.phoneNumber
+          });
+          
+          // Si está conectado, detener polling
+          if (data.connected) {
+            setIsPolling(false);
+            setQrCode(null);
+            onConnectionChange?.(true);
+          }
+          
+          // Si hay QR code disponible, mostrarlo
+          if (data.qrCode && !data.connected) {
+            setQrCode(data.qrCode);
+          }
         }
       } catch (error) {
         console.error('Error polling status:', error);
@@ -68,10 +73,12 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
 
   const fetchQRCode = async () => {
     try {
-      const response = await apiRequest('GET', `/whatsapp/qr/${chatbotId}`);
+      const response = await apiRequest('GET', `/whatsapp/status/${chatbotId}`);
       if (response.ok) {
         const data = await response.json();
-        setQrCode(data.qrCode);
+        if (data.qrCode) {
+          setQrCode(data.qrCode);
+        }
       }
     } catch (error) {
       console.error('Error fetching QR code:', error);
@@ -83,30 +90,30 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
     setQrCode(null);
     
     try {
-      const response = await apiRequest('POST', `/whatsapp/connect/${chatbotId}`, {
-        userId: 'default_user' // TODO: Obtener del contexto de autenticación
-      });
+      const response = await apiRequest('POST', `/whatsapp/connect/${chatbotId}`, {});
       
       const result = await response.json();
       
       if (result.success) {
-        toast({
-          title: "¡Conectado!",
-          description: "WhatsApp conectado exitosamente",
-        });
-        setSessionStatus({ connected: true, status: 'ready', phoneNumber: result.phoneNumber });
-        onConnectionChange?.(true);
-      } else if (result.qrCode) {
-        setQrCode(result.qrCode);
-        setIsPolling(true);
-        toast({
-          title: "Escanea el código QR",
-          description: "Abre WhatsApp en tu teléfono y escanea el código QR",
-        });
+        if (result.connected) {
+          toast({
+            title: "¡Conectado!",
+            description: "WhatsApp conectado exitosamente",
+          });
+          setSessionStatus({ connected: true, status: 'connected' });
+          onConnectionChange?.(true);
+        } else if (result.qr) {
+          setQrCode(result.qr);
+          setIsPolling(true);
+          toast({
+            title: "Escanea el código QR",
+            description: "Abre WhatsApp en tu teléfono y escanea el código QR",
+          });
+        }
       } else {
         toast({
           title: "Error",
-          description: result.error || "Error al conectar WhatsApp",
+          description: result.message || "Error al conectar WhatsApp",
           variant: "destructive",
         });
       }
@@ -124,21 +131,89 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
 
   const disconnectWhatsApp = async () => {
     try {
-      await apiRequest('POST', `/whatsapp/disconnect/${chatbotId}`);
-      setSessionStatus({ connected: false, status: 'disconnected' });
-      setQrCode(null);
-      setIsPolling(false);
-      onConnectionChange?.(false);
+      const response = await apiRequest('POST', `/whatsapp/disconnect/${chatbotId}`, {});
+      const result = await response.json();
       
-      toast({
-        title: "Desconectado",
-        description: "WhatsApp desconectado exitosamente",
-      });
+      if (result.success) {
+        setSessionStatus({ connected: false, status: 'disconnected' });
+        setQrCode(null);
+        setIsPolling(false);
+        onConnectionChange?.(false);
+        
+        toast({
+          title: "Desconectado",
+          description: "WhatsApp desconectado exitosamente",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Error al desconectar WhatsApp",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error('Error disconnecting WhatsApp:', error);
       toast({
         title: "Error",
         description: "Error al desconectar WhatsApp",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const checkConnection = async () => {
+    try {
+      const response = await apiRequest('POST', `/whatsapp/check-connection/${chatbotId}`, {});
+      const result = await response.json();
+      
+      if (result.success) {
+        setSessionStatus({ 
+          connected: result.connected, 
+          status: result.status 
+        });
+        
+        if (result.connected) {
+          setQrCode(null);
+          setIsPolling(false);
+          onConnectionChange?.(true);
+          toast({
+            title: "¡Conectado!",
+            description: "WhatsApp está conectado correctamente",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking connection:', error);
+    }
+  };
+
+  const forceConnected = async () => {
+    try {
+      const response = await apiRequest('POST', `/whatsapp/force-connected/${chatbotId}`, {});
+      const result = await response.json();
+      
+      if (result.success) {
+        setSessionStatus({ connected: true, status: 'connected' });
+        setQrCode(null);
+        setIsPolling(false);
+        onConnectionChange?.(true);
+        
+        toast({
+          title: "¡Conectado!",
+          description: "WhatsApp marcado como conectado",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Error marcando como conectado",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error forcing connection:', error);
+      toast({
+        title: "Error",
+        description: "Error al marcar como conectado",
         variant: "destructive",
       });
     }
@@ -214,16 +289,28 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
         )}
 
         {/* Botones de acción */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {!sessionStatus.connected ? (
-            <Button 
-              onClick={connectWhatsApp}
-              disabled={isConnecting || isPolling}
-              className="flex-1"
-            >
-              {isConnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {isPolling ? 'Esperando conexión...' : 'Conectar WhatsApp'}
-            </Button>
+            <>
+              <Button 
+                onClick={connectWhatsApp}
+                disabled={isConnecting || isPolling}
+                className="flex-1"
+              >
+                {isConnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {isPolling ? 'Esperando conexión...' : 'Conectar WhatsApp'}
+              </Button>
+              
+              {qrCode && (
+                <Button 
+                  onClick={forceConnected}
+                  variant="secondary"
+                  className="whitespace-nowrap"
+                >
+                  Ya escaneé el QR
+                </Button>
+              )}
+            </>
           ) : (
             <Button 
               onClick={disconnectWhatsApp}
@@ -233,6 +320,16 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
               Desconectar WhatsApp
             </Button>
           )}
+          
+          <Button 
+            onClick={checkConnection}
+            variant="ghost"
+            size="sm"
+            className="whitespace-nowrap"
+          >
+            <RefreshCw className="w-4 h-4 mr-1" />
+            Verificar
+          </Button>
         </div>
 
         {/* Instrucciones */}
