@@ -235,6 +235,9 @@ The application is configured for deployment on Replit with:
 - **Implemented AI Message Processing**: Added complete message handling system with trigger word detection
 - **Working Auto-Responses**: Chatbots now properly respond to WhatsApp messages when trigger words are detected
 - **Full Integration**: WhatsApp connection + chatbot configuration + AI responses all working together
+- **Smart Conversation Flow**: First message needs trigger keyword, then maintains 30-minute active conversation
+- **Flexible Trigger Words**: Any words configured in "Palabras Clave de Activación" work as triggers
+- **Complete Database Integration**: All WhatsApp message columns properly configured and working
 
 ## Development Workflow
 
