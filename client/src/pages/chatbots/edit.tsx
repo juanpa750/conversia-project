@@ -35,10 +35,32 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
     aiPersonality: '',
     welcomeMessage: '',
     objective: 'sales',
-    conversationObjective: 'sales'
+    conversationObjective: 'sales',
+    communicationTone: 'balanced',
+    responseLength: 'moderate',
+    language: 'spanish',
+    successMetrics: 'conversions'
   });
+
+  // Auto-save debounced
+  const [debouncedFormData, setDebouncedFormData] = useState(formData);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedFormData(formData);
+    }, 1000); // 1 segundo de delay
+
+    return () => clearTimeout(timer);
+  }, [formData]);
+
+  useEffect(() => {
+    if (debouncedFormData !== formData && Object.keys(debouncedFormData).length > 0) {
+      updateChatbot.mutate(debouncedFormData);
+    }
+  }, [debouncedFormData]);
   
   const [newKeyword, setNewKeyword] = useState('');
+  const [autoSaving, setAutoSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('editar');
 
   // Obtener datos del chatbot
@@ -71,7 +93,11 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
         aiPersonality: personalityToUse,
         welcomeMessage: chatbot.welcomeMessage || '',
         objective: chatbot.objective || 'sales',
-        conversationObjective: chatbot.conversationObjective || 'sales'
+        conversationObjective: chatbot.conversationObjective || 'sales',
+        communicationTone: chatbot.communicationTone || 'balanced',
+        responseLength: chatbot.responseLength || 'moderate',
+        language: chatbot.language || 'spanish',
+        successMetrics: chatbot.successMetrics || 'conversions'
       });
     }
   }, [chatbot]);
@@ -79,6 +105,7 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
   // Mutación para actualizar chatbot
   const updateChatbot = useMutation({
     mutationFn: async (data: any) => {
+      setAutoSaving(true);
       const response = await apiRequest('PUT', `/api/chatbots/${id}`, data);
       if (!response.ok) {
         throw new Error('Error al actualizar chatbot');
@@ -86,14 +113,17 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
       return response.json();
     },
     onSuccess: () => {
+      setAutoSaving(false);
       queryClient.invalidateQueries({ queryKey: [`/api/chatbots/${id}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/chatbots'] });
       toast({
-        title: "Chatbot actualizado",
+        title: "✅ Guardado automático",
         description: "Los cambios se han guardado exitosamente.",
+        duration: 2000,
       });
     },
     onError: () => {
+      setAutoSaving(false);
       toast({
         title: "Error",
         description: "No se pudieron guardar los cambios. Inténtalo de nuevo.",
@@ -212,10 +242,18 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
             <p className="text-gray-600">{formData.name || 'Chatbot sin nombre'}</p>
           </div>
         </div>
-        <Button onClick={handleSave} disabled={updateChatbot.isPending}>
-          <Save className="h-4 w-4 mr-2" />
-          {updateChatbot.isPending ? 'Guardando...' : 'Guardar Cambios'}
-        </Button>
+        <div className="flex items-center space-x-3">
+          {autoSaving && (
+            <div className="flex items-center text-sm text-blue-600">
+              <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full mr-2"></div>
+              Guardando...
+            </div>
+          )}
+          <Button onClick={handleSave} disabled={updateChatbot.isPending}>
+            <Save className="h-4 w-4 mr-2" />
+            {updateChatbot.isPending ? 'Guardando...' : 'Guardar Cambios'}
+          </Button>
+        </div>
       </div>
 
       {/* Tabs de configuración */}
@@ -320,7 +358,11 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
                 <Label htmlFor="conversationStructure">Estructura de Conversación</Label>
                 <Select 
                   value={formData.conversationObjective || 'direct'} 
-                  onValueChange={(value) => setFormData({ ...formData, conversationObjective: value })}
+                  onValueChange={(value) => {
+                    const newFormData = { ...formData, conversationObjective: value };
+                    setFormData(newFormData);
+                    updateChatbot.mutate(newFormData);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona la estructura" />
@@ -390,7 +432,11 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
                 <Label htmlFor="aiPersonality">Personalidad del Bot</Label>
                 <Select 
                   value={formData.aiPersonality || 'professional'} 
-                  onValueChange={(value) => setFormData({ ...formData, aiPersonality: value })}
+                  onValueChange={(value) => {
+                    const newFormData = { ...formData, aiPersonality: value };
+                    setFormData(newFormData);
+                    updateChatbot.mutate(newFormData);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona una personalidad" />
@@ -405,6 +451,107 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
                 </Select>
                 <p className="text-sm text-gray-500 mt-1">
                   💡 Recomendación: "Consultor Estratégico" para ventas, "Profesional y Formal" para servicios médicos/legales
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="communicationTone">Personalidad y Tono de Comunicación</Label>
+                <Select 
+                  value={formData.communicationTone || 'balanced'} 
+                  onValueChange={(value) => {
+                    const newFormData = { ...formData, communicationTone: value };
+                    setFormData(newFormData);
+                    updateChatbot.mutate(newFormData);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona el tono" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="formal">Formal y Profesional</SelectItem>
+                    <SelectItem value="friendly">Amigable y Cercano</SelectItem>
+                    <SelectItem value="balanced">Equilibrado (Recomendado)</SelectItem>
+                    <SelectItem value="casual">Casual y Relajado</SelectItem>
+                    <SelectItem value="technical">Técnico y Especializado</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Recomendación: "Equilibrado" funciona bien para la mayoría de negocios
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="responseLength">Longitud de Respuestas</Label>
+                <Select 
+                  value={formData.responseLength || 'moderate'} 
+                  onValueChange={(value) => {
+                    const newFormData = { ...formData, responseLength: value };
+                    setFormData(newFormData);
+                    updateChatbot.mutate(newFormData);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona la longitud" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="concise">Conciso - Respuestas cortas y directas</SelectItem>
+                    <SelectItem value="moderate">Moderado - Respuestas balanceadas (Recomendado)</SelectItem>
+                    <SelectItem value="detailed">Detallado - Respuestas completas y explicativas</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Recomendación: "Moderado" para equilibrar información y brevedad
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="language">Idioma Principal</Label>
+                <Select 
+                  value={formData.language || 'spanish'} 
+                  onValueChange={(value) => {
+                    const newFormData = { ...formData, language: value };
+                    setFormData(newFormData);
+                    updateChatbot.mutate(newFormData);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona el idioma" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="spanish">Español</SelectItem>
+                    <SelectItem value="english">English</SelectItem>
+                    <SelectItem value="portuguese">Português</SelectItem>
+                    <SelectItem value="french">Français</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Recomendación: Selecciona el idioma principal de tus clientes
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="successMetrics">Métricas de Éxito</Label>
+                <Select 
+                  value={formData.successMetrics || 'conversions'} 
+                  onValueChange={(value) => {
+                    const newFormData = { ...formData, successMetrics: value };
+                    setFormData(newFormData);
+                    updateChatbot.mutate(newFormData);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona la métrica principal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="conversions">Conversiones/Ventas</SelectItem>
+                    <SelectItem value="engagement">Engagement/Interacción</SelectItem>
+                    <SelectItem value="satisfaction">Satisfacción del Cliente</SelectItem>
+                    <SelectItem value="response_time">Tiempo de Respuesta</SelectItem>
+                    <SelectItem value="lead_generation">Generación de Leads</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Recomendación: Define qué quieres medir para optimizar el rendimiento
                 </p>
               </div>
 
@@ -440,7 +587,11 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
                 <Label htmlFor="productId">Producto/Servicio Principal</Label>
                 <Select 
                   value={formData.productId?.toString() || 'none'} 
-                  onValueChange={(value) => setFormData({ ...formData, productId: value === 'none' ? null : parseInt(value) })}
+                  onValueChange={(value) => {
+                    const newFormData = { ...formData, productId: value === 'none' ? null : parseInt(value) };
+                    setFormData(newFormData);
+                    updateChatbot.mutate(newFormData);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un producto (opcional)" />
@@ -485,7 +636,11 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
-                        onClick={() => setFormData({ ...formData, objective: obj.value })}
+                        onClick={() => {
+                          const newFormData = { ...formData, objective: obj.value };
+                          setFormData(newFormData);
+                          updateChatbot.mutate(newFormData);
+                        }}
                       >
                         <div className="flex items-center space-x-3">
                           <Icon className={`h-6 w-6 ${obj.color}`} />

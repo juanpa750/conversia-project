@@ -118,6 +118,10 @@ export const chatbots = pgTable("chatbots", {
   conversationObjective: varchar("conversation_objective").default('sales'),
   productId: integer("product_id").references(() => businessProducts.id, { onDelete: 'set null' }),
   whatsappNumber: varchar("whatsapp_number"),
+  communicationTone: varchar("communication_tone").default('balanced'),
+  responseLength: varchar("response_length").default('moderate'),
+  language: varchar("language").default('spanish'),
+  successMetrics: varchar("success_metrics").default('conversions'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
