@@ -6,6 +6,7 @@ import { whatsappMultiService } from "./whatsappMultiService";
 import { whatsappCloudAPI } from "./whatsappCloudAPI";
 import { whatsappRoutes } from './whatsappRoutes';
 import { whatsappService } from './whatsappService';
+import realWhatsAppRoutes from './realWhatsAppRoutes';
 
 import { registerWhatsAppSimpleRoutes } from "./routes-whatsapp-simple";
 import { db } from "./db";
@@ -1130,6 +1131,59 @@ Responde de manera natural y conversacional. Usa la información del producto pa
   } catch (error) {
     console.error('Error importing WhatsApp routes:', error);
   }
+
+  // Register REAL WhatsApp routes (using whatsapp-web.js)
+  app.use('/api/whatsapp-real', realWhatsAppRoutes);
+  console.log('Real WhatsApp routes registered successfully');
+
+  // Rutas para WhatsApp real (sin autenticación para pruebas)
+  app.post('/api/whatsapp-real/connect/:chatbotId', async (req, res) => {
+    try {
+      const { chatbotId } = req.params;
+      const sessionId = `chatbot_${chatbotId}`;
+      
+      const result = await import('./realWhatsAppService').then(module => 
+        module.realWhatsAppService.initializeSession(sessionId)
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Error connecting real WhatsApp:', error);
+      res.status(500).json({ success: false, error: 'Failed to connect real WhatsApp' });
+    }
+  });
+
+  app.get('/api/whatsapp-real/status/:chatbotId', async (req, res) => {
+    try {
+      const { chatbotId } = req.params;
+      const sessionId = `chatbot_${chatbotId}`;
+      
+      const status = await import('./realWhatsAppService').then(module => 
+        module.realWhatsAppService.getSessionStatus(sessionId)
+      );
+      
+      res.json(status);
+    } catch (error) {
+      console.error('Error getting real WhatsApp status:', error);
+      res.status(500).json({ success: false, error: 'Failed to get real WhatsApp status' });
+    }
+  });
+
+  app.post('/api/whatsapp-real/disconnect/:chatbotId', async (req, res) => {
+    try {
+      const { chatbotId } = req.params;
+      const sessionId = `chatbot_${chatbotId}`;
+      
+      const result = await import('./realWhatsAppService').then(module => 
+        module.realWhatsAppService.disconnectSession(sessionId)
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Error disconnecting real WhatsApp:', error);
+      res.status(500).json({ success: false, error: 'Failed to disconnect real WhatsApp' });
+    }
+  });
 
   // Create HTTP server
 

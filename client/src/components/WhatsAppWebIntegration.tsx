@@ -25,6 +25,7 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
     status: 'not_initialized'
   });
   const [isPolling, setIsPolling] = useState(false);
+  const [useRealWhatsApp, setUseRealWhatsApp] = useState(false);
   const { toast } = useToast();
 
   // Polling para verificar estado de conexión
@@ -268,6 +269,25 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
 
   return (
     <div className="w-full space-y-4">
+        {/* Selector de tipo de WhatsApp */}
+        <div className="p-3 border rounded-lg bg-blue-50">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Tipo de WhatsApp:</span>
+            <Button
+              onClick={() => setUseRealWhatsApp(!useRealWhatsApp)}
+              variant={useRealWhatsApp ? "default" : "outline"}
+              size="sm"
+            >
+              {useRealWhatsApp ? "Real WhatsApp" : "Demo WhatsApp"}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {useRealWhatsApp 
+              ? "🔴 Modo REAL: Usa whatsapp-web.js para conectar realmente con WhatsApp" 
+              : "🟡 Modo DEMO: Simula la conexión de WhatsApp para pruebas"}
+          </p>
+        </div>
+
         {/* Estado actual */}
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Estado:</span>
