@@ -209,6 +209,10 @@ export class SimpleStorage implements ISimpleStorage {
         type: row.type,
         flow: row.flow,
         objective: row.objective,
+        successMetrics: row.success_metrics,
+        language: row.language,
+        communicationTone: row.communication_personality,
+        responseLength: row.response_length,
         productName: row.product_name,
         productDescription: row.product_description,
         createdAt: row.created_at,
@@ -233,6 +237,11 @@ export class SimpleStorage implements ISimpleStorage {
           ai_instructions = COALESCE(${updates.aiInstructions}, ai_instructions),
           ai_personality = COALESCE(${updates.aiPersonality}, ai_personality),
           conversation_objective = COALESCE(${updates.conversationObjective}, conversation_objective),
+          communication_personality = COALESCE(${updates.communicationTone}, communication_personality),
+          response_length = COALESCE(${updates.responseLength}, response_length),
+          objective = COALESCE(${updates.objective}, objective),
+          success_metrics = COALESCE(${updates.successMetrics}, success_metrics),
+          language = COALESCE(${updates.language}, language),
           updated_at = NOW()
         WHERE id = ${id}
         RETURNING *
