@@ -360,8 +360,8 @@ export class RealWhatsAppService extends EventEmitter {
         responseText = chatbot.welcomeMessage;
         console.log(`👋 Enviando mensaje de bienvenida (primera interacción)`);
       } else {
-        // Respuestas subsecuentes: más cortas y conversacionales
-        responseText = this.makeResponseConversational(aiResponse.message, message.body.toLowerCase());
+        // Respuestas subsecuentes: usar respuesta de IA directa
+        responseText = aiResponse.message;
         console.log(`💬 Enviando respuesta conversacional (conversación activa)`);
       }
 
