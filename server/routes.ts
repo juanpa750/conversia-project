@@ -469,9 +469,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chatbotId = req.params.chatbotId;
       const userId = req.userId;
 
-      // Verificar manualmente el estado de conexión
-      const isConnected = await whatsappMultiService.checkConnectionStatus(chatbotId, userId);
-      const session = await whatsappMultiService.getSession(chatbotId, userId);
+      // Find integration for this chatbot
+      const integration = await simpleStorage.getWhatsappIntegrationByChatbotId(parseInt(chatbotId));
+      if (!integration || integration.user_id !== userId) {
+        return res.json({ 
+          connected: false, 
+          status: 'not_initialized' 
+        });
+      }
+
+      // Create session ID for this integration
+      const sessionId = `${userId}_${integration.id}`;
+      
+      // Get session status from WhatsApp service
+      const session = whatsappService.getSessionStatus(sessionId);
       
       if (!session) {
         return res.json({ 
@@ -481,10 +492,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ 
-        connected: session.isConnected || isConnected,
-        status: (session.isConnected || isConnected) ? 'connected' : 'waiting_connection',
-        sessionId: `${userId}_${chatbotId}`,
-        lastActivity: session.lastActivity
+        connected: session.isConnected,
+        status: session.status,
+        qrCode: session.qrCode,
+        phoneNumber: session.phoneNumber,
+        lastError: session.lastError,
+        sessionId: sessionId
       });
 
     } catch (error) {

@@ -33,7 +33,7 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
 
     const pollStatus = async () => {
       try {
-        const response = await apiRequest('GET', `/whatsapp/status/${chatbotId}`);
+        const response = await apiRequest('GET', `/api/whatsapp/status/${chatbotId}`);
         if (response.ok) {
           const data = await response.json();
           setSessionStatus({
@@ -73,7 +73,7 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
 
   const fetchQRCode = async () => {
     try {
-      const response = await apiRequest('GET', `/whatsapp/status/${chatbotId}`);
+      const response = await apiRequest('GET', `/api/whatsapp/status/${chatbotId}`);
       if (response.ok) {
         const data = await response.json();
         if (data.qrCode) {
@@ -90,7 +90,7 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
     setQrCode(null);
     
     try {
-      const response = await apiRequest('POST', `/whatsapp/connect/${chatbotId}`, {});
+      const response = await apiRequest('POST', `/api/whatsapp/connect/${chatbotId}`, {});
       
       const result = await response.json();
       
@@ -131,7 +131,7 @@ export function WhatsAppWebIntegration({ chatbotId, onConnectionChange }: WhatsA
 
   const disconnectWhatsApp = async () => {
     try {
-      const response = await apiRequest('POST', `/whatsapp/disconnect/${chatbotId}`, {});
+      const response = await apiRequest('POST', `/api/whatsapp/disconnect/${chatbotId}`, {});
       const result = await response.json();
       
       if (result.success) {
