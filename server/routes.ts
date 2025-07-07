@@ -4,6 +4,7 @@ import { isAuthenticated, generateToken, hashPassword, comparePassword } from ".
 import { simpleStorage } from "./storage";
 import { whatsappMultiService } from "./whatsappMultiService";
 import { whatsappCloudAPI } from "./whatsappCloudAPI";
+import { whatsappRoutes } from './whatsappRoutes';
 
 import { registerWhatsAppSimpleRoutes } from "./routes-whatsapp-simple";
 // WhatsApp Web service will be imported in whatsappRoutes.ts

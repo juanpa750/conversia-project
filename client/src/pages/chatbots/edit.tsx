@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Save, MessageSquare, BarChart3, Settings, Target, Phone, X, Plus, ShoppingCart, Calendar, HelpCircle, Users, Info, Bot, Zap, Heart } from 'lucide-react';
 import { Link } from 'wouter';
 import WhatsAppIntegration from '@/components/WhatsAppIntegration';
+import { WhatsAppWebIntegration } from '@/components/WhatsAppWebIntegration';
 
 interface ChatbotEditProps {
   id: string;
@@ -694,7 +695,7 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <WhatsAppIntegration chatbotId={parseInt(id)} chatbotName={formData.name} />
+              <WhatsAppWebIntegration chatbotId={parseInt(id)} />
             </CardContent>
           </Card>
         </TabsContent>

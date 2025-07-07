@@ -1,437 +1,202 @@
-// whatsappRoutes.ts - Rutas para manejar WhatsApp
 import { Router } from 'express';
-import WhatsAppWebService from './whatsappWebService';
-import { isAuthenticated } from './auth';
-import { chatbots, whatsappIntegrations, whatsappMessages } from '../shared/schema';
-import { eq, and } from 'drizzle-orm';
-import { db } from './db';
+import { whatsappWebService } from './whatsappWebService';
+import { storage } from './storage';
 
 const router = Router();
-const whatsappService = new WhatsAppWebService();
 
-// Mapa para almacenar conexiones SSE por usuario
-const sseConnections = new Map<string, any>();
-
-// Configurar listeners del servicio WhatsApp
-whatsappService.on('qr', async ({ chatbotId, qr }) => {
-  console.log(`QR generado para chatbot ${chatbotId}`);
-  
-  // Notificar via SSE si hay conexión activa
-  const userId = await getUserFromChatbot(chatbotId);
-  if (userId && sseConnections.has(userId)) {
-    const res = sseConnections.get(userId);
-    try {
-      res.write(`data: ${JSON.stringify({ type: 'qr', chatbotId, qr })}\n\n`);
-    } catch (error) {
-      console.error('Error enviando QR via SSE:', error);
-    }
-  }
-});
-
-whatsappService.on('connected', async ({ chatbotId }) => {
-  console.log(`WhatsApp conectado para chatbot ${chatbotId}`);
-  
-  // Actualizar estado en base de datos
+/**
+ * Conectar WhatsApp para un chatbot específico
+ */
+router.post('/connect/:chatbotId', async (req, res) => {
   try {
-    await db
-      .update(whatsappIntegrations)
-      .set({ 
-        isActive: true, 
-        updatedAt: new Date(),
-        status: 'connected'
-      })
-      .where(eq(whatsappIntegrations.chatbotId, parseInt(chatbotId)));
-  } catch (error) {
-    console.error('Error updating WhatsApp integration status:', error);
-  }
+    const chatbotId = parseInt(req.params.chatbotId);
+    const userId = req.body.userId || 'default_user'; // Obtener del auth
 
-  // Notificar via SSE
-  const userId = await getUserFromChatbot(chatbotId);
-  if (userId && sseConnections.has(userId)) {
-    const res = sseConnections.get(userId);
-    try {
-      res.write(`data: ${JSON.stringify({ type: 'connected', chatbotId })}\n\n`);
-    } catch (error) {
-      console.error('Error enviando connected via SSE:', error);
-    }
-  }
-});
-
-whatsappService.on('disconnected', async ({ chatbotId }) => {
-  console.log(`WhatsApp desconectado para chatbot ${chatbotId}`);
-  
-  // Actualizar estado en base de datos
-  try {
-    await db
-      .update(whatsappIntegrations)
-      .set({ 
-        isActive: false,
-        status: 'disconnected'
-      })
-      .where(eq(whatsappIntegrations.chatbotId, parseInt(chatbotId)));
-  } catch (error) {
-    console.error('Error updating WhatsApp integration status:', error);
-  }
-
-  // Notificar via SSE
-  const userId = await getUserFromChatbot(chatbotId);
-  if (userId && sseConnections.has(userId)) {
-    const res = sseConnections.get(userId);
-    try {
-      res.write(`data: ${JSON.stringify({ type: 'disconnected', chatbotId })}\n\n`);
-    } catch (error) {
-      console.error('Error enviando disconnected via SSE:', error);
-    }
-  }
-});
-
-whatsappService.on('message', async (message) => {
-  console.log(`Mensaje recibido para chatbot ${message.chatbotId}:`, message.body);
-  
-  try {
-    // Obtener userId del chatbot
-    const chatbotData = await db
-      .select({ userId: chatbots.userId })
-      .from(chatbots)
-      .where(eq(chatbots.id, parseInt(message.chatbotId)))
-      .limit(1);
-
-    if (!chatbotData[0]) {
-      console.error('Chatbot no encontrado');
-      return;
+    if (isNaN(chatbotId)) {
+      return res.status(400).json({ error: 'Invalid chatbot ID' });
     }
 
-    // Guardar mensaje en base de datos
-    await db.insert(whatsappMessages).values({
-      userId: chatbotData[0].userId,
-      messageId: message.id,
-      fromNumber: message.from,
-      toNumber: message.to,
-      messageText: message.body,
-      messageType: 'text',
-      isIncoming: !message.isFromMe,
-      wasAutoReplied: false
-    });
-
-    // Procesar con IA y responder
-    if (!message.isFromMe) {
-      await processMessageWithAI(message);
-    }
-
-    // Notificar via SSE
-    const userId = await getUserFromChatbot(message.chatbotId);
-    if (userId && sseConnections.has(userId)) {
-      const res = sseConnections.get(userId);
-      try {
-        res.write(`data: ${JSON.stringify({ type: 'message', message })}\n\n`);
-      } catch (error) {
-        console.error('Error enviando message via SSE:', error);
-      }
-    }
-
-  } catch (error) {
-    console.error('Error procesando mensaje:', error);
-  }
-});
-
-// Función auxiliar para obtener userId desde chatbotId
-async function getUserFromChatbot(chatbotId: string): Promise<string | null> {
-  try {
-    const chatbot = await db
-      .select({ userId: chatbots.userId })
-      .from(chatbots)
-      .where(eq(chatbots.id, parseInt(chatbotId)))
-      .limit(1);
-
-    return chatbot[0]?.userId || null;
-  } catch (error) {
-    console.error('Error obteniendo userId:', error);
-    return null;
-  }
-}
-
-// Procesar mensaje con IA
-async function processMessageWithAI(message: any): Promise<void> {
-  try {
-    // Obtener configuración del chatbot
-    const chatbotConfig = await db
-      .select()
-      .from(chatbots)
-      .where(eq(chatbots.id, parseInt(message.chatbotId)))
-      .limit(1);
-
-    if (!chatbotConfig[0]) {
-      throw new Error('Chatbot no encontrado');
-    }
-
-    // Simular respuesta de IA (reemplazar con servicio real)
-    const aiResponse = {
-      message: "Hola, soy un bot de IA. ¿Cómo puedo ayudarte?",
-      confidence: 0.9
-    };
-
-    if (aiResponse && aiResponse.message) {
-      // Enviar respuesta via WhatsApp
-      await whatsappService.sendMessage(
-        message.chatbotId,
-        message.from,
-        aiResponse.message
-      );
-
-      // Guardar respuesta en base de datos
-      const userData = await db
-        .select({ userId: chatbots.userId })
-        .from(chatbots)
-        .where(eq(chatbots.id, parseInt(message.chatbotId)))
-        .limit(1);
-
-      if (userData[0]) {
-        await db.insert(whatsappMessages).values({
-          userId: userData[0].userId,
-          messageId: `ai_${Date.now()}`,
-          fromNumber: message.to,
-          toNumber: message.from,
-          messageText: aiResponse.message,
-          messageType: 'text',
-          isIncoming: false,
-          wasAutoReplied: true,
-          aiResponse: aiResponse.message
-        });
-      }
-    }
-
-  } catch (error) {
-    console.error('Error procesando con IA:', error);
-  }
-}
-
-// Inicializar conexión WhatsApp para un chatbot
-router.post('/whatsapp/connect/:chatbotId', isAuthenticated, async (req: any, res) => {
-  try {
-    const { chatbotId } = req.params;
-    const userId = req.userId;
-
-    // Verificar que el chatbot pertenece al usuario
-    const chatbot = await db
-      .select()
-      .from(chatbots)
-      .where(and(
-        eq(chatbots.id, parseInt(chatbotId)),
-        eq(chatbots.userId, userId)
-      ))
-      .limit(1);
-
-    if (!chatbot[0]) {
-      return res.status(404).json({ error: 'Chatbot no encontrado' });
+    // Verificar que el chatbot existe
+    const chatbot = await storage.getChatbot(chatbotId);
+    if (!chatbot) {
+      return res.status(404).json({ error: 'Chatbot not found' });
     }
 
     // Inicializar sesión WhatsApp
-    const result = await whatsappService.initializeSession(chatbotId);
+    const result = await whatsappWebService.initializeSession(chatbotId, userId);
     
-    if (result === 'CONNECTED') {
-      res.json({ 
+    if (result.success) {
+      return res.json({ 
         success: true, 
-        status: 'connected',
-        message: 'WhatsApp ya está conectado' 
+        message: 'WhatsApp connected successfully' 
+      });
+    } else if (result.qrCode) {
+      return res.json({ 
+        success: false, 
+        qrCode: result.qrCode,
+        message: 'QR Code generated, scan to connect' 
       });
     } else {
-      res.json({ 
-        success: true, 
-        status: 'waiting_qr',
-        qr: result,
-        message: 'Escanea el código QR con WhatsApp' 
+      return res.status(500).json({ 
+        error: result.error || 'Failed to initialize WhatsApp session' 
       });
     }
-
   } catch (error) {
-    console.error('Error conectando WhatsApp:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('Error connecting WhatsApp:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Obtener estado de conexión
-router.get('/whatsapp/status/:chatbotId', isAuthenticated, async (req: any, res) => {
+/**
+ * Obtener QR code para un chatbot
+ */
+router.get('/qr/:chatbotId', async (req, res) => {
   try {
-    const { chatbotId } = req.params;
-    const userId = req.userId;
-
-    // Verificar que el chatbot pertenece al usuario
-    const chatbot = await db
-      .select()
-      .from(chatbots)
-      .where(and(
-        eq(chatbots.id, parseInt(chatbotId)),
-        eq(chatbots.userId, userId)
-      ))
-      .limit(1);
-
-    if (!chatbot[0]) {
-      return res.status(404).json({ error: 'Chatbot no encontrado' });
-    }
-
-    const status = whatsappService.getSessionStatus(chatbotId);
+    const chatbotId = parseInt(req.params.chatbotId);
     
-    res.json({
-      success: true,
-      ...status
-    });
-
-  } catch (error) {
-    console.error('Error obteniendo estado:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-
-// Desconectar WhatsApp
-router.post('/whatsapp/disconnect/:chatbotId', isAuthenticated, async (req: any, res) => {
-  try {
-    const { chatbotId } = req.params;
-    const userId = req.userId;
-
-    // Verificar que el chatbot pertenece al usuario
-    const chatbot = await db
-      .select()
-      .from(chatbots)
-      .where(and(
-        eq(chatbots.id, parseInt(chatbotId)),
-        eq(chatbots.userId, userId)
-      ))
-      .limit(1);
-
-    if (!chatbot[0]) {
-      return res.status(404).json({ error: 'Chatbot no encontrado' });
+    if (isNaN(chatbotId)) {
+      return res.status(400).json({ error: 'Invalid chatbot ID' });
     }
 
-    await whatsappService.disconnectSession(chatbotId);
+    const qrCode = await whatsappWebService.getQRCode(chatbotId);
     
-    res.json({ 
-      success: true, 
-      message: 'WhatsApp desconectado correctamente' 
-    });
-
+    if (qrCode) {
+      res.json({ qrCode });
+    } else {
+      res.status(404).json({ error: 'QR Code not available' });
+    }
   } catch (error) {
-    console.error('Error desconectando WhatsApp:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('Error getting QR code:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Enviar mensaje manual
-router.post('/whatsapp/send/:chatbotId', isAuthenticated, async (req: any, res) => {
+/**
+ * Obtener estado de conexión WhatsApp para un chatbot
+ */
+router.get('/status/:chatbotId', async (req, res) => {
   try {
-    const { chatbotId } = req.params;
-    const { to, message } = req.body;
-    const userId = req.userId;
-
-    // Verificar que el chatbot pertenece al usuario
-    const chatbot = await db
-      .select()
-      .from(chatbots)
-      .where(and(
-        eq(chatbots.id, parseInt(chatbotId)),
-        eq(chatbots.userId, userId)
-      ))
-      .limit(1);
-
-    if (!chatbot[0]) {
-      return res.status(404).json({ error: 'Chatbot no encontrado' });
+    const chatbotId = parseInt(req.params.chatbotId);
+    
+    if (isNaN(chatbotId)) {
+      return res.status(400).json({ error: 'Invalid chatbot ID' });
     }
 
-    const success = await whatsappService.sendMessage(chatbotId, to, message);
+    const status = whatsappWebService.getSessionStatus(chatbotId);
+    res.json(status);
+  } catch (error) {
+    console.error('Error getting WhatsApp status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Desconectar WhatsApp para un chatbot
+ */
+router.post('/disconnect/:chatbotId', async (req, res) => {
+  try {
+    const chatbotId = parseInt(req.params.chatbotId);
+    
+    if (isNaN(chatbotId)) {
+      return res.status(400).json({ error: 'Invalid chatbot ID' });
+    }
+
+    await whatsappWebService.disconnect(chatbotId);
+    res.json({ success: true, message: 'WhatsApp disconnected successfully' });
+  } catch (error) {
+    console.error('Error disconnecting WhatsApp:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Enviar mensaje desde un chatbot
+ */
+router.post('/send/:chatbotId', async (req, res) => {
+  try {
+    const chatbotId = parseInt(req.params.chatbotId);
+    const { phoneNumber, message } = req.body;
+    
+    if (isNaN(chatbotId)) {
+      return res.status(400).json({ error: 'Invalid chatbot ID' });
+    }
+
+    if (!phoneNumber || !message) {
+      return res.status(400).json({ error: 'Phone number and message are required' });
+    }
+
+    const success = await whatsappWebService.sendMessage(chatbotId, phoneNumber, message);
     
     if (success) {
-      // Guardar mensaje en base de datos
-      await db.insert(whatsappMessages).values({
-        userId: userId,
-        messageId: `manual_${Date.now()}`,
-        fromNumber: 'chatbot',
-        toNumber: to,
-        messageText: message,
-        messageType: 'text',
-        isIncoming: false,
-        wasAutoReplied: false
-      });
-
-      res.json({ 
-        success: true, 
-        message: 'Mensaje enviado correctamente' 
-      });
+      res.json({ success: true, message: 'Message sent successfully' });
     } else {
-      res.status(400).json({ error: 'Error enviando mensaje' });
+      res.status(500).json({ error: 'Failed to send message' });
     }
-
   } catch (error) {
-    console.error('Error enviando mensaje:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('Error sending message:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Server-Sent Events para actualizaciones en tiempo real
-router.get('/whatsapp/events/:userId', isAuthenticated, (req, res) => {
-  const { userId } = req.params;
-
-  // Configurar SSE
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Cache-Control'
-  });
-
-  // Guardar conexión
-  sseConnections.set(userId, res);
-
-  // Enviar mensaje inicial
-  res.write(`data: ${JSON.stringify({ type: 'connected', message: 'SSE conectado' })}\n\n`);
-
-  // Limpiar conexión cuando se cierre
-  req.on('close', () => {
-    sseConnections.delete(userId);
-  });
-});
-
-// Obtener historial de mensajes
-router.get('/whatsapp/messages/:chatbotId', isAuthenticated, async (req: any, res) => {
+/**
+ * Probar respuesta del chatbot (para testing)
+ */
+router.post('/test-response/:chatbotId', async (req, res) => {
   try {
-    const { chatbotId } = req.params;
-    const userId = req.userId;
-
-    // Verificar que el chatbot pertenece al usuario
-    const chatbot = await db
-      .select()
-      .from(chatbots)
-      .where(and(
-        eq(chatbots.id, parseInt(chatbotId)),
-        eq(chatbots.userId, userId)
-      ))
-      .limit(1);
-
-    if (!chatbot[0]) {
-      return res.status(404).json({ error: 'Chatbot no encontrado' });
+    const chatbotId = parseInt(req.params.chatbotId);
+    const { message } = req.body;
+    
+    if (isNaN(chatbotId)) {
+      return res.status(400).json({ error: 'Invalid chatbot ID' });
     }
 
-    const messages = await db
-      .select()
-      .from(whatsappMessages)
-      .where(eq(whatsappMessages.userId, userId))
-      .orderBy(whatsappMessages.createdAt);
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
 
-    res.json({
-      success: true,
-      messages
+    // Obtener configuración del chatbot
+    const chatbot = await storage.getChatbot(chatbotId);
+    if (!chatbot) {
+      return res.status(404).json({ error: 'Chatbot not found' });
+    }
+
+    // Verificar trigger keywords
+    const messageText = message.toLowerCase();
+    const triggerKeywords = chatbot.triggerKeywords || [];
+    
+    const shouldRespond = triggerKeywords.some(keyword => 
+      messageText.includes(keyword.toLowerCase())
+    );
+
+    if (!shouldRespond) {
+      return res.json({ 
+        willRespond: false, 
+        reason: 'Message does not contain trigger keywords',
+        triggerKeywords 
+      });
+    }
+
+    // Generar respuesta (sin enviar)
+    let response = chatbot.aiInstructions || 'Hola, gracias por contactarnos. ¿En qué puedo ayudarte?';
+    
+    // Si hay producto asociado, incluir información del producto
+    if (chatbot.productId) {
+      const product = await storage.getProduct(chatbot.productId);
+      if (product) {
+        response = `${response}\n\nTe comparto información sobre ${product.name}:\n${product.description}`;
+      }
+    }
+
+    res.json({ 
+      willRespond: true, 
+      response,
+      triggerKeywords,
+      matchedKeyword: triggerKeywords.find(keyword => messageText.includes(keyword.toLowerCase()))
     });
-
   } catch (error) {
-    console.error('Error obteniendo mensajes:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('Error testing chatbot response:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Cleanup al cerrar el servidor
-process.on('SIGINT', async () => {
-  console.log('Cerrando sesiones de WhatsApp...');
-  await whatsappService.cleanup();
-  process.exit(0);
-});
-
-export default router;
+export { router as whatsappRoutes };
