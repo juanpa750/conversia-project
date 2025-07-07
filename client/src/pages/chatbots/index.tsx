@@ -410,7 +410,7 @@ export function Chatbots() {
                   href={`/chatbots/${chatbot.id}/edit`}
                   onClick={() => {
                     console.log('🔗 Edit link clicked for chatbot:', chatbot.id, chatbot.name);
-                    console.log('🔗 Generated URL:', `/chatbots/builder/${chatbot.id}`);
+                    console.log('🔗 Generated URL:', `/chatbots/${chatbot.id}/edit`);
                   }}
                 >
                   Editar
@@ -518,10 +518,10 @@ export function Chatbots() {
                     <div className="flex justify-end space-x-2">
                       <Button variant="outline" size="sm" asChild>
                         <Link 
-                          href={`/chatbots/builder/${chatbot.id}`}
+                          href={`/chatbots/${chatbot.id}/edit`}
                           onClick={() => {
                             console.log('🔗 Edit link clicked for chatbot:', chatbot.id, chatbot.name);
-                            console.log('🔗 Generated URL:', `/chatbots/builder/${chatbot.id}`);
+                            console.log('🔗 Generated URL:', `/chatbots/${chatbot.id}/edit`);
                           }}
                         >
                           <RiEditLine className="h-4 w-4" />
