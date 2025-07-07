@@ -446,6 +446,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chatbotId = req.params.chatbotId;
       const userId = req.userId;
 
+      console.log(`🔍 Verificación manual solicitada para chatbot ${chatbotId}`);
+
       const isConnected = await whatsappMultiService.checkConnectionStatus(chatbotId, userId);
       
       res.json({ 
@@ -457,6 +459,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error('❌ Error verificando conexión WhatsApp:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  });
+
+  // Forzar marcado como conectado (para cuando el usuario confirma que escaneó el QR)
+  app.post("/api/whatsapp/force-connected/:chatbotId", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbotId = req.params.chatbotId;
+      const userId = req.userId;
+
+      console.log(`🔧 Forzando estado conectado para chatbot ${chatbotId}`);
+
+      const session = await whatsappMultiService.getSession(chatbotId, userId);
+      if (session) {
+        session.isConnected = true;
+        console.log(`✅ Estado forzado a conectado para: ${userId}_${chatbotId}`);
+        
+        res.json({ 
+          success: true,
+          connected: true,
+          status: 'connected',
+          message: 'WhatsApp marcado como conectado'
+        });
+      } else {
+        res.status(404).json({ error: 'Sesión no encontrada' });
+      }
+
+    } catch (error) {
+      console.error('❌ Error forzando conexión WhatsApp:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   });

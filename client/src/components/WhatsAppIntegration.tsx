@@ -75,6 +75,33 @@ export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrat
     }
   };
 
+  const forceConnected = async () => {
+    try {
+      setIsConnecting(true);
+      const response = await apiRequest('POST', `/api/whatsapp/force-connected/${chatbotId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setIsConnected(true);
+        setStatus('connected');
+        toast({
+          title: "✅ Conexión Confirmada",
+          description: "WhatsApp marcado como conectado exitosamente",
+        });
+        await checkConnectionStatus();
+      }
+    } catch (error) {
+      console.error('Error forzando conexión:', error);
+      toast({
+        title: "❌ Error",
+        description: "No se pudo marcar como conectado",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
   const connectWhatsApp = async () => {
     if (isConnecting) return;
     
@@ -249,15 +276,33 @@ export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrat
         {/* Instrucciones */}
         {status === 'waiting_qr' && (
           <div className="bg-blue-50 p-3 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-1">
+            <h4 className="font-medium text-blue-900 mb-2">
               Instrucciones:
             </h4>
-            <ol className="text-sm text-blue-800 space-y-1">
+            <ol className="text-sm text-blue-800 space-y-1 mb-3">
               <li>1. Abre WhatsApp en tu teléfono</li>
               <li>2. Ve a Configuración → Dispositivos vinculados</li>
               <li>3. Toca "Vincular un dispositivo"</li>
               <li>4. Escanea el código QR de arriba</li>
             </ol>
+            <div className="border-t pt-3">
+              <Button
+                onClick={forceConnected}
+                disabled={isConnecting}
+                size="sm"
+                className="w-full"
+                variant="outline"
+              >
+                {isConnecting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Verificando...
+                  </>
+                ) : (
+                  "✅ Ya escaneé el QR - Marcar como conectado"
+                )}
+              </Button>
+            </div>
           </div>
         )}
 
