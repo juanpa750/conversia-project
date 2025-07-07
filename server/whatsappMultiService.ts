@@ -1,6 +1,8 @@
 import { EventEmitter } from 'events';
 import puppeteer, { Browser, Page } from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { advancedAIService } from './advancedAIService.js';
+import { storage } from './storage.js';
 
 // Configurar Puppeteer con stealth
 puppeteer.use(StealthPlugin());
@@ -33,7 +35,7 @@ export class WhatsAppMultiService extends EventEmitter {
       // Configuración específica para Replit con Chromium
       const browserOptions = {
         headless: 'new' as const,
-        executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
+        executablePath: process.env.CHROMIUM_PATH || '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -376,8 +378,7 @@ export class WhatsAppMultiService extends EventEmitter {
       const session = this.sessions.get(data.sessionKey);
       if (!session) return;
       
-      // Importar servicio de IA dinámicamente para evitar dependencias circulares
-      const { advancedAIService } = await import('./advancedAIService');
+
       
       // Procesar mensaje con IA
       const context = advancedAIService.analyzeConversation(data.message, []);

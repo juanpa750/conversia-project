@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, QrCode, CheckCircle, XCircle, Copy, Power, PowerOff } from "lucide-react";
+import { Loader2, QrCode, CheckCircle, XCircle, Copy, Power, PowerOff, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -11,7 +11,7 @@ interface WhatsAppIntegrationProps {
   chatbotName: string;
 }
 
-export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrationProps) {
+export default function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrationProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -328,7 +328,7 @@ export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrat
               {isConnecting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                "🔄"
+                <RefreshCw className="w-4 h-4" />
               )}
             </Button>
           </div>
