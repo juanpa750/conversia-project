@@ -210,12 +210,12 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
   };
 
   const personalityOptions = [
-    { value: 'professional', label: 'Profesional y Formal', description: 'Tono empresarial, serio y confiable' },
-    { value: 'friendly', label: 'Amigable y Cercano', description: 'Conversacional, cálido y empático' },
-    { value: 'expert', label: 'Experto Técnico', description: 'Conocimiento especializado y detallado' },
-    { value: 'energetic', label: 'Enérgico y Motivador', description: 'Entusiasta, positivo y dinámico' },
-    { value: 'consultant', label: 'Consultor Estratégico', description: 'Hace preguntas, analiza y recomienda' },
-    { value: 'custom', label: 'Personalidad Personalizada', description: 'Configuración específica según instrucciones' }
+    { value: 'professional', label: '👔 Asistente Profesional', description: 'Rol de ejecutivo empresarial - formal y confiable' },
+    { value: 'consultant', label: '🎯 Consultor Estratégico', description: 'Rol de asesor - hace preguntas, analiza y recomienda' },
+    { value: 'expert', label: '🔬 Especialista Técnico', description: 'Rol de experto - conocimiento profundo y especializado' },
+    { value: 'friendly', label: '🤗 Compañero Amigable', description: 'Rol de amigo cercano - empático y comprensivo' },
+    { value: 'energetic', label: '⚡ Motivador Dinámico', description: 'Rol de coach - entusiasta, positivo e inspirador' },
+    { value: 'custom', label: '🎭 Personalidad Única', description: 'Rol personalizado según tus instrucciones específicas' }
   ];
 
   if (isLoading) {
@@ -434,12 +434,12 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-gray-500 mt-1">
-                  💡 Recomendación: "Consultor Estratégico" para ventas, "Profesional y Formal" para servicios médicos/legales
+                  💡 <strong>Personalidad:</strong> Define el ROL que tendrá tu bot. "Consultor" para ventas, "Especialista" para servicios técnicos, "Profesional" para medicina/legal
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="communicationTone">Personalidad y Tono de Comunicación</Label>
+                <Label htmlFor="communicationTone">Tono de Comunicación</Label>
                 <Select 
                   value={formData.communicationTone || 'balanced'} 
                   onValueChange={(value) => {
@@ -449,18 +449,18 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecciona el tono" />
+                    <SelectValue placeholder="Selecciona el tono de voz" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="formal">Formal y Profesional</SelectItem>
-                    <SelectItem value="friendly">Amigable y Cercano</SelectItem>
-                    <SelectItem value="balanced">Equilibrado (Recomendado)</SelectItem>
-                    <SelectItem value="casual">Casual y Relajado</SelectItem>
-                    <SelectItem value="technical">Técnico y Especializado</SelectItem>
+                    <SelectItem value="formal">🎩 Formal y Protocolar</SelectItem>
+                    <SelectItem value="friendly">😊 Amigable y Cálido</SelectItem>
+                    <SelectItem value="balanced">⚖️ Equilibrado - Profesional pero Cercano</SelectItem>
+                    <SelectItem value="casual">🤗 Casual y Conversacional</SelectItem>
+                    <SelectItem value="persuasive">🎯 Persuasivo y Convincente</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-gray-500 mt-1">
-                  💡 Recomendación: "Equilibrado" funciona bien para la mayoría de negocios
+                  💡 <strong>Tono:</strong> Define CÓMO habla tu bot. "Equilibrado" para la mayoría, "Persuasivo" para ventas, "Formal" para medicina/legal, "Casual" para jóvenes
                 </p>
               </div>
 
