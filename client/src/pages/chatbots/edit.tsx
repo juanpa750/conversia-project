@@ -43,13 +43,13 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
     successMetrics: 'conversions'
   });
 
-  // Auto-save debounced
+  // Auto-save debounced - Reducido a 500ms para mejor respuesta
   const [debouncedFormData, setDebouncedFormData] = useState(formData);
   
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedFormData(formData);
-    }, 1000); // 1 segundo de delay
+    }, 500); // Reducido a 500ms para respuesta más rápida
 
     return () => clearTimeout(timer);
   }, [formData]);
@@ -117,15 +117,20 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setAutoSaving(false);
-      queryClient.invalidateQueries({ queryKey: [`/api/chatbots/${id}`] });
+      // Actualizar cache inmediatamente con los datos recibidos
+      queryClient.setQueryData([`/api/chatbots/${id}`], data);
       queryClient.invalidateQueries({ queryKey: ['/api/chatbots'] });
-      toast({
-        title: "✅ Guardado automático",
-        description: "Los cambios se han guardado exitosamente.",
-        duration: 2000,
-      });
+      
+      // Solo mostrar toast para cambios manuales, no auto-guardado
+      if (!autoSaving) {
+        toast({
+          title: "✅ Cambios guardados",
+          description: "Actualización completada exitosamente.",
+          duration: 1500,
+        });
+      }
     },
     onError: () => {
       setAutoSaving(false);
@@ -148,7 +153,16 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
         triggerKeywords: [...formData.triggerKeywords, newKeyword.trim()]
       };
       setFormData(newFormData);
-      updateChatbot.mutate(newFormData);
+      updateChatbot.mutate(newFormData, {
+        onSuccess: () => {
+          // Invalidar caché inmediatamente para reflejar cambios
+          queryClient.invalidateQueries({ queryKey: [`/api/chatbots/${id}`] });
+          toast({
+            title: "Palabra clave agregada",
+            description: `"${newKeyword.trim()}" se agregó correctamente`,
+          });
+        }
+      });
       setNewKeyword('');
     }
   };
@@ -159,7 +173,16 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
       triggerKeywords: formData.triggerKeywords.filter(k => k !== keyword)
     };
     setFormData(newFormData);
-    updateChatbot.mutate(newFormData);
+    updateChatbot.mutate(newFormData, {
+      onSuccess: () => {
+        // Invalidar caché inmediatamente para reflejar cambios
+        queryClient.invalidateQueries({ queryKey: [`/api/chatbots/${id}`] });
+        toast({
+          title: "Palabra clave eliminada",
+          description: `"${keyword}" se eliminó correctamente`,
+        });
+      }
+    });
   };
 
   const objectives = [

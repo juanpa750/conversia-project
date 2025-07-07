@@ -257,77 +257,66 @@ export class SimpleStorage implements ISimpleStorage {
       // Remove triggerKeywords from updates to handle other fields normally
       const { triggerKeywords, ...otherUpdates } = updates;
 
-      // Update other fields using standard SQL to avoid type conflicts
-      const updateFields: string[] = [];
-      const values: any[] = [];
-
-      if (otherUpdates.name !== undefined) {
-        updateFields.push('name = ?');
-        values.push(otherUpdates.name);
-      }
-      if (otherUpdates.description !== undefined) {
-        updateFields.push('description = ?');
-        values.push(otherUpdates.description);
-      }
-      if (otherUpdates.type !== undefined) {
-        updateFields.push('type = ?');
-        values.push(otherUpdates.type);
-      }
-      if (otherUpdates.status !== undefined) {
-        updateFields.push('status = ?');
-        values.push(otherUpdates.status);
-      }
-      if (otherUpdates.flow !== undefined) {
-        updateFields.push('flow = ?');
-        values.push(otherUpdates.flow ? (typeof otherUpdates.flow === 'string' ? otherUpdates.flow : JSON.stringify(otherUpdates.flow)) : null);
-      }
-      if (otherUpdates.aiInstructions !== undefined) {
-        updateFields.push('ai_instructions = ?');
-        values.push(otherUpdates.aiInstructions);
-      }
-      if (otherUpdates.aiPersonality !== undefined) {
-        updateFields.push('ai_personality = ?');
-        values.push(otherUpdates.aiPersonality);
-      }
-      if (otherUpdates.conversationObjective !== undefined) {
-        updateFields.push('conversation_objective = ?');
-        values.push(otherUpdates.conversationObjective);
-      }
-      if (otherUpdates.communicationTone !== undefined) {
-        updateFields.push('communication_personality = ?');
-        values.push(otherUpdates.communicationTone);
-      }
-      if (otherUpdates.responseLength !== undefined) {
-        updateFields.push('response_length = ?');
-        values.push(otherUpdates.responseLength);
-      }
-      if (otherUpdates.objective !== undefined) {
-        updateFields.push('objective = ?');
-        values.push(otherUpdates.objective);
-      }
-      if (otherUpdates.successMetrics !== undefined) {
-        updateFields.push('success_metrics = ?');
-        values.push(otherUpdates.successMetrics);
-      }
-      if (otherUpdates.language !== undefined) {
-        updateFields.push('language = ?');
-        values.push(otherUpdates.language);
-      }
-
-      if (updateFields.length > 0) {
-        updateFields.push('updated_at = NOW()');
-        values.push(id);
-
-        const result = await db.execute(sql`
-          UPDATE chatbots 
-          SET ${sql.raw(updateFields.join(', '))}
-          WHERE id = ${id}
-          RETURNING *
-        `);
+      // Update other fields using direct SQL to avoid placeholder conflicts
+      const updateParts = [];
         
-        return result.rows[0];
-      }
-
+        if (otherUpdates.name !== undefined) {
+          updateParts.push(`name = '${otherUpdates.name.replace(/'/g, "''")}'`);
+        }
+        if (otherUpdates.description !== undefined) {
+          updateParts.push(`description = '${otherUpdates.description.replace(/'/g, "''")}'`);
+        }
+        if (otherUpdates.type !== undefined) {
+          updateParts.push(`type = '${otherUpdates.type}'`);
+        }
+        if (otherUpdates.status !== undefined) {
+          updateParts.push(`status = '${otherUpdates.status}'`);
+        }
+        if (otherUpdates.flow !== undefined) {
+          const flowValue = otherUpdates.flow ? (typeof otherUpdates.flow === 'string' ? otherUpdates.flow : JSON.stringify(otherUpdates.flow)) : null;
+          updateParts.push(flowValue ? `flow = '${flowValue.replace(/'/g, "''")}'` : 'flow = NULL');
+        }
+        if (otherUpdates.aiInstructions !== undefined) {
+          updateParts.push(`ai_instructions = '${otherUpdates.aiInstructions.replace(/'/g, "''")}'`);
+        }
+        if (otherUpdates.aiPersonality !== undefined) {
+          updateParts.push(`ai_personality = '${otherUpdates.aiPersonality}'`);
+        }
+        if (otherUpdates.conversationObjective !== undefined) {
+          updateParts.push(`conversation_objective = '${otherUpdates.conversationObjective}'`);
+        }
+        if (otherUpdates.communicationTone !== undefined) {
+          updateParts.push(`communication_personality = '${otherUpdates.communicationTone}'`);
+        }
+        if (otherUpdates.responseLength !== undefined) {
+          updateParts.push(`response_length = '${otherUpdates.responseLength}'`);
+        }
+        if (otherUpdates.objective !== undefined) {
+          updateParts.push(`objective = '${otherUpdates.objective}'`);
+        }
+        if (otherUpdates.successMetrics !== undefined) {
+          updateParts.push(`success_metrics = '${otherUpdates.successMetrics}'`);
+        }
+        if (otherUpdates.language !== undefined) {
+          updateParts.push(`language = '${otherUpdates.language}'`);
+        }
+        if (otherUpdates.productId !== undefined) {
+          updateParts.push(`product_id = ${otherUpdates.productId || 'NULL'}`);
+        }
+        
+        if (updateParts.length > 0) {
+          updateParts.push('updated_at = NOW()');
+          
+          const result = await db.execute(sql.raw(`
+            UPDATE chatbots 
+            SET ${updateParts.join(', ')}
+            WHERE id = ${id}
+            RETURNING *
+          `));
+          
+          return result.rows[0];
+        }
+      
       // If no other fields to update, just return the current record
       const result = await db.execute(sql`
         SELECT * FROM chatbots WHERE id = ${id}
