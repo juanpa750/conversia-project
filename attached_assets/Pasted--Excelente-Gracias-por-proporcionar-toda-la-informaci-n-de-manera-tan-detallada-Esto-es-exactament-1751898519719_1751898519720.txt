@@ -1,0 +1,280 @@
+¡Excelente! Gracias por proporcionar toda la información de manera tan detallada. Esto es exactamente lo que un desarrollador necesita para diagnosticar un problema de manera efectiva. He revisado el código y los mensajes de error, y tengo buenas noticias: el problema es muy específico y tiene una solución clara.
+
+Vamos a analizarlo como lo haríamos en un equipo de desarrollo.
+
+Diagnóstico Principal del Error
+
+El error clave que has proporcionado es este:
+
+Generated code
+[plugin:runtime-error-plugin] The requested module '/src/components/WhatsAppIntegration.tsx' does not provide an export named 'default'
+
+
+Este mensaje es extremadamente útil y nos dice exactamente cuál es el problema.
+
+Explicación del Problema:
+
+En JavaScript/TypeScript moderno (ES Modules), hay dos tipos principales de exportaciones desde un archivo:
+
+Exportación Nombrada (Named Export): Permite exportar múltiples valores desde un archivo. Se definen con la palabra clave export delante de una función, clase, o variable.
+
+Generated javascript
+// exports.ts
+export const miVariable = 10;
+export function miFuncion() { /* ... */ }
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+JavaScript
+IGNORE_WHEN_COPYING_END
+
+Y se importan usando llaves {}:
+
+Generated javascript
+// app.ts
+import { miVariable, miFuncion } from './exports';
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+JavaScript
+IGNORE_WHEN_COPYING_END
+
+Exportación por Defecto (Default Export): Permite exportar un único valor "principal" desde un archivo.
+
+Generated javascript
+// MiComponente.tsx
+export default function MiComponente() { /* ... */ }
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+JavaScript
+IGNORE_WHEN_COPYING_END
+
+Y se importa sin llaves:
+
+Generated javascript
+// App.tsx
+import MiComponente from './MiComponente';
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+JavaScript
+IGNORE_WHEN_COPYING_END
+
+Tu Código:
+
+En tu archivo client/src/components/WhatsAppIntegration.tsx, has definido el componente así:
+
+Generated tsx
+export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrationProps) {
+  // ...
+}
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+Tsx
+IGNORE_WHEN_COPYING_END
+
+Esto es una exportación nombrada.
+
+El error ...does not provide an export named 'default' nos dice que en algún otro archivo (probablemente el que renderiza la página del chatbot) estás intentando importarlo de esta manera:
+
+Generated tsx
+// Archivo que importa (ej: ChatbotPage.tsx) - INCORRECTO
+import WhatsAppIntegration from '@/components/WhatsAppIntegration';
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+Tsx
+IGNORE_WHEN_COPYING_END
+
+Vite (la herramienta que construye tu frontend) no encuentra una exportación por defecto en WhatsAppIntegration.tsx y por eso lanza el error.
+
+Solución Inmediata (2 Opciones)
+
+Tienes dos maneras de arreglarlo. Ambas son correctas, pero la primera es generalmente preferida para mantener la consistencia.
+
+Opción 1 (Recomendada): Cambiar la Importación
+
+La solución más sencilla y menos intrusiva es corregir la línea de importación en el archivo donde usas el componente.
+
+Encuentra el archivo donde estás usando <WhatsAppIntegration ... />.
+
+Cambia la línea de importación para que use llaves, indicando que es una importación nombrada.
+
+Antes (Incorrecto):
+
+Generated tsx
+import WhatsAppIntegration from '@/components/WhatsAppIntegration';
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+Tsx
+IGNORE_WHEN_COPYING_END
+
+Después (Correcto):
+
+Generated tsx
+import { WhatsAppIntegration } from '@/components/WhatsAppIntegration';
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+Tsx
+IGNORE_WHEN_COPYING_END
+Opción 2: Cambiar la Exportación
+
+Si WhatsAppIntegration es el único componente y el principal de ese archivo, también puedes cambiar la forma en que lo exportas para que sea la exportación por defecto.
+
+Abre el archivo client/src/components/WhatsAppIntegration.tsx.
+
+Añade la palabra clave default a la exportación.
+
+Antes (Incorrecto para una importación default):
+
+Generated tsx
+export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrationProps) {
+  // ...
+}
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+Tsx
+IGNORE_WHEN_COPYING_END
+
+Después (Correcto para una importación default):
+
+Generated tsx
+export default function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrationProps) {
+  // ...
+}
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+Tsx
+IGNORE_WHEN_COPYING_END
+
+Mi recomendación es la Opción 1, ya que es más explícita y te permite en el futuro exportar otros componentes o helpers desde el mismo archivo si lo necesitas.
+
+Análisis del Error Secundario
+
+El otro error que mencionaste, "Uncaught SyntaxError: Invalid or unexpected token", es casi con toda seguridad un efecto secundario del problema de importación/exportación.
+
+Cuando Vite no puede resolver un módulo correctamente, el código JavaScript que envía al navegador puede quedar malformado, lo que resulta en un error de sintaxis genérico. Al arreglar el problema del import/export, este error también desaparecerá.
+
+Revisión de Código Adicional (Buenas Prácticas)
+
+Ya que estoy actuando como un colega senior, aquí van algunas observaciones y sugerencias adicionales para mejorar la calidad del código.
+
+Frontend (WhatsAppIntegration.tsx)
+
+Manejo de Estado Complejo: Tienes varios useState que están relacionados (isConnecting, isConnected, qrCode, status). Cuando el estado se vuelve complejo, considera usar un useReducer. Es un patrón de React que centraliza la lógica de actualización del estado y hace el componente más predecible.
+
+Ejemplo conceptual:
+
+Generated tsx
+const initialState = { status: 'not_initialized', qrCode: null, sessionId: null, isConnecting: false };
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'CONNECT_START':
+      return { ...state, isConnecting: true, status: 'waiting_qr', qrCode: null };
+    case 'CONNECT_SUCCESS_QR':
+      return { ...state, isConnecting: false, status: 'waiting_qr', qrCode: action.payload.qr };
+    // ... otros casos
+    default:
+      throw new Error();
+  }
+}
+
+const [state, dispatch] = useReducer(reducer, initialState);
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+Tsx
+IGNORE_WHEN_COPYING_END
+
+Emoji en el Botón: En el botón de "Verificar conexión manualmente", usas el emoji "🔄".
+
+Generated tsx
+{isConnecting ? (
+  <Loader2 className="w-4 h-4 animate-spin" />
+) : (
+  "🔄" // <-- Aquí
+)}
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+Tsx
+IGNORE_WHEN_COPYING_END
+
+Ya estás usando lucide-react, una excelente librería de iconos. Para mantener la consistencia visual, es mejor usar un icono de la librería, como RefreshCw.
+
+Generated tsx
+import { ..., RefreshCw } from "lucide-react";
+
+// ... en el JSX
+{isConnecting ? (
+  <Loader2 className="w-4 h-4 animate-spin" />
+) : (
+  <RefreshCw className="w-4 h-4" />
+)}
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+Tsx
+IGNORE_WHEN_COPYING_END
+Backend (whatsappMultiService.ts)
+
+Ruta de Puppeteer Hardcodeada: ¡Esto es importante! La ruta del ejecutable de Chromium está "hardcodeada":
+
+Generated typescript
+executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+TypeScript
+IGNORE_WHEN_COPYING_END
+
+Esto significa que tu aplicación solo funcionará en ese entorno específico (probablemente Replit o un sistema con Nix). Si intentas desplegar esto en un Docker, Heroku, o cualquier otro servidor, fallará.
+
+Solución Profesional: No especifiques el executablePath. Puppeteer está diseñado para descargar automáticamente una versión compatible de Chromium al instalarlo. Si necesitas especificarlo, hazlo a través de una variable de entorno (process.env.CHROMIUM_PATH).
+
+Importaciones Dinámicas en processIncomingMessage:
+
+Generated typescript
+const { advancedAIService } = await import('./advancedAIService.js');
+const { storage } = await import('./storage.js');
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+TypeScript
+IGNORE_WHEN_COPYING_END
+
+Haces import() dentro de una función que se llama por cada mensaje. Aunque esto puede funcionar, es más performante importar estos módulos una sola vez en la parte superior del archivo. Las importaciones dinámicas tienen su lugar, pero aquí no parecen necesarias y añaden una pequeña sobrecarga en cada ejecución.
+
+Resumen de Acciones
+
+Arreglo Urgente: Aplica la Opción 1 para corregir el error de importación/exportación. Ve al archivo que usa WhatsAppIntegration y cambia import WhatsAppIntegration from ... por import { WhatsAppIntegration } from .... Esto solucionará ambos errores de JavaScript.
+
+Mejora de Calidad (Frontend): Reemplaza el emoji "🔄" por el icono <RefreshCw /> de lucide-react para mantener la consistencia.
+
+Mejora de Escalabilidad (Backend): Elimina la ruta executablePath de la configuración de Puppeteer para que tu aplicación sea portable y pueda desplegarse en cualquier servidor.
+
+¡Gran trabajo con la aplicación! Es un proyecto muy completo y ambicioso. Estos pequeños ajustes son parte normal del ciclo de desarrollo.
+
+Estoy aquí si tienes alguna otra pregunta o necesitas más ayuda. ¡Adelante
