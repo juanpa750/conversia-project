@@ -30,9 +30,10 @@ export class WhatsAppMultiService extends EventEmitter {
     try {
       console.log('🚀 Inicializando navegador global para WhatsApp');
       
-      // Configuración específica para Replit
+      // Configuración específica para Replit con Chromium
       const browserOptions = {
         headless: 'new' as const,
+        executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -66,18 +67,10 @@ export class WhatsAppMultiService extends EventEmitter {
         }
       };
 
-      // Intentar lanzar el navegador con manejo de errores mejorado
-      try {
-        this.globalBrowser = await puppeteer.launch(browserOptions);
-        this.isInitialized = true;
-        console.log('✅ Navegador global inicializado correctamente');
-      } catch (launchError) {
-        console.log('⚠️ Chrome no encontrado, configurando modo simulado...');
-        // En entornos sin Chrome disponible, configurar modo simulado
-        this.globalBrowser = null;
-        this.isInitialized = false;
-        console.log('📋 WhatsApp funcionará en modo simulado para desarrollo');
-      }
+      // Lanzar el navegador con Chromium
+      this.globalBrowser = await puppeteer.launch(browserOptions);
+      this.isInitialized = true;
+      console.log('✅ Navegador global inicializado correctamente con Chromium');
     } catch (error) {
       console.error('❌ Error inicializando navegador:', error);
       this.isInitialized = false;
@@ -89,32 +82,7 @@ export class WhatsAppMultiService extends EventEmitter {
     
     // Verificar si el navegador está disponible
     if (!this.globalBrowser) {
-      console.log('⚠️ Navegador no disponible, iniciando modo simulado');
-      
-      // Crear sesión simulada para desarrollo
-      const mockSession = {
-        id: sessionKey,
-        userId,
-        chatbotId,
-        status: 'simulated',
-        qrCode: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
-        connected: false,
-        page: null,
-        client: null
-      };
-      
-      this.sessions.set(sessionKey, mockSession);
-      
-      // Simular QR code después de un pequeño delay
-      setTimeout(() => {
-        console.log('🔄 Generando QR code simulado para desarrollo...');
-        this.emit('qr-generated', { 
-          sessionKey, 
-          qrCode: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI0MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+CiAgICBRUiBDb2RlIFNpbXVsYWRvCiAgPC90ZXh0PgogIDx0ZXh0IHg9IjUwJSIgeT0iNjAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPgogICAgTW9kbyBEZXNhcnJvbGxvCiAgPC90ZXh0Pgo8L3N2Zz4K'
-        });
-      }, 1000);
-      
-      return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI0MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+CiAgICBRUiBDb2RlIFNpbXVsYWRvCiAgPC90ZXh0PgogIDx0ZXh0IHg9IjUwJSIgeT0iNjAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPgogICAgTW9kbyBEZXNhcnJvbGxvCiAgPC90ZXh0Pgo8L3N2Zz4K';
+      throw new Error('Navegador no disponible. Reinicie la aplicación.');
     }
     
     // Si ya existe una sesión activa, la reutilizamos
