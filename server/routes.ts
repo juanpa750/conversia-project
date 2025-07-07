@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { isAuthenticated, generateToken, hashPassword, comparePassword } from "./auth";
 import { simpleStorage } from "./storage";
-import { whatsappService } from "./whatsappService";
+import { whatsappMultiService } from "./whatsappMultiService";
 import { whatsappCloudAPI } from "./whatsappCloudAPI";
 
 import { registerWhatsAppSimpleRoutes } from "./routes-whatsapp-simple";
@@ -351,50 +351,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Connect WhatsApp for a specific chatbot
+  // Connect WhatsApp for a specific chatbot using NEW Multi-Chat Service
   app.post("/api/whatsapp/connect/chatbot/:chatbotId", isAuthenticated, async (req: any, res) => {
     try {
       const chatbotId = parseInt(req.params.chatbotId);
-      
-      // Verify chatbot belongs to user
+      const userId = req.userId;
+
+      console.log(`🔄 Iniciando conexión WhatsApp Multi-Chat para chatbot ${chatbotId}, usuario ${userId}`);
+
+      // Verificar que el chatbot pertenece al usuario
       const chatbot = await simpleStorage.getChatbot(chatbotId);
-      if (!chatbot || chatbot.userId !== req.userId) {
-        return res.status(404).json({ message: 'Chatbot not found' });
+      if (!chatbot || chatbot.userId !== userId) {
+        return res.status(404).json({ message: 'Chatbot no encontrado' });
       }
 
-      // Create new WhatsApp integration for this specific chatbot
-      const integration = await simpleStorage.createWhatsappIntegration({
-        userId: req.userId,
-        chatbotId: chatbotId,
-        phoneNumber: `pending_${Date.now()}`, // Temporary until QR is scanned
-        isConnected: false,
-        status: 'connecting'
-      });
-
-      const sessionId = `${req.userId}_${integration.id}`;
+      // Inicializar sesión WhatsApp con el nuevo servicio multi-chat
+      const result = await whatsappMultiService.createSession(chatbotId.toString(), userId);
       
-      // Initialize WhatsApp session
-      const qrCode = await whatsappService.initializeSession(sessionId);
-      
-      if (qrCode) {
-        // Update integration with session info
-        await simpleStorage.updateWhatsappIntegration(integration.id, {
-          status: 'qr_ready'
-        });
-        
-        res.json({
-          success: true,
-          sessionId,
-          integrationId: integration.id,
-          qrCode,
-          message: 'QR code generated. Scan with WhatsApp to connect.'
+      if (result === 'CONNECTED') {
+        res.json({ 
+          success: true, 
+          status: 'connected',
+          message: 'WhatsApp ya está conectado',
+          sessionId: `${userId}_${chatbotId}`
         });
       } else {
-        res.status(500).json({ message: 'Failed to generate QR code' });
+        res.json({ 
+          success: true, 
+          status: 'waiting_qr',
+          qr: result,
+          message: 'Escanea el código QR con WhatsApp',
+          sessionId: `${userId}_${chatbotId}`
+        });
       }
+
     } catch (error) {
-      console.error('Connect chatbot WhatsApp error:', error);
-      res.status(500).json({ message: 'Failed to connect WhatsApp for chatbot' });
+      console.error('❌ Error conectando WhatsApp Multi-Chat:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  });
+
+  // Desconectar sesión WhatsApp
+  app.post("/api/whatsapp/disconnect/:chatbotId", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbotId = req.params.chatbotId;
+      const userId = req.userId;
+
+      await whatsappMultiService.disconnectSession(chatbotId, userId);
+      
+      res.json({ 
+        success: true, 
+        message: 'WhatsApp desconectado exitosamente' 
+      });
+
+    } catch (error) {
+      console.error('❌ Error desconectando WhatsApp:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  });
+
+  // Obtener estado de sesión WhatsApp
+  app.get("/api/whatsapp/status/:chatbotId", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbotId = req.params.chatbotId;
+      const userId = req.userId;
+
+      const session = await whatsappMultiService.getSession(chatbotId, userId);
+      
+      if (!session) {
+        return res.json({ 
+          connected: false, 
+          status: 'not_initialized' 
+        });
+      }
+
+      res.json({ 
+        connected: session.isConnected,
+        status: session.isConnected ? 'connected' : 'waiting_connection',
+        sessionId: `${userId}_${chatbotId}`,
+        lastActivity: session.lastActivity
+      });
+
+    } catch (error) {
+      console.error('❌ Error obteniendo estado WhatsApp:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  });
+
+  // Clonar configuración del chatbot master
+  app.post("/api/chatbots/clone-master/:targetChatbotId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { targetChatbotId } = req.params;
+      const userId = req.userId;
+
+      // Buscar el chatbot master (ID: 29)
+      const masterChatbot = await simpleStorage.getChatbot(29);
+      if (!masterChatbot || masterChatbot.userId !== userId) {
+        return res.status(404).json({ error: 'Chatbot master no encontrado' });
+      }
+
+      // Obtener el chatbot objetivo
+      const targetChatbot = await simpleStorage.getChatbot(parseInt(targetChatbotId));
+      if (!targetChatbot || targetChatbot.userId !== userId) {
+        return res.status(404).json({ error: 'Chatbot objetivo no encontrado' });
+      }
+
+      // Clonar configuración del master al objetivo
+      const updatedChatbot = await simpleStorage.updateChatbot(parseInt(targetChatbotId), {
+        ai_instructions: masterChatbot.ai_instructions,
+        ai_personality: masterChatbot.ai_personality,
+        conversation_objective: masterChatbot.conversation_objective,
+        type: masterChatbot.type,
+        objective: masterChatbot.objective
+      });
+
+      console.log(`✅ Configuración clonada del master al chatbot ${targetChatbotId}`);
+
+      res.json({ 
+        success: true, 
+        message: 'Configuración clonada exitosamente',
+        chatbot: updatedChatbot
+      });
+
+    } catch (error) {
+      console.error('❌ Error clonando configuración:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
     }
   });
 
