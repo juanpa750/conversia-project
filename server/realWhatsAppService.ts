@@ -287,34 +287,27 @@ export class RealWhatsAppService extends EventEmitter {
       const messageText = message.body.toLowerCase();
       const contactPhone = message.from;
       
-      // Verificar si ya existe una conversación activa para este contacto
+      // Por ahora simplificar: responder a mensajes con palabras clave
+      // Esto evita errores SQL y funciona de manera más confiable
       let isActiveConversation = false;
-      try {
-        const { simpleStorage } = await import('./storage');
-        const recentMessages = await simpleStorage.getRecentMessagesForContact(chatbotId, contactPhone, 30); // últimos 30 minutos
-        isActiveConversation = recentMessages && recentMessages.length > 0;
-      } catch (error) {
-        console.log('No se pudo verificar conversación activa, asumiendo nueva conversación');
-      }
       
       let shouldRespond = false;
       let isFirstMessage = !isActiveConversation;
       
-      if (isActiveConversation) {
-        // Si hay conversación activa, responder a todo
-        shouldRespond = true;
-        console.log(`🔄 Conversación activa detectada para ${contactPhone}`);
-      } else if (triggerWords.length === 0) {
+      if (triggerWords.length === 0) {
         // Si no hay palabras activadoras configuradas, responder a todo
         shouldRespond = true;
         console.log(`🚀 Sin palabras activadoras, respondiendo a todo`);
       } else {
-        // Verificar si el mensaje contiene alguna palabra activadora para iniciar conversación
+        // Verificar si el mensaje contiene alguna palabra activadora
         shouldRespond = triggerWords.some((keyword: string) => 
           messageText.includes(keyword.toLowerCase())
         );
         if (shouldRespond) {
           console.log(`🎯 Palabra activadora detectada: ${triggerWords.find(k => messageText.includes(k.toLowerCase()))}`);
+        } else {
+          console.log(`⏭️ Mensaje sin palabras activadoras. Palabras clave: ${triggerWords.join(', ')}`);
+          console.log(`📝 Mensaje recibido: "${messageText}"`);
         }
       }
 
