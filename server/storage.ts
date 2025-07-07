@@ -128,6 +128,7 @@ export class SimpleStorage implements ISimpleStorage {
         triggerKeywords: row.trigger_keywords,
         aiInstructions: row.ai_instructions,
         aiPersonality: row.ai_personality,
+        welcomeMessage: row.welcome_message,
         conversationObjective: row.conversation_objective,
         status: row.status,
         type: row.type,
@@ -208,6 +209,7 @@ export class SimpleStorage implements ISimpleStorage {
         triggerKeywords: row.trigger_keywords,
         aiInstructions: row.ai_instructions,
         aiPersonality: row.ai_personality,
+        welcomeMessage: row.welcome_message,
         conversationObjective: row.conversation_objective,
         status: row.status,
         type: row.type,
@@ -302,6 +304,9 @@ export class SimpleStorage implements ISimpleStorage {
         }
         if (otherUpdates.productId !== undefined) {
           updateParts.push(`product_id = ${otherUpdates.productId || 'NULL'}`);
+        }
+        if (otherUpdates.welcomeMessage !== undefined) {
+          updateParts.push(`welcome_message = '${otherUpdates.welcomeMessage.replace(/'/g, "''")}'`);
         }
         
         if (updateParts.length > 0) {

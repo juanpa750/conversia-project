@@ -1,0 +1,42 @@
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+chunk-RPCDYKBN.js?v=53d51497:521 Warning: validateDOMNesting(...): <a> cannot appear as a descendant of <a>.
+    at a
+    at a
+    at https://fe5c4300-0ca5-4d73-bee0-f622e1b2ec51-00-1h90t9ziiqu8s.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=53d51497:205:18
+    at NavItem (https://fe5c4300-0ca5-4d73-bee0-f622e1b2ec51-00-1h90t9ziiqu8s.riker.replit.dev/src/components/layout/sidebar.tsx:35:20)
+    at nav
+    at div
+    at Sidebar (https://fe5c4300-0ca5-4d73-bee0-f622e1b2ec51-00-1h90t9ziiqu8s.riker.replit.dev/src/components/layout/sidebar.tsx:63:22)
+    at div
+    at div
+    at Layout (https://fe5c4300-0ca5-4d73-bee0-f622e1b2ec51-00-1h90t9ziiqu8s.riker.replit.dev/src/components/layout/layout.tsx:22:26)
+    at Route (https://fe5c4300-0ca5-4d73-bee0-f622e1b2ec51-00-1h90t9ziiqu8s.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=53d51497:191:16)
+    at Switch (https://fe5c4300-0ca5-4d73-bee0-f622e1b2ec51-00-1h90t9ziiqu8s.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=53d51497:247:17)
+    at LanguageProvider (https://fe5c4300-0ca5-4d73-bee0-f622e1b2ec51-00-1h90t9ziiqu8s.riker.replit.dev/src/contexts/LanguageContext.tsx:403:36)
+    at Router (https://fe5c4300-0ca5-4d73-bee0-f622e1b2ec51-00-1h90t9ziiqu8s.riker.replit.dev/src/App.tsx?v=ZNWKFqGIQ9n8nhLtosYLu:68:42)
+    at Provider (https://fe5c4300-0ca5-4d73-bee0-f622e1b2ec51-00-1h90t9ziiqu8s.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=53d51497:38:15)
+    at TooltipProvider (https://fe5c4300-0ca5-4d73-bee0-f622e1b2ec51-00-1h90t9ziiqu8s.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=53d51497:64:5)
+    at LanguageProvider (https://fe5c4300-0ca5-4d73-bee0-f622e1b2ec51-00-1h90t9ziiqu8s.riker.replit.dev/src/contexts/LanguageContext.tsx:403:36)
+    at App
+    at QueryClientProvider (https://fe5c4300-0ca5-4d73-bee0-f622e1b2ec51-00-1h90t9ziiqu8s.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=53d51497:2805:3)
+    at ThemeProvider (https://fe5c4300-0ca5-4d73-bee0-f622e1b2ec51-00-1h90t9ziiqu8s.riker.replit.dev/src/components/ui/theme-provider.tsx:25:3)
+    at LanguageProvider (https://fe5c4300-0ca5-4d73-bee0-f622e1b2ec51-00-1h90t9ziiqu8s.riker.replit.dev/src/contexts/LanguageContext.tsx?v=ZNWKFqGIQ9n8nhLtosYLu:403:36)
+printWarning @ chunk-RPCDYKBN.js?v=53d51497:521Entender este error
+edit.tsx:110 📤 Enviando datos al servidor: Object
+edit.tsx:146 🚀 Guardando chatbot con datos: Object
+edit.tsx:110 📤 Enviando datos al servidor: Object
+edit.tsx:110 📤 Enviando datos al servidor: Object
+edit.tsx:110 📤 Enviando datos al servidor: Object
+edit.tsx:110 📤 Enviando datos al servidor: Object
+edit.tsx:146 🚀 Guardando chatbot con datos: Object
+edit.tsx:110 📤 Enviando datos al servidor: Object
+edit.tsx:110 📤 Enviando datos al servidor: Object
+edit.tsx:146 🚀 Guardando chatbot con datos: Object
+edit.tsx:110 📤 Enviando datos al servidor: Object
+edit.tsx:146 🚀 Guardando chatbot con datos: Object
+edit.tsx:110 📤 Enviando datos al servidor: Object
+edit.tsx:146 🚀 Guardando chatbot con datos: {name: 'Chatbot Master - WhatsApp Pro', description: 'Chatbot maestro con configuración perfecta para WhatsApp', type: 'sales', status: 'active', productId: null, …}
+edit.tsx:110 📤 Enviando datos al servidor: {name: 'Chatbot Master - WhatsApp Pro', description: 'Chatbot maestro con configuración perfecta para WhatsApp', type: 'sales', status: 'active', productId: null, …}
+edit.tsx:110 📤 Enviando datos al servidor: {name: 'Chatbot Master - WhatsApp Pro', description: 'Chatbot maestro con configuración perfecta para WhatsApp', type: 'sales', status: 'active', productId: null, …}
+edit.tsx:146 🚀 Guardando chatbot con datos: {name: 'Chatbot Master - WhatsApp Pro', description: 'Chatbot maestro con configuración perfecta para WhatsApp', type: 'sales', status: 'active', productId: null, …}
+edit.tsx:110 📤 Enviando datos al servidor: {name: 'Chatbot Master - WhatsApp Pro', description: 'Chatbot maestro con configuración perfecta para WhatsApp', type: 'sales', status: 'active', productId: null, …}
