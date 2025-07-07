@@ -1,115 +1,104 @@
-import React, { useState } from 'react';
-import { useParams } from 'wouter';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { 
-  ArrowLeft, 
-  Save, 
-  Bot, 
-  Workflow, 
-  MessageCircle, 
-  Target, 
-  Smartphone,
-  Settings,
-  Zap,
-  Brain,
-  ShoppingCart,
-  Calendar,
-  HelpCircle,
-  Users,
-  Info
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { useLocation } from 'wouter';
+import { apiRequest } from '@/lib/queryClient';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft, Save, MessageSquare, BarChart3, Settings, Target, Phone, X, Plus, ShoppingCart, Calendar, HelpCircle, Users, Info, Bot, Zap, Heart } from 'lucide-react';
+import { Link } from 'wouter';
 import WhatsAppIntegration from '@/components/WhatsAppIntegration';
 
-export default function ChatbotEdit() {
-  const params = useParams();
-  const chatbotId = parseInt(params.id as string);
-  const [, setLocation] = useLocation();
+interface ChatbotEditProps {
+  id: string;
+}
+
+export default function ChatbotEdit({ id }: ChatbotEditProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Estado local para todos los campos
+  
+  // Estado del formulario
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    type: 'sales',
+    status: 'draft',
+    productId: null,
+    triggerKeywords: [],
     aiInstructions: '',
     aiPersonality: '',
     welcomeMessage: '',
     objective: 'sales',
-    conversationObjective: '',
-    productId: null as number | null,
-    triggerKeywords: [] as string[],
-    whatsappNumber: ''
+    conversationObjective: 'sales'
   });
-
+  
   const [newKeyword, setNewKeyword] = useState('');
+  const [activeTab, setActiveTab] = useState('editar');
 
-  // Cargar datos del chatbot
+  // Obtener datos del chatbot
   const { data: chatbot, isLoading } = useQuery({
-    queryKey: [`/api/chatbots/${chatbotId}`],
-    onSuccess: (data) => {
-      setFormData({
-        name: data.name || '',
-        description: data.description || '',
-        aiInstructions: data.aiInstructions || '',
-        aiPersonality: data.aiPersonality || '',
-        welcomeMessage: data.welcomeMessage || '',
-        objective: data.objective || 'sales',
-        conversationObjective: data.conversationObjective || '',
-        productId: data.productId || null,
-        triggerKeywords: data.triggerKeywords || [],
-        whatsappNumber: data.whatsappNumber || ''
-      });
-    }
+    queryKey: [`/api/chatbots/${id}`],
+    enabled: !!id
   });
 
-  // Cargar productos disponibles
+  // Obtener productos disponibles
   const { data: products = [] } = useQuery({
     queryKey: ['/api/products']
   });
 
-  // Cargar información del producto seleccionado
-  const { data: selectedProduct } = useQuery({
-    queryKey: [`/api/products/${formData.productId}`],
-    enabled: !!formData.productId
-  });
+  // Cargar datos cuando se obtiene el chatbot
+  useEffect(() => {
+    if (chatbot) {
+      setFormData({
+        name: chatbot.name || '',
+        description: chatbot.description || '',
+        type: chatbot.type || 'sales',
+        status: chatbot.status || 'draft',
+        productId: chatbot.productId || null,
+        triggerKeywords: Array.isArray(chatbot.triggerKeywords) ? chatbot.triggerKeywords : [],
+        aiInstructions: chatbot.aiInstructions || '',
+        aiPersonality: chatbot.aiPersonality || '',
+        welcomeMessage: chatbot.welcomeMessage || '',
+        objective: chatbot.objective || 'sales',
+        conversationObjective: chatbot.conversationObjective || 'sales'
+      });
+    }
+  }, [chatbot]);
 
-  // Mutación para guardar cambios
-  const saveMutation = useMutation({
+  // Mutación para actualizar chatbot
+  const updateChatbot = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('PATCH', `/api/chatbots/${chatbotId}`, data);
+      const response = await apiRequest('PUT', `/api/chatbots/${id}`, data);
+      if (!response.ok) {
+        throw new Error('Error al actualizar chatbot');
+      }
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/chatbots/${chatbotId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/chatbots/${id}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/chatbots'] });
       toast({
-        title: "Configuración guardada",
-        description: "Los cambios se han guardado exitosamente."
+        title: "Chatbot actualizado",
+        description: "Los cambios se han guardado exitosamente.",
       });
     },
-    onError: (error: any) => {
+    onError: () => {
       toast({
-        title: "Error al guardar",
-        description: error.message || "No se pudieron guardar los cambios.",
-        variant: "destructive"
+        title: "Error",
+        description: "No se pudieron guardar los cambios. Inténtalo de nuevo.",
+        variant: "destructive",
       });
     }
   });
 
   const handleSave = () => {
-    saveMutation.mutate(formData);
+    updateChatbot.mutate(formData);
   };
 
   const handleAddKeyword = () => {
@@ -178,374 +167,365 @@ export default function ChatbotEdit() {
       title: "Estructura Informativa",
       steps: [
         "Saludo y identificación de consulta",
-        "Provisión de información relevante",
-        "Clarificación de dudas adicionales",
-        "Oferta de recursos complementarios"
+        "Búsqueda y presentación de información",
+        "Aclaración de dudas adicionales",
+        "Derivación si es necesario"
       ]
     }
   };
 
+  const personalityOptions = [
+    { value: 'professional', label: 'Profesional y Formal', description: 'Tono empresarial, serio y confiable' },
+    { value: 'friendly', label: 'Amigable y Cercano', description: 'Conversacional, cálido y empático' },
+    { value: 'expert', label: 'Experto Técnico', description: 'Conocimiento especializado y detallado' },
+    { value: 'energetic', label: 'Enérgico y Motivador', description: 'Entusiasta, positivo y dinámico' },
+    { value: 'consultant', label: 'Consultor Estratégico', description: 'Hace preguntas, analiza y recomienda' }
+  ];
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 max-w-6xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => setLocation("/chatbots")}
-          >
-            <ArrowLeft className="mr-2 w-4 h-4" />
-            Volver
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/chatbots">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver
+            </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Configuración del Chatbot
-            </h1>
-            <p className="text-sm text-gray-500">
-              {chatbot?.name || `Chatbot ${chatbotId}`}
-            </p>
+            <h1 className="text-2xl font-bold">Editar Chatbot</h1>
+            <p className="text-gray-600">{formData.name || 'Chatbot sin nombre'}</p>
           </div>
         </div>
-        <Button 
-          onClick={handleSave}
-          disabled={saveMutation.isPending}
-          className="flex items-center space-x-2"
-        >
-          {saveMutation.isPending ? (
-            <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          <span>Guardar Cambios</span>
+        <Button onClick={handleSave} disabled={updateChatbot.isPending}>
+          <Save className="h-4 w-4 mr-2" />
+          {updateChatbot.isPending ? 'Guardando...' : 'Guardar Cambios'}
         </Button>
       </div>
 
       {/* Tabs de configuración */}
-      <Tabs defaultValue="edit" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="edit" className="flex items-center space-x-2">
-            <Settings className="w-4 h-4" />
+          <TabsTrigger value="editar" className="flex items-center space-x-2">
+            <Settings className="h-4 w-4" />
             <span>Editar</span>
           </TabsTrigger>
-          <TabsTrigger value="flow" className="flex items-center space-x-2">
-            <Workflow className="w-4 h-4" />
+          <TabsTrigger value="flujo" className="flex items-center space-x-2">
+            <BarChart3 className="h-4 w-4" />
             <span>Flujo</span>
           </TabsTrigger>
-          <TabsTrigger value="instructions" className="flex items-center space-x-2">
-            <Brain className="w-4 h-4" />
+          <TabsTrigger value="instruccion" className="flex items-center space-x-2">
+            <Bot className="h-4 w-4" />
             <span>Instrucción</span>
           </TabsTrigger>
-          <TabsTrigger value="objective" className="flex items-center space-x-2">
-            <Target className="w-4 h-4" />
+          <TabsTrigger value="objetivo" className="flex items-center space-x-2">
+            <Target className="h-4 w-4" />
             <span>Objetivo</span>
           </TabsTrigger>
           <TabsTrigger value="whatsapp" className="flex items-center space-x-2">
-            <Smartphone className="w-4 h-4" />
+            <Phone className="h-4 w-4" />
             <span>WhatsApp</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Pestaña Editar */}
-        <TabsContent value="edit" className="space-y-6">
+        <TabsContent value="editar" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Información Básica</CardTitle>
+              <CardTitle>Configuración Básica</CardTitle>
               <CardDescription>
-                Configura la información fundamental del chatbot
+                Configura la información fundamental de tu chatbot
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Nombre del Chatbot</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ej: Asistente de Ventas María"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="objective-select">Objetivo Principal</Label>
-                  <Select 
-                    value={formData.objective} 
-                    onValueChange={(value) => setFormData({ ...formData, objective: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {objectives.map((obj) => (
-                        <SelectItem key={obj.value} value={obj.value}>
-                          <div className="flex items-center space-x-2">
-                            <obj.icon className={`w-4 h-4 ${obj.color}`} />
-                            <span>{obj.label}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label htmlFor="name">Nombre del Chatbot</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Ej: Asistente de Ventas"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Recomendación: Usa un nombre descriptivo como "Asistente Vitaminas", "Bot Citas Médicas" o "Soporte Técnico Pro"
+                </p>
               </div>
-
+              
               <div>
                 <Label htmlFor="description">Descripción</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe brevemente las funciones del chatbot"
+                  placeholder="Describe el propósito y funcionalidad de tu chatbot"
                   rows={3}
                 />
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Recomendación: "Chatbot especializado en ventas de suplementos vitamínicos con asesoría personalizada y seguimiento post-venta"
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              
+              <div>
+                <Label htmlFor="type">Tipo de Chatbot</Label>
+                <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona el tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sales">Ventas</SelectItem>
+                    <SelectItem value="support">Soporte</SelectItem>
+                    <SelectItem value="appointment">Citas</SelectItem>
+                    <SelectItem value="general">General</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Recomendación: "Ventas" para productos/servicios, "Citas" para consultas médicas/legales, "Soporte" para atención cliente
+                </p>
+              </div>
+              
+              <div>
+                <Label htmlFor="status">Estado</Label>
+                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona el estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Borrador</SelectItem>
+                    <SelectItem value="active">Activo</SelectItem>
+                    <SelectItem value="paused">Pausado</SelectItem>
+                    <SelectItem value="archived">Archivado</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Recomendación: Usa "Borrador" mientras configuras, "Activo" cuando esté listo para recibir mensajes
+                </p>
+              </div>
 
-          {/* Selección de Producto */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Producto Vinculado</CardTitle>
-              <CardDescription>
-                Selecciona el producto que este chatbot va a promocionar
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="product">Producto</Label>
-                  <Select 
-                    value={formData.productId?.toString() || ""} 
-                    onValueChange={(value) => setFormData({ ...formData, productId: value ? parseInt(value) : null })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar producto..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map((product: any) => (
-                        <SelectItem key={product.id} value={product.id.toString()}>
-                          {product.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {selectedProduct && (
-                  <Card className="bg-blue-50 border-blue-200">
-                    <CardContent className="p-4">
-                      <h4 className="font-semibold text-blue-900 mb-2">
-                        Información del Producto Seleccionado:
-                      </h4>
-                      <div className="text-sm text-blue-800 space-y-1">
-                        <p><strong>Nombre:</strong> {selectedProduct.name}</p>
-                        <p><strong>Precio:</strong> ${selectedProduct.price}</p>
-                        <p><strong>Categoría:</strong> {selectedProduct.category}</p>
-                        <p><strong>Descripción:</strong> {selectedProduct.description}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+              <div>
+                <Label htmlFor="conversationStructure">Estructura de Conversación</Label>
+                <Select 
+                  value={formData.conversationObjective || 'direct'} 
+                  onValueChange={(value) => setFormData({ ...formData, conversationObjective: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona la estructura" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="direct">Directa - Respuestas rápidas y al grano</SelectItem>
+                    <SelectItem value="educational">Educativa - Explica beneficios y características</SelectItem>
+                    <SelectItem value="consultative">Consultiva - Hace preguntas para entender necesidades</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Recomendación: "Consultiva" para ventas complejas, "Directa" para información rápida, "Educativa" para productos técnicos
+                </p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Pestaña Flujo */}
-        <TabsContent value="flow" className="space-y-6">
+        <TabsContent value="flujo" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Flujo de Conversación Recomendado</CardTitle>
+              <CardTitle>Estructura de Conversación</CardTitle>
               <CardDescription>
-                Flujo ideal para {objectives.find(o => o.value === formData.objective)?.label.toLowerCase()}
+                Define cómo tu chatbot guiará las conversaciones según su objetivo
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                  <h4 className="font-semibold text-blue-900 mb-3">
-                    {conversationStructures[formData.objective as keyof typeof conversationStructures]?.title}
-                  </h4>
-                  <ol className="list-decimal list-inside space-y-2">
-                    {conversationStructures[formData.objective as keyof typeof conversationStructures]?.steps.map((step, index) => (
-                      <li key={index} className="text-blue-800">{step}</li>
+              {formData.objective && conversationStructures[formData.objective] && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-blue-600">
+                    {conversationStructures[formData.objective].title}
+                  </h3>
+                  <div className="space-y-3">
+                    {conversationStructures[formData.objective].steps.map((step, index) => (
+                      <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
+                        <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                          {index + 1}
+                        </div>
+                        <p className="text-gray-700">{step}</p>
+                      </div>
                     ))}
-                  </ol>
+                  </div>
+                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      💡 Esta estructura se aplica automáticamente según el objetivo seleccionado. 
+                      Tu IA seguirá estos pasos para guiar naturalmente las conversaciones.
+                    </p>
+                  </div>
                 </div>
-                
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <h4 className="font-semibold text-yellow-900 mb-2">Nota</h4>
-                  <p className="text-yellow-800 text-sm">
-                    Este flujo está optimizado por IA y se adapta automáticamente según las respuestas del cliente.
-                    Tu chatbot seguirá esta estructura de manera inteligente para maximizar los resultados.
-                  </p>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Pestaña Instrucciones */}
-        <TabsContent value="instructions" className="space-y-6">
+        {/* Pestaña Instrucción */}
+        <TabsContent value="instruccion" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Configuración de la IA</CardTitle>
+              <CardTitle>Configuración de IA</CardTitle>
               <CardDescription>
-                Define la personalidad y comportamiento de tu chatbot
+                Personaliza la personalidad y comportamiento de tu chatbot
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div>
+                <Label htmlFor="aiPersonality">Personalidad del Bot</Label>
+                <Select 
+                  value={formData.aiPersonality} 
+                  onValueChange={(value) => setFormData({ ...formData, aiPersonality: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona una personalidad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {personalityOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Recomendación: "Consultor Estratégico" para ventas, "Profesional y Formal" para servicios médicos/legales
+                </p>
+              </div>
+
               <div>
                 <Label htmlFor="welcomeMessage">Mensaje de Bienvenida</Label>
                 <Textarea
                   id="welcomeMessage"
                   value={formData.welcomeMessage}
                   onChange={(e) => setFormData({ ...formData, welcomeMessage: e.target.value })}
-                  placeholder="¡Hola! 👋 Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?"
+                  placeholder="Escribe el primer mensaje que verán tus clientes..."
                   rows={3}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Este mensaje se enviará automáticamente cuando alguien inicie una conversación
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Recomendación: "¡Hola! 👋 Soy tu asistente especializado en [producto/servicio]. ¿En qué puedo ayudarte hoy?"
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="aiPersonality">Personalidad de la IA</Label>
-                <Input
-                  id="aiPersonality"
-                  value={formData.aiPersonality}
-                  onChange={(e) => setFormData({ ...formData, aiPersonality: e.target.value })}
-                  placeholder="Ej: Amigable, profesional y orientado a resultados"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="aiInstructions">Instrucciones Específicas</Label>
+                <Label htmlFor="aiInstructions">Instrucciones Detalladas para la IA</Label>
                 <Textarea
                   id="aiInstructions"
                   value={formData.aiInstructions}
                   onChange={(e) => setFormData({ ...formData, aiInstructions: e.target.value })}
-                  placeholder="Eres un experto en ventas. Tu objetivo es ayudar a los clientes a encontrar el producto perfecto..."
+                  placeholder="Describe detalladamente cómo debe comportarse tu chatbot..."
                   rows={6}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Define cómo debe comportarse la IA, qué información debe priorizar y cómo debe interactuar
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Recomendación: "Eres un experto en [área]. Siempre pregunta necesidades específicas antes de recomendar. Usa un tono [personalidad] y enfócate en [objetivo principal]."
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="conversationObjective">Objetivo de Conversación</Label>
-                <Input
-                  id="conversationObjective"
-                  value={formData.conversationObjective}
-                  onChange={(e) => setFormData({ ...formData, conversationObjective: e.target.value })}
-                  placeholder="Convertir visitantes en clientes usando metodología AIDA"
-                />
+                <Label htmlFor="productId">Producto/Servicio Principal</Label>
+                <Select 
+                  value={formData.productId?.toString() || ''} 
+                  onValueChange={(value) => setFormData({ ...formData, productId: value ? parseInt(value) : null })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un producto (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Sin producto específico</SelectItem>
+                    {products.map((product) => (
+                      <SelectItem key={product.id} value={product.id.toString()}>
+                        {product.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Recomendación: Selecciona el producto principal que promocionará este chatbot para respuestas más precisas
+                </p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Pestaña Objetivo */}
-        <TabsContent value="objective" className="space-y-6">
+        <TabsContent value="objetivo" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Objetivo del Chatbot</CardTitle>
               <CardDescription>
-                Define el propósito principal y las palabras que activarán el chatbot
+                Define el propósito principal y palabras clave que activarán tu chatbot
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <Label>Selecciona el Objetivo Principal</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                  {objectives.map((obj) => (
-                    <Card 
-                      key={obj.value}
-                      className={`cursor-pointer transition-all ${
-                        formData.objective === obj.value 
-                          ? 'ring-2 ring-blue-500 bg-blue-50' 
-                          : 'hover:bg-gray-50'
-                      }`}
-                      onClick={() => setFormData({ ...formData, objective: obj.value })}
-                    >
-                      <CardContent className="p-4">
+                <Label>Objetivo Principal</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+                  {objectives.map((obj) => {
+                    const Icon = obj.icon;
+                    return (
+                      <div
+                        key={obj.value}
+                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                          formData.objective === obj.value
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        onClick={() => setFormData({ ...formData, objective: obj.value })}
+                      >
                         <div className="flex items-center space-x-3">
-                          <obj.icon className={`w-6 h-6 ${obj.color}`} />
+                          <Icon className={`h-6 w-6 ${obj.color}`} />
                           <span className="font-medium">{obj.label}</span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-
-              <Separator />
-
-              <div>
-                <Label>Palabras Disparadoras</Label>
-                <p className="text-sm text-gray-500 mb-3">
-                  Define las palabras o frases que activarán automáticamente el chatbot para responder
+                <p className="text-sm text-gray-500 mt-2">
+                  💡 Recomendación: El objetivo define la estrategia de conversación y las métricas de éxito del chatbot
                 </p>
-                
-                <div className="flex space-x-2 mb-3">
-                  <Input
-                    value={newKeyword}
-                    onChange={(e) => setNewKeyword(e.target.value)}
-                    placeholder="Agregar palabra clave..."
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddKeyword()}
-                  />
-                  <Button onClick={handleAddKeyword} variant="outline">
-                    <Zap className="w-4 h-4 mr-2" />
-                    Agregar
-                  </Button>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {formData.triggerKeywords.map((keyword) => (
-                    <Badge key={keyword} variant="secondary" className="flex items-center space-x-1">
-                      <span>{keyword}</span>
-                      <button 
-                        onClick={() => handleRemoveKeyword(keyword)}
-                        className="ml-1 hover:text-red-500"
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-
-                {formData.triggerKeywords.length === 0 && (
-                  <p className="text-sm text-yellow-600 mt-2">
-                    ⚠️ Sin palabras disparadoras configuradas. El chatbot no se activará automáticamente.
-                  </p>
-                )}
               </div>
 
               <Separator />
 
               <div>
-                <Label>Estructura de Conversación</Label>
-                <Card className="mt-3 bg-gray-50">
-                  <CardContent className="p-4">
-                    <h4 className="font-semibold mb-3">
-                      {conversationStructures[formData.objective as keyof typeof conversationStructures]?.title}
-                    </h4>
-                    <ol className="list-decimal list-inside space-y-2 text-sm">
-                      {conversationStructures[formData.objective as keyof typeof conversationStructures]?.steps.map((step, index) => (
-                        <li key={index} className="text-gray-700">{step}</li>
-                      ))}
-                    </ol>
-                  </CardContent>
-                </Card>
+                <Label htmlFor="triggerKeywords">Palabras Clave de Activación</Label>
+                <div className="space-y-3">
+                  <div className="flex space-x-2">
+                    <Input
+                      value={newKeyword}
+                      onChange={(e) => setNewKeyword(e.target.value)}
+                      placeholder="Ej: hola, información, precio, comprar..."
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddKeyword()}
+                    />
+                    <Button onClick={handleAddKeyword} size="sm">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    {formData.triggerKeywords.map((keyword) => (
+                      <Badge key={keyword} variant="secondary" className="flex items-center space-x-1">
+                        <span>{keyword}</span>
+                        <X 
+                          className="h-3 w-3 cursor-pointer" 
+                          onClick={() => handleRemoveKeyword(keyword)}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Recomendación: Agrega palabras que tus clientes usarían: "precio", "información", "comprar", "ayuda", nombres de productos, etc.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -553,10 +533,17 @@ export default function ChatbotEdit() {
 
         {/* Pestaña WhatsApp */}
         <TabsContent value="whatsapp" className="space-y-6">
-          <WhatsAppIntegration 
-            chatbotId={chatbotId} 
-            chatbotName={formData.name || 'Chatbot'} 
-          />
+          <Card>
+            <CardHeader>
+              <CardTitle>Integración WhatsApp</CardTitle>
+              <CardDescription>
+                Conecta tu chatbot con WhatsApp Web para empezar a recibir mensajes
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <WhatsAppIntegration chatbotId={parseInt(id)} />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
