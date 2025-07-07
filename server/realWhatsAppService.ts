@@ -318,7 +318,7 @@ export class RealWhatsAppService extends EventEmitter {
       }
 
       // Importar servicios necesarios
-      const { chatbotProductAI } = await import('./chatbotProductAIService');
+      const { structuredAIService } = await import('./structuredAIService');
       const { simpleStorage } = await import('./storage');
 
       // Obtener configuración del chatbot
@@ -389,12 +389,19 @@ export class RealWhatsAppService extends EventEmitter {
         return;
       }
 
-      // Generar respuesta con IA
-      const aiResponse = await chatbotProductAI.generateIntelligentResponse(
-        message.body,
-        chatbot.userId,
-        chatbotId,
-        []  // historial vacío por simplicidad
+      // Generar respuesta con IA estructurada
+      const conversationContext = {
+        userMessage: message.body,
+        conversationHistory: [], // historial vacío por simplicidad
+        detectedIntent: 'general',
+        urgencyLevel: 'medium' as const,
+        customerType: isActiveConversation ? 'returning' : 'new' as const
+      };
+
+      const aiResponse = await structuredAIService.generateStructuredResponse(
+        conversationContext,
+        chatbot.user_id,
+        chatbotId
       );
 
       let responseText = aiResponse.message;
