@@ -199,6 +199,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Obtener datos completos del chatbot para edición
+  app.get("/api/chatbots/:id/edit", isAuthenticated, async (req: any, res) => {
+    try {
+      const chatbotId = parseInt(req.params.id);
+      const chatbot = await simpleStorage.getChatbot(chatbotId);
+      
+      if (!chatbot || chatbot.userId !== req.userId) {
+        return res.status(404).json({ message: 'Chatbot not found' });
+      }
+      
+      res.json(chatbot);
+    } catch (error) {
+      console.error('Get chatbot for edit error:', error);
+      res.status(500).json({ message: 'Failed to fetch chatbot for edit' });
+    }
+  });
+
   app.put("/api/chatbots/:id", isAuthenticated, async (req: any, res) => {
     try {
       const chatbotId = parseInt(req.params.id);
