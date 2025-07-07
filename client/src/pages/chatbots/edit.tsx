@@ -318,23 +318,7 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
                 </p>
               </div>
               
-              <div>
-                <Label htmlFor="type">Tipo de Chatbot</Label>
-                <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona el tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sales">Ventas</SelectItem>
-                    <SelectItem value="support">Soporte</SelectItem>
-                    <SelectItem value="appointment">Citas</SelectItem>
-                    <SelectItem value="general">General</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-gray-500 mt-1">
-                  💡 Recomendación: "Ventas" para productos/servicios, "Citas" para consultas médicas/legales, "Soporte" para atención cliente
-                </p>
-              </div>
+
               
               <div>
                 <Label htmlFor="status">Estado</Label>
