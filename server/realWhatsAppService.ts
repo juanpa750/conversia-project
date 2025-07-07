@@ -147,6 +147,12 @@ export class RealWhatsAppService extends EventEmitter {
     phoneNumber?: string;
   } {
     const session = this.sessions.get(sessionId);
+    console.log(`🔍 Getting status for session ${sessionId}:`, session ? {
+      status: session.status,
+      connected: session.isConnected,
+      hasQR: !!session.qrCode
+    } : 'not found');
+    
     if (!session) {
       return {
         connected: false,

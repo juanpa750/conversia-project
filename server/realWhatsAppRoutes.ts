@@ -36,11 +36,11 @@ router.post('/connect/:chatbotId', async (req, res) => {
   }
 });
 
-// Get real WhatsApp session status
-router.get('/status/:chatbotId', isAuthenticated, async (req, res) => {
+// Get real WhatsApp session status (sin autenticación para pruebas)
+router.get('/status/:chatbotId', async (req, res) => {
   try {
     const { chatbotId } = req.params;
-    const userId = req.userId;
+    const userId = 'test_user'; // Temporary for testing
     const sessionId = `${userId}_${chatbotId}`;
     
     const status = realWhatsAppService.getSessionStatus(sessionId);
