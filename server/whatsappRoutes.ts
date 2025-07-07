@@ -199,4 +199,4 @@ router.post('/test-response/:chatbotId', async (req, res) => {
   }
 });
 
-export { router as whatsappRoutes };
+export default router;
