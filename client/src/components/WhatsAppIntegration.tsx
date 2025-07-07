@@ -50,12 +50,12 @@ export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrat
         setIsConnected(true);
         setStatus('connected');
         toast({
-          title: "✅ WhatsApp Conectado",
+          title: "WhatsApp Conectado",
           description: "Tu WhatsApp está conectado y funcionando",
         });
       } else {
         toast({
-          title: "⚠️ WhatsApp No Conectado",
+          title: "WhatsApp No Conectado",
           description: "Escanea el código QR para conectar",
           variant: "destructive",
         });
@@ -66,7 +66,7 @@ export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrat
     } catch (error) {
       console.error('Error forzando verificación:', error);
       toast({
-        title: "❌ Error",
+        title: "Error",
         description: "No se pudo verificar el estado de conexión",
         variant: "destructive",
       });
@@ -85,7 +85,7 @@ export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrat
         setIsConnected(true);
         setStatus('connected');
         toast({
-          title: "✅ Conexión Confirmada",
+          title: "Conexión Confirmada",
           description: "WhatsApp marcado como conectado exitosamente",
         });
         await checkConnectionStatus();
@@ -93,7 +93,7 @@ export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrat
     } catch (error) {
       console.error('Error forzando conexión:', error);
       toast({
-        title: "❌ Error",
+        title: "Error",
         description: "No se pudo marcar como conectado",
         variant: "destructive",
       });
@@ -124,7 +124,7 @@ export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrat
             setStatus('connected');
             setSessionId(data.sessionId);
             toast({
-              title: "✅ WhatsApp Conectado",
+              title: "WhatsApp Conectado",
               description: `${chatbotName} ya está conectado a WhatsApp`,
             });
           } else if (data.qr) {
@@ -144,7 +144,7 @@ export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrat
       console.error('Error conectando WhatsApp:', error);
       setStatus('error');
       toast({
-        title: "❌ Error de Conexión",
+        title: "Error de Conexión",
         description: "No se pudo conectar WhatsApp. Intenta nuevamente.",
         variant: "destructive",
       });
@@ -171,7 +171,7 @@ export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrat
     } catch (error) {
       console.error('Error desconectando WhatsApp:', error);
       toast({
-        title: "❌ Error",
+        title: "Error",
         description: "No se pudo desconectar WhatsApp",
         variant: "destructive",
       });
@@ -299,7 +299,7 @@ export function WhatsAppIntegration({ chatbotId, chatbotName }: WhatsAppIntegrat
                     Verificando...
                   </>
                 ) : (
-                  "✅ Ya escaneé el QR - Marcar como conectado"
+                  "Ya escaneé el QR - Marcar como conectado"
                 )}
               </Button>
             </div>
