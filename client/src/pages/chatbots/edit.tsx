@@ -107,6 +107,7 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
   const updateChatbot = useMutation({
     mutationFn: async (data: any) => {
       setAutoSaving(true);
+      console.log('📤 Enviando datos al servidor:', data);
       const response = await apiRequest('PUT', `/api/chatbots/${id}`, data);
       if (!response.ok) {
         throw new Error('Error al actualizar chatbot');
@@ -142,6 +143,7 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
   });
 
   const handleSave = () => {
+    console.log('🚀 Guardando chatbot con datos:', formData);
     updateChatbot.mutate(formData);
   };
 

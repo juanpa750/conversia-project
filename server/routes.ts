@@ -248,6 +248,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chatbotId = parseInt(req.params.id);
       const updateData = req.body;
       
+      console.log(`🔧 Updating chatbot ${chatbotId} with data:`, JSON.stringify(updateData, null, 2));
+      
       // Check if chatbot exists and belongs to user
       const existing = await simpleStorage.getChatbot(chatbotId);
       if (!existing || existing.userId !== req.userId) {
@@ -255,6 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const updatedChatbot = await simpleStorage.updateChatbot(chatbotId, updateData);
+      console.log(`✅ Chatbot ${chatbotId} updated successfully`);
       res.json(updatedChatbot);
     } catch (error) {
       console.error('Update chatbot error:', error);
