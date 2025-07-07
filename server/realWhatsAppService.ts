@@ -127,6 +127,19 @@ export class RealWhatsAppService extends EventEmitter {
         this.emit('disconnected', sessionId, reason);
       });
 
+      // Manejador de mensajes entrantes - CRÍTICO PARA RESPUESTAS
+      client.on('message', async (message: any) => {
+        try {
+          // Solo procesar mensajes de texto entrantes (no enviados por nosotros)
+          if (message.body && !message.fromMe && message.type === 'chat') {
+            console.log(`📨 Mensaje recibido en sesión ${sessionId}: ${message.body} de ${message.from}`);
+            await this.processIncomingMessage(message, sessionId);
+          }
+        } catch (error) {
+          console.error(`❌ Error procesando mensaje en sesión ${sessionId}:`, error);
+        }
+      });
+
       // Initialize the client
       await client.initialize();
 
@@ -232,6 +245,99 @@ export class RealWhatsAppService extends EventEmitter {
 
   getAllSessions(): string[] {
     return Array.from(this.sessions.keys());
+  }
+
+  // Procesar mensaje entrante y generar respuesta AI
+  private async processIncomingMessage(message: any, sessionId: string): Promise<void> {
+    try {
+      const session = this.sessions.get(sessionId);
+      if (!session) {
+        console.error(`❌ Sesión no encontrada: ${sessionId}`);
+        return;
+      }
+
+      // Extraer chatbotId del sessionId (formato: userId_chatbotId)
+      const chatbotId = parseInt(sessionId.split('_')[1]);
+      if (!chatbotId) {
+        console.error(`❌ ChatbotId no válido en sessionId: ${sessionId}`);
+        return;
+      }
+
+      // Importar servicios necesarios
+      const { chatbotProductAI } = await import('./chatbotProductAIService');
+      const { simpleStorage } = await import('./storage');
+
+      // Obtener configuración del chatbot
+      const chatbot = await simpleStorage.getChatbot(chatbotId);
+      if (!chatbot) {
+        console.error(`❌ Chatbot ${chatbotId} no encontrado`);
+        return;
+      }
+
+      console.log(`🤖 Procesando mensaje con chatbot: ${chatbot.name}`);
+
+      // Verificar palabras activadoras
+      const triggerWords = chatbot.triggerKeywords || [];
+      const messageText = message.body.toLowerCase();
+      
+      let shouldRespond = false;
+      
+      // Si no hay palabras activadoras, responder a todo
+      if (triggerWords.length === 0) {
+        shouldRespond = true;
+      } else {
+        // Verificar si el mensaje contiene alguna palabra activadora
+        shouldRespond = triggerWords.some((keyword: string) => 
+          messageText.includes(keyword.toLowerCase())
+        );
+      }
+
+      if (!shouldRespond) {
+        console.log(`⏭️ Mensaje no contiene palabras activadoras: ${triggerWords.join(', ')}`);
+        return;
+      }
+
+      // Generar respuesta con IA
+      const aiResponse = await chatbotProductAI.generateIntelligentResponse(
+        message.body,
+        chatbot.userId,
+        chatbotId,
+        []  // historial vacío por simplicidad
+      );
+
+      let responseText = aiResponse.message;
+
+      // Si hay mensaje de bienvenida y es primera interacción, usarlo
+      if (chatbot.welcomeMessage && chatbot.welcomeMessage.trim()) {
+        responseText = chatbot.welcomeMessage + '\n\n' + responseText;
+      }
+
+      console.log(`🤖 Enviando respuesta: ${responseText.substring(0, 100)}...`);
+
+      // Enviar respuesta
+      await message.reply(responseText);
+
+      // Guardar mensaje en la base de datos
+      try {
+        await simpleStorage.saveWhatsAppMessage({
+          chatbotId: chatbotId,
+          contactPhone: message.from,
+          contactName: message.notifyName || 'Usuario',
+          messageType: 'received',
+          content: message.body,
+          messageId: message.id._serialized,
+          aiResponse: responseText
+        });
+      } catch (dbError) {
+        console.error('Error guardando mensaje en BD:', dbError);
+        // No interrumpir el flujo por errores de BD
+      }
+
+      console.log(`✅ Mensaje procesado exitosamente para chatbot ${chatbotId}`);
+
+    } catch (error) {
+      console.error(`❌ Error procesando mensaje en sesión ${sessionId}:`, error);
+    }
   }
 }
 
