@@ -212,6 +212,13 @@ The application is configured for deployment on Replit with:
 - **System Dependencies**: Puppeteer with stealth plugin for improved QR generation
 
 ## Recent Changes
+- **January 7, 2025 (Night - 9:40 PM)**: Fixed Critical Frontend Cache Update Issue
+- **FIXED**: Configuration no longer disappears when changing products
+- **FIXED**: Frontend cache now updates immediately after save operations
+- **FIXED**: Auto-save filter prevents empty fields from overwriting existing data
+- **IMPROVED**: Server data synchronization with frontend form state
+- **RESOLVED**: User frustration with data persistence - changes now appear instantly
+
 - **January 7, 2025 (Evening)**: Major WhatsApp Integration UX Overhaul
 - **Removed Confusing Demo Mode**: Eliminated demo/real WhatsApp toggle that was confusing users
 - **Honest Connection Process**: Replaced fake QR codes with clear instructions to use web.whatsapp.com

@@ -132,9 +132,38 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
     },
     onSuccess: (data) => {
       setAutoSaving(false);
-      // Actualizar cache inmediatamente con los datos recibidos
+      
+      // Actualizar formData con los datos reales del servidor
+      if (data) {
+        const serverData = {
+          name: data.name || '',
+          description: data.description || '',
+          type: data.type || 'sales',
+          status: data.status || 'draft',
+          productId: data.productId || data.product_id || null,
+          triggerKeywords: Array.isArray(data.triggerKeywords) 
+            ? data.triggerKeywords 
+            : Array.isArray(data.trigger_keywords) 
+              ? data.trigger_keywords 
+              : [],
+          aiInstructions: data.aiInstructions || data.ai_instructions || '',
+          aiPersonality: data.aiPersonality || data.ai_personality || 'custom',
+          welcomeMessage: data.welcomeMessage || data.welcome_message || '',
+          objective: data.objective || 'sales',
+          conversationObjective: data.conversationObjective || data.conversation_objective || 'sales',
+          communicationTone: data.communicationTone || data.communication_personality || 'balanced',
+          responseLength: data.responseLength || data.response_length || 'moderate',
+          language: data.language || 'spanish',
+          successMetrics: data.successMetrics || data.success_metrics || 'conversions'
+        };
+        
+        setFormData(serverData);
+      }
+      
+      // Actualizar cache y invalidar queries
       queryClient.setQueryData([`/api/chatbots/${id}`], data);
       queryClient.invalidateQueries({ queryKey: ['/api/chatbots'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/chatbots/${id}`] });
       
       // Marcar que los cambios están guardados
       setHasUnsavedChanges(false);
