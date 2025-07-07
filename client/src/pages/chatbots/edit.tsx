@@ -609,7 +609,9 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
                 <Select 
                   value={formData.productId?.toString() || 'none'} 
                   onValueChange={(value) => {
-                    const newFormData = { ...formData, productId: value === 'none' ? null : parseInt(value) };
+                    console.log('🔧 Cambiando producto a:', value);
+                    const productId = value === 'none' ? null : parseInt(value);
+                    const newFormData = { ...formData, productId: productId };
                     setFormData(newFormData);
                     updateChatbot.mutate(newFormData);
                   }}
