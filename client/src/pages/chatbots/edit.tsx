@@ -43,19 +43,18 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
     successMetrics: 'conversions'
   });
 
-  // Desactivamos auto-save temporalmente para arreglar el problema
+  // Auto-save desactivado para evitar pérdida de datos
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [newKeyword, setNewKeyword] = useState('');
+  const [activeTab, setActiveTab] = useState('editar');
+
   useEffect(() => {
     // Marcar que hay cambios sin guardar cuando se modifica el form
     if (chatbot && formData.name) {
       setHasUnsavedChanges(true);
     }
   }, [formData]);
-  
-  const [newKeyword, setNewKeyword] = useState('');
-  const [autoSaving, setAutoSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('editar');
 
   // Obtener datos del chatbot
   const { data: chatbot, isLoading } = useQuery({
@@ -107,8 +106,25 @@ export default function ChatbotEdit({ id }: ChatbotEditProps) {
   const updateChatbot = useMutation({
     mutationFn: async (data: any) => {
       setAutoSaving(true);
-      console.log('📤 Enviando datos al servidor:', data);
-      const response = await apiRequest('PUT', `/api/chatbots/${id}`, data);
+      
+      // Filtrar campos vacíos antes de enviar al servidor
+      const filteredData = {};
+      Object.keys(data).forEach(key => {
+        const value = data[key];
+        // Solo enviar valores que no estén vacíos
+        if (value !== "" && value !== null && value !== undefined) {
+          filteredData[key] = value;
+        } else if (key === 'productId') {
+          // Permitir cambios explícitos de productId (incluso null)
+          filteredData[key] = value;
+        } else if (Array.isArray(value) && value.length > 0) {
+          // Incluir arrays no vacíos
+          filteredData[key] = value;
+        }
+      });
+      
+      console.log('📤 Enviando datos filtrados al servidor:', filteredData);
+      const response = await apiRequest('PUT', `/api/chatbots/${id}`, filteredData);
       if (!response.ok) {
         throw new Error('Error al actualizar chatbot');
       }
